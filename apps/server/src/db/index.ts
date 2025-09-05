@@ -1,3 +1,14 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/bun-sql";
+import { account, session, user, verification } from "@/db/schema/auth";
+import { env } from "@/env";
 
-export const db = drizzle(process.env.DATABASE_URL || "");
+const schema = {
+  user,
+  session,
+  account,
+  verification,
+};
+
+export const db = drizzle(env.DATABASE_URL, {
+  schema,
+});
