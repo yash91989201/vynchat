@@ -18,6 +18,7 @@ import { Toaster } from "@/components/ui/sonner";
 import type { orpcClient, queryUtils } from "@/utils/orpc";
 import { link } from "@/utils/orpc";
 import "@/index.css";
+import { authClient } from "@/lib/auth-client";
 
 export interface RouterAppContext {
   queryUtils: typeof queryUtils;
@@ -33,7 +34,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         name: "description",
-        content: "",
+        content:
+          "VynChat is a modern chat application that lets you connect with people from around the world in real-time.",
       },
     ],
     links: [
@@ -43,6 +45,13 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
     ],
   }),
+  beforeLoad: async () => {
+    const session = await authClient.getSession();
+
+    return {
+      session: session.data,
+    };
+  },
   component: RootComponent,
 });
 

@@ -9,38 +9,244 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as LogInRouteImport } from './routes/log-in'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as BlogsIndexRouteImport } from './routes/blogs/index'
+import { Route as BlogsSlugIndexRouteImport } from './routes/blogs/[slug]/index'
+import { Route as AuthAdminSignUpRouteImport } from './routes/auth/admin/sign-up'
+import { Route as AuthAdminLogInRouteImport } from './routes/auth/admin/log-in'
+import { Route as AuthenticateduserChatRouteImport } from './routes/_authenticated/(user)/chat'
+import { Route as AuthenticatedadminDashboardRouteRouteImport } from './routes/_authenticated/(admin)/dashboard/route'
+import { Route as AuthenticatedadminDashboardIndexRouteImport } from './routes/_authenticated/(admin)/dashboard/index'
+import { Route as AuthenticatedadminDashboardBlogsIndexRouteImport } from './routes/_authenticated/(admin)/dashboard/blogs/index'
+import { Route as AuthenticatedadminDashboardBlogsNewRouteImport } from './routes/_authenticated/(admin)/dashboard/blogs/new'
+import { Route as AuthenticatedadminDashboardBlogsSlugIndexRouteImport } from './routes/_authenticated/(admin)/dashboard/blogs/[slug]/index'
 
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LogInRoute = LogInRouteImport.update({
+  id: '/log-in',
+  path: '/log-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AboutRoute = AboutRouteImport.update({
+  id: '/about',
+  path: '/about',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BlogsIndexRoute = BlogsIndexRouteImport.update({
+  id: '/blogs/',
+  path: '/blogs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BlogsSlugIndexRoute = BlogsSlugIndexRouteImport.update({
+  id: '/blogs/slug/',
+  path: '/blogs/slug/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthAdminSignUpRoute = AuthAdminSignUpRouteImport.update({
+  id: '/auth/admin/sign-up',
+  path: '/auth/admin/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthAdminLogInRoute = AuthAdminLogInRouteImport.update({
+  id: '/auth/admin/log-in',
+  path: '/auth/admin/log-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticateduserChatRoute = AuthenticateduserChatRouteImport.update({
+  id: '/(user)/chat',
+  path: '/chat',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedadminDashboardRouteRoute =
+  AuthenticatedadminDashboardRouteRouteImport.update({
+    id: '/(admin)/dashboard',
+    path: '/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedadminDashboardIndexRoute =
+  AuthenticatedadminDashboardIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedadminDashboardRouteRoute,
+  } as any)
+const AuthenticatedadminDashboardBlogsIndexRoute =
+  AuthenticatedadminDashboardBlogsIndexRouteImport.update({
+    id: '/blogs/',
+    path: '/blogs/',
+    getParentRoute: () => AuthenticatedadminDashboardRouteRoute,
+  } as any)
+const AuthenticatedadminDashboardBlogsNewRoute =
+  AuthenticatedadminDashboardBlogsNewRouteImport.update({
+    id: '/blogs/new',
+    path: '/blogs/new',
+    getParentRoute: () => AuthenticatedadminDashboardRouteRoute,
+  } as any)
+const AuthenticatedadminDashboardBlogsSlugIndexRoute =
+  AuthenticatedadminDashboardBlogsSlugIndexRouteImport.update({
+    id: '/blogs/slug/',
+    path: '/blogs/slug/',
+    getParentRoute: () => AuthenticatedadminDashboardRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/log-in': typeof LogInRoute
+  '/sign-up': typeof SignUpRoute
+  '/blogs': typeof BlogsIndexRoute
+  '/dashboard': typeof AuthenticatedadminDashboardRouteRouteWithChildren
+  '/chat': typeof AuthenticateduserChatRoute
+  '/auth/admin/log-in': typeof AuthAdminLogInRoute
+  '/auth/admin/sign-up': typeof AuthAdminSignUpRoute
+  '/blogs/slug': typeof BlogsSlugIndexRoute
+  '/dashboard/': typeof AuthenticatedadminDashboardIndexRoute
+  '/dashboard/blogs/new': typeof AuthenticatedadminDashboardBlogsNewRoute
+  '/dashboard/blogs': typeof AuthenticatedadminDashboardBlogsIndexRoute
+  '/dashboard/blogs/slug': typeof AuthenticatedadminDashboardBlogsSlugIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/about': typeof AboutRoute
+  '/log-in': typeof LogInRoute
+  '/sign-up': typeof SignUpRoute
+  '/blogs': typeof BlogsIndexRoute
+  '/chat': typeof AuthenticateduserChatRoute
+  '/auth/admin/log-in': typeof AuthAdminLogInRoute
+  '/auth/admin/sign-up': typeof AuthAdminSignUpRoute
+  '/blogs/slug': typeof BlogsSlugIndexRoute
+  '/dashboard': typeof AuthenticatedadminDashboardIndexRoute
+  '/dashboard/blogs/new': typeof AuthenticatedadminDashboardBlogsNewRoute
+  '/dashboard/blogs': typeof AuthenticatedadminDashboardBlogsIndexRoute
+  '/dashboard/blogs/slug': typeof AuthenticatedadminDashboardBlogsSlugIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/about': typeof AboutRoute
+  '/log-in': typeof LogInRoute
+  '/sign-up': typeof SignUpRoute
+  '/blogs/': typeof BlogsIndexRoute
+  '/_authenticated/(admin)/dashboard': typeof AuthenticatedadminDashboardRouteRouteWithChildren
+  '/_authenticated/(user)/chat': typeof AuthenticateduserChatRoute
+  '/auth/admin/log-in': typeof AuthAdminLogInRoute
+  '/auth/admin/sign-up': typeof AuthAdminSignUpRoute
+  '/blogs/slug/': typeof BlogsSlugIndexRoute
+  '/_authenticated/(admin)/dashboard/': typeof AuthenticatedadminDashboardIndexRoute
+  '/_authenticated/(admin)/dashboard/blogs/new': typeof AuthenticatedadminDashboardBlogsNewRoute
+  '/_authenticated/(admin)/dashboard/blogs/': typeof AuthenticatedadminDashboardBlogsIndexRoute
+  '/_authenticated/(admin)/dashboard/blogs/slug/': typeof AuthenticatedadminDashboardBlogsSlugIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/about'
+    | '/log-in'
+    | '/sign-up'
+    | '/blogs'
+    | '/dashboard'
+    | '/chat'
+    | '/auth/admin/log-in'
+    | '/auth/admin/sign-up'
+    | '/blogs/slug'
+    | '/dashboard/'
+    | '/dashboard/blogs/new'
+    | '/dashboard/blogs'
+    | '/dashboard/blogs/slug'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/about'
+    | '/log-in'
+    | '/sign-up'
+    | '/blogs'
+    | '/chat'
+    | '/auth/admin/log-in'
+    | '/auth/admin/sign-up'
+    | '/blogs/slug'
+    | '/dashboard'
+    | '/dashboard/blogs/new'
+    | '/dashboard/blogs'
+    | '/dashboard/blogs/slug'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/about'
+    | '/log-in'
+    | '/sign-up'
+    | '/blogs/'
+    | '/_authenticated/(admin)/dashboard'
+    | '/_authenticated/(user)/chat'
+    | '/auth/admin/log-in'
+    | '/auth/admin/sign-up'
+    | '/blogs/slug/'
+    | '/_authenticated/(admin)/dashboard/'
+    | '/_authenticated/(admin)/dashboard/blogs/new'
+    | '/_authenticated/(admin)/dashboard/blogs/'
+    | '/_authenticated/(admin)/dashboard/blogs/slug/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  AboutRoute: typeof AboutRoute
+  LogInRoute: typeof LogInRoute
+  SignUpRoute: typeof SignUpRoute
+  BlogsIndexRoute: typeof BlogsIndexRoute
+  AuthAdminLogInRoute: typeof AuthAdminLogInRoute
+  AuthAdminSignUpRoute: typeof AuthAdminSignUpRoute
+  BlogsSlugIndexRoute: typeof BlogsSlugIndexRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/log-in': {
+      id: '/log-in'
+      path: '/log-in'
+      fullPath: '/log-in'
+      preLoaderRoute: typeof LogInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: ''
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -48,11 +254,128 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/blogs/': {
+      id: '/blogs/'
+      path: '/blogs'
+      fullPath: '/blogs'
+      preLoaderRoute: typeof BlogsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/blogs/slug/': {
+      id: '/blogs/slug/'
+      path: '/blogs/slug'
+      fullPath: '/blogs/slug'
+      preLoaderRoute: typeof BlogsSlugIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/admin/sign-up': {
+      id: '/auth/admin/sign-up'
+      path: '/auth/admin/sign-up'
+      fullPath: '/auth/admin/sign-up'
+      preLoaderRoute: typeof AuthAdminSignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/admin/log-in': {
+      id: '/auth/admin/log-in'
+      path: '/auth/admin/log-in'
+      fullPath: '/auth/admin/log-in'
+      preLoaderRoute: typeof AuthAdminLogInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/(user)/chat': {
+      id: '/_authenticated/(user)/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthenticateduserChatRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/(admin)/dashboard': {
+      id: '/_authenticated/(admin)/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedadminDashboardRouteRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/(admin)/dashboard/': {
+      id: '/_authenticated/(admin)/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthenticatedadminDashboardIndexRouteImport
+      parentRoute: typeof AuthenticatedadminDashboardRouteRoute
+    }
+    '/_authenticated/(admin)/dashboard/blogs/': {
+      id: '/_authenticated/(admin)/dashboard/blogs/'
+      path: '/blogs'
+      fullPath: '/dashboard/blogs'
+      preLoaderRoute: typeof AuthenticatedadminDashboardBlogsIndexRouteImport
+      parentRoute: typeof AuthenticatedadminDashboardRouteRoute
+    }
+    '/_authenticated/(admin)/dashboard/blogs/new': {
+      id: '/_authenticated/(admin)/dashboard/blogs/new'
+      path: '/blogs/new'
+      fullPath: '/dashboard/blogs/new'
+      preLoaderRoute: typeof AuthenticatedadminDashboardBlogsNewRouteImport
+      parentRoute: typeof AuthenticatedadminDashboardRouteRoute
+    }
+    '/_authenticated/(admin)/dashboard/blogs/slug/': {
+      id: '/_authenticated/(admin)/dashboard/blogs/slug/'
+      path: '/blogs/slug'
+      fullPath: '/dashboard/blogs/slug'
+      preLoaderRoute: typeof AuthenticatedadminDashboardBlogsSlugIndexRouteImport
+      parentRoute: typeof AuthenticatedadminDashboardRouteRoute
+    }
   }
 }
 
+interface AuthenticatedadminDashboardRouteRouteChildren {
+  AuthenticatedadminDashboardIndexRoute: typeof AuthenticatedadminDashboardIndexRoute
+  AuthenticatedadminDashboardBlogsNewRoute: typeof AuthenticatedadminDashboardBlogsNewRoute
+  AuthenticatedadminDashboardBlogsIndexRoute: typeof AuthenticatedadminDashboardBlogsIndexRoute
+  AuthenticatedadminDashboardBlogsSlugIndexRoute: typeof AuthenticatedadminDashboardBlogsSlugIndexRoute
+}
+
+const AuthenticatedadminDashboardRouteRouteChildren: AuthenticatedadminDashboardRouteRouteChildren =
+  {
+    AuthenticatedadminDashboardIndexRoute:
+      AuthenticatedadminDashboardIndexRoute,
+    AuthenticatedadminDashboardBlogsNewRoute:
+      AuthenticatedadminDashboardBlogsNewRoute,
+    AuthenticatedadminDashboardBlogsIndexRoute:
+      AuthenticatedadminDashboardBlogsIndexRoute,
+    AuthenticatedadminDashboardBlogsSlugIndexRoute:
+      AuthenticatedadminDashboardBlogsSlugIndexRoute,
+  }
+
+const AuthenticatedadminDashboardRouteRouteWithChildren =
+  AuthenticatedadminDashboardRouteRoute._addFileChildren(
+    AuthenticatedadminDashboardRouteRouteChildren,
+  )
+
+interface AuthenticatedRouteChildren {
+  AuthenticatedadminDashboardRouteRoute: typeof AuthenticatedadminDashboardRouteRouteWithChildren
+  AuthenticateduserChatRoute: typeof AuthenticateduserChatRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedadminDashboardRouteRoute:
+    AuthenticatedadminDashboardRouteRouteWithChildren,
+  AuthenticateduserChatRoute: AuthenticateduserChatRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  AboutRoute: AboutRoute,
+  LogInRoute: LogInRoute,
+  SignUpRoute: SignUpRoute,
+  BlogsIndexRoute: BlogsIndexRoute,
+  AuthAdminLogInRoute: AuthAdminLogInRoute,
+  AuthAdminSignUpRoute: AuthAdminSignUpRoute,
+  BlogsSlugIndexRoute: BlogsSlugIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
