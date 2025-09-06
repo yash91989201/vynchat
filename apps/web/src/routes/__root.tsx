@@ -30,7 +30,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
   head: () => ({
     meta: [
       {
-        title: "VynChat",
+        title: "VynChat - Connect Beyond Limits",
       },
       {
         name: "description",

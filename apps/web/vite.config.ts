@@ -15,7 +15,8 @@ export default defineConfig({
       manifest: {
         name: "VynChat",
         short_name: "vynchat",
-        description: "VynChat - PWA Application",
+        description:
+          "VynChat is a modern chat application that lets you connect with people from around the world in real-time.",
         theme_color: "#0c0c0c",
       },
       pwaAssets: { disabled: false, config: true },
