@@ -1,28 +1,29 @@
+import { cuid2 } from "drizzle-cuid2/postgres";
 import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
-  integer,
   pgTable,
   primaryKey,
-  serial,
   text,
   timestamp,
   uniqueIndex,
+  varchar,
 } from "drizzle-orm/pg-core";
-import { user } from "./auth";
+import { user } from "@/db/schema/auth";
 
-export const post = pgTable(
-  "post",
+export const blog = pgTable(
+  "blog",
   {
-    id: serial("id").primaryKey(),
-    title: text("title").notNull(),
+    id: cuid2("id").defaultRandom().primaryKey(),
     slug: text("slug").notNull(),
-    excerpt: text("excerpt"),
+    title: text("title").notNull(),
+    tldr: text("tldr"),
     body: text("body").notNull(),
-    cover: text("cover"),
+    excerpt: text("excerpt"),
+    imageUrl: text("image_url"),
     category: text("category").notNull().default("Uncategorized"),
-    authorId: integer("author_id")
+    authorId: text("author_id")
       .notNull()
       .references(() => user.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -33,50 +34,62 @@ export const post = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("post_slug_idx").on(table.slug),
-    index("post_author_idx").on(table.authorId),
-    index("post_title_body_idx").on(table.title, table.body, table.excerpt),
-    index("post_created_at_idx").on(table.createdAt),
+    uniqueIndex("blog_slug_idx").on(table.slug),
+    index("blog_author_idx").on(table.authorId),
+    index("blog_title_body_idx").on(table.title, table.body, table.excerpt),
+    index("blog_created_at_idx").on(table.createdAt),
   ]
 );
 
-export const postRelations = relations(post, ({ one, many }) => ({
-  author: one(user, { fields: [post.authorId], references: [user.id] }),
-  comments: many(comment),
-  likes: many(like),
-}));
+export const tag = pgTable("blog_tags", {
+  id: cuid2("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 128 }).unique().notNull(),
+  description: text("description"),
+});
+
+export const blogTag = pgTable(
+  "blog_tag",
+  {
+    blogId: text("blog_id")
+      .notNull()
+      .references(() => blog.id, { onDelete: "cascade" }),
+    tagId: text("tag_id")
+      .notNull()
+      .references(() => tag.id, { onDelete: "cascade" }),
+  },
+  (table) => [primaryKey({ columns: [table.blogId, table.tagId] })]
+);
 
 export const comment = pgTable(
   "comment",
   {
-    id: serial("id").primaryKey(),
-    userId: integer("user_id")
+    id: cuid2("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
       .notNull()
       .references(() => user.id),
-    postId: integer("post_id")
+    blogId: cuid2("blog_id")
       .notNull()
-      .references(() => post.id),
+      .references(() => blog.id),
     text: text("text").notNull(),
+    approved: boolean("approved").default(false),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
-  (table) => [index("comment_post_idx").on(table.postId)]
+  (table) => [index("comment_blog_idx").on(table.blogId)]
 );
-
-export const commentRelations = relations(comment, ({ one }) => ({
-  author: one(user, { fields: [comment.userId], references: [user.id] }),
-  post: one(post, { fields: [comment.postId], references: [post.id] }),
-}));
 
 export const message = pgTable(
   "message",
   {
-    id: serial("id").primaryKey(),
-    roomId: integer("room_id")
+    id: cuid2("id").defaultRandom().primaryKey(),
+    roomId: cuid2("room_id")
       .notNull()
       .references(() => room.id),
-    senderId: integer("sender_id")
+    senderId: text("sender_id")
       .notNull()
       .references(() => user.id),
     type: text("type").notNull().default("text"),
@@ -91,20 +104,15 @@ export const message = pgTable(
   (table) => [index("message_room_idx").on(table.roomId, table.createdAt)]
 );
 
-export const messageRelations = relations(message, ({ one }) => ({
-  room: one(room, { fields: [message.roomId], references: [room.id] }),
-  sender: one(user, { fields: [message.senderId], references: [user.id] }),
-}));
-
 export const room = pgTable(
   "room",
   {
-    id: serial("id").primaryKey(),
+    id: cuid2("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     description: text("description"),
     isPrivate: boolean("is_private").notNull().default(false),
     isDM: boolean("is_dm").notNull().default(false),
-    ownerId: integer("owner_id")
+    ownerId: text("owner_id")
       .notNull()
       .references(() => user.id),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -117,6 +125,123 @@ export const room = pgTable(
   (table) => [index("room_owner_idx").on(table.ownerId)]
 );
 
+export const roomMembers = pgTable(
+  "room_members",
+  {
+    roomId: cuid2("room_id")
+      .notNull()
+      .references(() => room.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
+);
+
+export const roomModerators = pgTable(
+  "room_moderators",
+  {
+    roomId: cuid2("room_id")
+      .notNull()
+      .references(() => room.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
+);
+
+export const roomBanned = pgTable(
+  "room_banned",
+  {
+    roomId: cuid2("room_id")
+      .notNull()
+      .references(() => room.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
+);
+
+export const like = pgTable(
+  "like",
+  {
+    id: cuid2("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    blogId: cuid2("blog_id")
+      .notNull()
+      .references(() => blog.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("like_user_idx").on(table.userId)]
+);
+
+export const userFollowers = pgTable(
+  "user_followers",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.followerId] })]
+);
+
+export const userFollowing = pgTable(
+  "user_following",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    followingId: text("following_id")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.followingId] })]
+);
+
+export const blogRelations = relations(blog, ({ one, many }) => ({
+  author: one(user, {
+    fields: [blog.authorId],
+    references: [user.id],
+  }),
+  comments: many(comment),
+  likes: many(like),
+  tags: many(blogTag),
+}));
+
+export const tagRelations = relations(tag, ({ many }) => ({
+  blogs: many(blogTag),
+}));
+
+export const blogTagRelations = relations(blogTag, ({ one }) => ({
+  blog: one(blog, {
+    fields: [blogTag.blogId],
+    references: [blog.id],
+  }),
+  tag: one(tag, {
+    fields: [blogTag.tagId],
+    references: [tag.id],
+  }),
+}));
+
+export const commentRelations = relations(comment, ({ one }) => ({
+  author: one(user, { fields: [comment.userId], references: [user.id] }),
+  blog: one(blog, { fields: [comment.blogId], references: [blog.id] }),
+}));
+
+export const messageRelations = relations(message, ({ one }) => ({
+  room: one(room, { fields: [message.roomId], references: [room.id] }),
+  sender: one(user, { fields: [message.senderId], references: [user.id] }),
+}));
+
 export const roomRelations = relations(room, ({ one, many }) => ({
   owner: one(user, { fields: [room.ownerId], references: [user.id] }),
   messages: many(message),
@@ -125,95 +250,26 @@ export const roomRelations = relations(room, ({ one, many }) => ({
   banneduser: many(roomBanned),
 }));
 
-export const roomMembers = pgTable(
-  "room_members",
-  {
-    roomId: integer("room_id")
-      .notNull()
-      .references(() => room.id),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
-);
 export const roomMembersRelations = relations(roomMembers, ({ one }) => ({
   room: one(room, { fields: [roomMembers.roomId], references: [room.id] }),
   user: one(user, { fields: [roomMembers.userId], references: [user.id] }),
 }));
-
-// Similar for moderators
-export const roomModerators = pgTable(
-  "room_moderators",
-  {
-    roomId: integer("room_id")
-      .notNull()
-      .references(() => room.id),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
-);
 
 export const roomModeratorsRelations = relations(roomModerators, ({ one }) => ({
   room: one(room, { fields: [roomModerators.roomId], references: [room.id] }),
   user: one(user, { fields: [roomModerators.userId], references: [user.id] }),
 }));
 
-// Banned user
-export const roomBanned = pgTable(
-  "room_banned",
-  {
-    roomId: integer("room_id")
-      .notNull()
-      .references(() => room.id),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
-);
-
 export const roomBannedRelations = relations(roomBanned, ({ one }) => ({
   room: one(room, { fields: [roomBanned.roomId], references: [room.id] }),
   user: one(user, { fields: [roomBanned.userId], references: [user.id] }),
 }));
 
-export const like = pgTable(
-  "like",
-  {
-    id: serial("id").primaryKey(),
-    userId: integer("user_id")
-      .notNull()
-      .references(() => user.id),
-    postId: integer("post_id")
-      .notNull()
-      .references(() => post.id),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [index("like_user_idx").on(table.userId)]
-);
-
 export const likeRelations = relations(like, ({ one }) => ({
   user: one(user, { fields: [like.userId], references: [user.id] }),
-  post: one(post, { fields: [like.postId], references: [post.id] }),
+  blog: one(blog, { fields: [like.blogId], references: [blog.id] }),
 }));
 
-export const userFollowers = pgTable(
-  "user_followers",
-  {
-    userId: integer("user_id")
-      .notNull()
-      .references(() => user.id),
-    followerId: integer("follower_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.followerId] })]
-);
 export const userFollowersRelations = relations(userFollowers, ({ one }) => ({
   user: one(user, { fields: [userFollowers.userId], references: [user.id] }),
   follower: one(user, {
@@ -221,20 +277,6 @@ export const userFollowersRelations = relations(userFollowers, ({ one }) => ({
     references: [user.id],
   }),
 }));
-
-// And reverse listing following
-export const userFollowing = pgTable(
-  "user_following",
-  {
-    userId: integer("user_id")
-      .notNull()
-      .references(() => user.id),
-    followingId: integer("following_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.followingId] })]
-);
 
 export const userFollowingRelations = relations(userFollowing, ({ one }) => ({
   user: one(user, { fields: [userFollowing.userId], references: [user.id] }),

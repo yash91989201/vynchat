@@ -1,4 +1,5 @@
 import type { Context as HonoContext } from "hono";
+import { db } from "@/db";
 import { auth } from "./auth";
 
 export type CreateContextOptions = {
@@ -12,6 +13,8 @@ export async function createContext({ context }: CreateContextOptions) {
 
   return {
     session,
+    db,
+    headers: context.req.raw.headers,
   };
 }
 

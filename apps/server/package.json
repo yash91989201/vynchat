@@ -23,19 +23,24 @@
     "@orpc/openapi": "^1.8.6",
     "@orpc/server": "^1.8.6",
     "@orpc/zod": "^1.8.6",
+    "@paralleldrive/cuid2": "^2.2.2",
     "@t3-oss/env-core": "^0.13.8",
     "better-auth": "^1.3.8",
     "dotenv": "^17.2.2",
+    "drizzle-cuid2": "^2.1.0",
     "drizzle-orm": "^0.44.5",
+    "drizzle-zod": "^0.8.3",
     "hono": "^4.9.6",
     "pg": "^8.16.3",
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@types/bun": "^1.2.21",
+    "@types/pg": "^8.15.5",
+    "@vitest/ui": "^3.2.4",
+    "drizzle-kit": "^0.31.4",
     "tsdown": "^0.14.2",
     "typescript": "^5.9.2",
-    "@types/bun": "^1.2.21",
-    "drizzle-kit": "^0.31.4",
-    "@types/pg": "^8.15.5"
+    "vitest": "^3.2.4"
   }
 }

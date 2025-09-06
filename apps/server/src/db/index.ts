@@ -1,9 +1,9 @@
 import { drizzle } from "drizzle-orm/bun-sql";
 import {
+  blog,
   comment,
   like,
   message,
-  post,
   room,
   roomBanned,
   roomMembers,
@@ -28,7 +28,7 @@ const schema = {
   roomModerators,
   userFollowers,
   userFollowing,
-  post,
+  blog,
 };
 
 export const db = drizzle(env.DATABASE_URL, {

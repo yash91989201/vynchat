@@ -26,6 +26,9 @@
     "rules": {
       "nursery": {
         "useConsistentTypeDefinitions": "off"
+      },
+      "style": {
+        "noMagicNumbers": "off"
       }
     }
   }
