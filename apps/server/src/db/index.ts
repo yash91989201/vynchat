@@ -8,6 +8,7 @@ import {
   roomBanned,
   roomMembers,
   roomModerators,
+  tag,
   userFollowers,
   userFollowing,
 } from "@/db/schema";
@@ -29,6 +30,7 @@ const schema = {
   userFollowers,
   userFollowing,
   blog,
+  tag,
 };
 
 export const db = drizzle(env.DATABASE_URL, {

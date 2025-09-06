@@ -13,6 +13,7 @@ import {
   roomBanned,
   roomMembers,
   roomModerators,
+  tag,
   userFollowers,
   userFollowing,
 } from "@/db/schema";
@@ -32,6 +33,7 @@ export const RoomMembersSchema = createSelectSchema(roomMembers);
 export const RoomModeratorsSchema = createSelectSchema(roomModerators);
 export const UserFollowersSchema = createSelectSchema(userFollowers);
 export const UserFollowingSchema = createSelectSchema(userFollowing);
+export const TagSchema = createSelectSchema(tag);
 
 export const UserInsertSchema = createInsertSchema(user);
 export const SessionInsertSchema = createInsertSchema(session);
@@ -47,6 +49,7 @@ export const RoomMembersInsertSchema = createInsertSchema(roomMembers);
 export const RoomModeratorsInsertSchema = createInsertSchema(roomModerators);
 export const UserFollowersInsertSchema = createInsertSchema(userFollowers);
 export const UserFollowingInsertSchema = createInsertSchema(userFollowing);
+export const TagInsertSchema = createInsertSchema(tag);
 
 export const UserUpdateSchema = createUpdateSchema(user);
 export const SessionUpdateSchema = createUpdateSchema(session);
@@ -62,6 +65,7 @@ export const RoomMembersUpdateSchema = createUpdateSchema(roomMembers);
 export const RoomModeratorsUpdateSchema = createUpdateSchema(roomModerators);
 export const UserFollowersUpdateSchema = createUpdateSchema(userFollowers);
 export const UserFollowingUpdateSchema = createUpdateSchema(userFollowing);
+export const TagUpdateSchema = createUpdateSchema(tag);
 
 export const CreateBlogInput = BlogInsertSchema;
 
@@ -138,3 +142,106 @@ export const ListBlogCommentsOutput = z.object({
   hasNextPage: z.boolean(),
   hasPreviousPage: z.boolean(),
 });
+
+export const ApproveCommentInput = z.object({
+  id: z.cuid2(),
+});
+
+export const ApproveCommentOutput = CommentSchema.optional();
+
+export const CreateTagInput = TagInsertSchema;
+export const CreateTagOutput = TagSchema.optional();
+
+export const GetTagInput = z.object({
+  id: z.cuid2(),
+});
+export const GetTagOutput = TagSchema.optional();
+
+export const ListTagsInput = z.object({
+  limit: z.number().min(1).max(100).default(10),
+  offset: z.number().min(0).default(0),
+});
+export const ListTagsOutput = z.object({
+  tags: z.array(TagSchema),
+  total: z.number().min(0),
+});
+
+export const UpdateTagInput = TagUpdateSchema.extend({
+  id: z.cuid2(),
+});
+export const UpdateTagOutput = TagSchema.optional();
+
+export const DeleteTagInput = z.object({
+  id: z.cuid2(),
+});
+export const DeleteTagOutput = z.object({});
+
+export const CreateMessageInput = MessageInsertSchema;
+export const CreateMessageOutput = MessageSchema.optional();
+export const GetMessageInput = z.object({
+  id: z.cuid2(),
+});
+export const GetMessageOutput = MessageSchema.optional();
+export const ListMessagesInput = z.object({
+  roomId: z.cuid2(),
+  limit: z.number().min(1).max(100).default(50),
+  offset: z.number().min(0).default(0),
+  sort: z.object({
+    field: z.enum(["createdAt"]).default("createdAt"),
+    order: z.enum(["asc", "desc"]).default("desc"),
+  }),
+});
+export const ListMessagesOutput = z.object({
+  messages: z.array(MessageSchema),
+  total: z.number().min(0),
+});
+export const UpdateMessageInput = MessageUpdateSchema.omit({
+  createdAt: true,
+  updatedAt: true,
+  senderId: true,
+}).extend({
+  id: z.cuid2(),
+});
+export const UpdateMessageOutput = MessageSchema.optional();
+export const DeleteMessageInput = z.object({
+  id: z.cuid2(),
+});
+export const DeleteMessageOutput = z.object({});
+
+export const CreateRoomInput = RoomInsertSchema;
+export const CreateRoomOutput = RoomSchema.optional();
+
+export const GetRoomInput = z.object({
+  id: z.cuid2(),
+});
+export const GetRoomOutput = RoomSchema.optional();
+
+export const ListRoomsInput = z.object({
+  limit: z.number().min(1).max(100).default(20),
+  offset: z.number().min(0).default(0),
+  filter: z
+    .object({
+      isPrivate: z.boolean().optional(),
+      isDM: z.boolean().optional(),
+    })
+    .optional(),
+});
+export const ListRoomsOutput = z.object({
+  rooms: z.array(RoomSchema),
+  total: z.number().min(0),
+});
+
+export const UpdateRoomInput = RoomUpdateSchema.omit({
+  createdAt: true,
+  updatedAt: true,
+  ownerId: true,
+}).extend({
+  id: z.cuid2(),
+});
+export const UpdateRoomOutput = RoomSchema.optional();
+
+export const DeleteRoomInput = z.object({
+  id: z.cuid2(),
+});
+
+export const DeleteRoomOutput = z.object({});
