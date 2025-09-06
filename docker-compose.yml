@@ -1,0 +1,68 @@
+name: vynchat
+
+services:
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_DB: vynchat
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "34532:5432"
+    volumes:
+      - vynchat-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=admin
+      - MINIO_ROOT_PASSWORD=password
+    command: server /data --console-address ":9001"
+    volumes:
+      - vynchat-minio-data:/data
+
+  next-image-transformation:
+    image: "ghcr.io/coollabsio/next-image-transformation:latest"
+    environment:
+      - SERVICE_URL_TRANSFORMATION_3000
+      - NODE_ENV=production
+      - "ALLOWED_REMOTE_DOMAINS=${ALLOWED_REMOTE_DOMAINS:-*}"
+      - "IMGPROXY_URL=${IMGPROXY_URL:-http://localhost:32895}"
+    ports:
+      - "35912:3000"
+    healthcheck:
+      test: "wget -qO- http://127.0.0.1:3000/health || exit 1"
+      interval: 2s
+      timeout: 10s
+      retries: 5
+
+  imgproxy:
+    image: darthsim/imgproxy
+    environment:
+      - IMGPROXY_ENABLE_WEBP_DETECTION=true
+      - IMGPROXY_JPEG_PROGRESSIVE=true
+      - IMGPROXY_USE_ETAG=true
+    ports:
+      - "32895:8080"
+    healthcheck:
+      test:
+        - CMD
+        - imgproxy
+        - health
+      interval: 2s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  vynchat-postgres-data:
+  vynchat-minio-data:
+
