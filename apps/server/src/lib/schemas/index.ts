@@ -6,6 +6,7 @@ import {
 import z from "zod";
 import {
   blog,
+  category,
   comment,
   like,
   message,
@@ -34,6 +35,7 @@ export const RoomModeratorsSchema = createSelectSchema(roomModerators);
 export const UserFollowersSchema = createSelectSchema(userFollowers);
 export const UserFollowingSchema = createSelectSchema(userFollowing);
 export const TagSchema = createSelectSchema(tag);
+export const CategorySchema = createSelectSchema(category);
 
 export const UserInsertSchema = createInsertSchema(user);
 export const SessionInsertSchema = createInsertSchema(session);
@@ -50,6 +52,7 @@ export const RoomModeratorsInsertSchema = createInsertSchema(roomModerators);
 export const UserFollowersInsertSchema = createInsertSchema(userFollowers);
 export const UserFollowingInsertSchema = createInsertSchema(userFollowing);
 export const TagInsertSchema = createInsertSchema(tag);
+export const CategoryInsertSchema = createInsertSchema(category);
 
 export const UserUpdateSchema = createUpdateSchema(user);
 export const SessionUpdateSchema = createUpdateSchema(session);
@@ -66,6 +69,12 @@ export const RoomModeratorsUpdateSchema = createUpdateSchema(roomModerators);
 export const UserFollowersUpdateSchema = createUpdateSchema(userFollowers);
 export const UserFollowingUpdateSchema = createUpdateSchema(userFollowing);
 export const TagUpdateSchema = createUpdateSchema(tag);
+export const CategoryUpdateSchema = createUpdateSchema(category);
+
+export const BlogDataSchema = BlogSchema.extend({
+  category: CategorySchema,
+  tags: z.array(TagSchema),
+});
 
 export const CreateBlogInput = BlogInsertSchema;
 
@@ -75,7 +84,7 @@ export const GetBlogInput = z.object({
   id: z.cuid2(),
 });
 
-export const GetBlogOutput = BlogSchema.optional();
+export const GetBlogOutput = BlogDataSchema.optional();
 
 export const ListBlogsInput = z.object({
   limit: z.number().min(1).max(100).default(10),
@@ -88,7 +97,7 @@ export const ListBlogsInput = z.object({
     .optional(),
   filter: z
     .object({
-      category: z.string().optional(),
+      categoryId: z.cuid2().optional(),
     })
     .optional(),
   sort: z.object({
@@ -98,7 +107,7 @@ export const ListBlogsInput = z.object({
 });
 
 export const ListBlogsOutput = z.object({
-  posts: z.array(BlogSchema),
+  blogs: z.array(BlogDataSchema),
   total: z.number().min(0),
   totalPages: z.number().min(0),
   currentPage: z.number().min(0),

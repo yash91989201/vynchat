@@ -22,10 +22,12 @@ export const blog = pgTable(
     body: text("body").notNull(),
     excerpt: text("excerpt"),
     imageUrl: text("image_url"),
-    category: text("category").notNull().default("Uncategorized"),
     authorId: text("author_id")
       .notNull()
       .references(() => user.id),
+    categoryId: cuid2("category_id")
+      .references(() => category.id)
+      .notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -41,23 +43,32 @@ export const blog = pgTable(
   ]
 );
 
-export const tag = pgTable("blog_tags", {
+export const tag = pgTable("tag", {
   id: cuid2("id").defaultRandom().primaryKey(),
   name: varchar("name", { length: 128 }).unique().notNull(),
   description: text("description"),
 });
 
+export const category = pgTable("category", {
+  id: cuid2("id").defaultRandom().primaryKey(),
+  name: varchar("name", { length: 128 }).unique().notNull(),
+});
+
 export const blogTag = pgTable(
   "blog_tag",
   {
-    blogId: text("blog_id")
+    blogId: cuid2("blog_id")
       .notNull()
       .references(() => blog.id, { onDelete: "cascade" }),
-    tagId: text("tag_id")
+    tagId: cuid2("tag_id")
       .notNull()
       .references(() => tag.id, { onDelete: "cascade" }),
   },
-  (table) => [primaryKey({ columns: [table.blogId, table.tagId] })]
+  (table) => [
+    primaryKey({ columns: [table.blogId, table.tagId] }),
+    index("blog_tag_blog_idx").on(table.blogId),
+    index("blog_tag_tag_idx").on(table.tagId),
+  ]
 );
 
 export const comment = pgTable(
@@ -212,13 +223,19 @@ export const blogRelations = relations(blog, ({ one, many }) => ({
     fields: [blog.authorId],
     references: [user.id],
   }),
-  comments: many(comment),
-  likes: many(like),
-  tags: many(blogTag),
+  category: one(category, {
+    fields: [blog.categoryId],
+    references: [category.id],
+  }),
+  blogTags: many(blogTag),
 }));
 
 export const tagRelations = relations(tag, ({ many }) => ({
-  blogs: many(blogTag),
+  blogTags: many(blogTag),
+}));
+
+export const categoryRelations = relations(category, ({ many }) => ({
+  blogs: many(blog),
 }));
 
 export const blogTagRelations = relations(blogTag, ({ one }) => ({
