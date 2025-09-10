@@ -12,21 +12,26 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { authClient } from "@/lib/auth-client";
 import { ChangePasswordFormSchema } from "@/lib/schemas";
 import type { ChangePasswordFormType } from "@/lib/types";
-import { queryUtils } from "@/utils/orpc";
 
 export const ChangePasswordForm = () => {
-  const { mutateAsync: changePassword } = useMutation(
-    queryUtils.profile.changePassword.mutationOptions({
-      onSuccess: async () => {
-        toast.success("Password changed successfully");
-      },
-      onError: (err) => {
-        toast.error(err.message);
-      },
-    })
-  );
+  const { mutateAsync: changePassword } = useMutation({
+    mutationKey: ["change-password"],
+    mutationFn: async (values: ChangePasswordFormType) => {
+      const changePasswordRes = await authClient.changePassword({
+        ...values,
+      });
+      return changePasswordRes;
+    },
+    onSuccess: () => {
+      toast.success("Password changed successfully");
+    },
+    onError: (err) => {
+      toast.error(err.message);
+    },
+  });
 
   const form = useForm<ChangePasswordFormType>({
     resolver: standardSchemaResolver(ChangePasswordFormSchema),

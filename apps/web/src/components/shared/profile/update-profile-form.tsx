@@ -24,11 +24,11 @@ export const UpdateProfileForm = () => {
   });
 
   const { data: bio } = useSuspenseQuery(
-    queryUtils.profile.getBio.queryOptions({})
+    queryUtils.user.getBio.queryOptions({})
   );
 
   const { mutateAsync: updateProfile } = useMutation(
-    queryUtils.profile.updateProfile.mutationOptions({
+    queryUtils.user.updateProfile.mutationOptions({
       onSuccess: () => {
         toast.success("Profile updated successfully");
       },
