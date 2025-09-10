@@ -9,8 +9,6 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as authenticatedRouteRouteImport } from './routes/(authenticated)/route'
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicAboutRouteImport } from './routes/(public)/about'
@@ -33,16 +31,6 @@ import { Route as authenticatedAdminDashboardCategoriesRouteImport } from './rou
 import { Route as authenticatedAdminDashboardBlogsIndexRouteImport } from './routes/(authenticated)/admin/dashboard/blogs/index'
 import { Route as authenticatedAdminDashboardBlogsNewRouteImport } from './routes/(authenticated)/admin/dashboard/blogs/new'
 
-const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const authenticatedRouteRoute = authenticatedRouteRouteImport.update({
   id: '/(authenticated)',
   getParentRoute: () => rootRouteImport,
@@ -159,8 +147,6 @@ const authenticatedAdminDashboardBlogsNewRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof publicIndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/login': typeof LoginRoute
   '/admin': typeof authenticatedAdminRouteRouteWithChildren
   '/log-in': typeof authLogInRoute
   '/sign-up': typeof authSignUpRoute
@@ -183,8 +169,6 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof publicIndexRoute
-  '/dashboard': typeof DashboardRoute
-  '/login': typeof LoginRoute
   '/admin': typeof authenticatedAdminRouteRouteWithChildren
   '/log-in': typeof authLogInRoute
   '/sign-up': typeof authSignUpRoute
@@ -207,8 +191,6 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(authenticated)': typeof authenticatedRouteRouteWithChildren
-  '/dashboard': typeof DashboardRoute
-  '/login': typeof LoginRoute
   '/(authenticated)/admin': typeof authenticatedAdminRouteRouteWithChildren
   '/(auth)/log-in': typeof authLogInRoute
   '/(auth)/sign-up': typeof authSignUpRoute
@@ -234,8 +216,6 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
-    | '/login'
     | '/admin'
     | '/log-in'
     | '/sign-up'
@@ -258,8 +238,6 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/dashboard'
-    | '/login'
     | '/admin'
     | '/log-in'
     | '/sign-up'
@@ -281,8 +259,6 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/(authenticated)'
-    | '/dashboard'
-    | '/login'
     | '/(authenticated)/admin'
     | '/(auth)/log-in'
     | '/(auth)/sign-up'
@@ -307,8 +283,6 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   authenticatedRouteRoute: typeof authenticatedRouteRouteWithChildren
-  DashboardRoute: typeof DashboardRoute
-  LoginRoute: typeof LoginRoute
   authLogInRoute: typeof authLogInRoute
   authSignUpRoute: typeof authSignUpRoute
   publicAboutRoute: typeof publicAboutRoute
@@ -321,20 +295,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/(authenticated)': {
       id: '/(authenticated)'
       path: '/'
@@ -551,8 +511,6 @@ const authenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   authenticatedRouteRoute: authenticatedRouteRouteWithChildren,
-  DashboardRoute: DashboardRoute,
-  LoginRoute: LoginRoute,
   authLogInRoute: authLogInRoute,
   authSignUpRoute: authSignUpRoute,
   publicAboutRoute: publicAboutRoute,
