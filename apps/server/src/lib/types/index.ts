@@ -36,8 +36,6 @@ import type {
   GetRoomOutput,
   GetTagInput,
   GetTagOutput,
-  LikeInsertSchema,
-  LikeSchema,
   ListBlogCommentsInput,
   ListBlogCommentsOutput,
   ListBlogsInput,
@@ -51,13 +49,8 @@ import type {
   MessageInsertSchema,
   MessageSchema,
   ReactionSchema,
-  RoomBannedInsertSchema,
-  RoomBannedSchema,
   RoomInsertSchema,
   RoomMembersInsertSchema,
-  RoomMembersSchema,
-  RoomModeratorsInsertSchema,
-  RoomModeratorsSchema,
   RoomSchema,
   SessionInsertSchema,
   SessionSchema,
@@ -87,13 +80,9 @@ export type SessionType = z.infer<typeof SessionSchema>;
 export type AccountType = z.infer<typeof AccountSchema>;
 export type VerificationType = z.infer<typeof VerificationSchema>;
 export type CommentType = z.infer<typeof CommentSchema>;
-export type LikeType = z.infer<typeof LikeSchema>;
 export type MessageType = z.infer<typeof MessageSchema>;
 export type BlogType = z.infer<typeof BlogSchema>;
 export type RoomType = z.infer<typeof RoomSchema>;
-export type RoomBannedType = z.infer<typeof RoomBannedSchema>;
-export type RoomMembersType = z.infer<typeof RoomMembersSchema>;
-export type RoomModeratorsType = z.infer<typeof RoomModeratorsSchema>;
 export type UserFollowersType = z.infer<typeof UserFollowersSchema>;
 export type UserFollowingType = z.infer<typeof UserFollowingSchema>;
 export type TagType = z.infer<typeof TagSchema>;
@@ -105,15 +94,10 @@ export type SessionInsertType = z.infer<typeof SessionInsertSchema>;
 export type AccountInsertType = z.infer<typeof AccountInsertSchema>;
 export type VerificationInsertType = z.infer<typeof VerificationInsertSchema>;
 export type CommentInsertType = z.infer<typeof CommentInsertSchema>;
-export type LikeInsertType = z.infer<typeof LikeInsertSchema>;
 export type MessageInsertType = z.infer<typeof MessageInsertSchema>;
 export type BlogInsertType = z.infer<typeof BlogInsertSchema>;
 export type RoomInsertType = z.infer<typeof RoomInsertSchema>;
-export type RoomBannedInsertType = z.infer<typeof RoomBannedInsertSchema>;
 export type RoomMembersInsertType = z.infer<typeof RoomMembersInsertSchema>;
-export type RoomModeratorsInsertType = z.infer<
-  typeof RoomModeratorsInsertSchema
->;
 export type UserFollowersInsertType = z.infer<typeof UserFollowersInsertSchema>;
 export type UserFollowingInsertType = z.infer<typeof UserFollowingInsertSchema>;
 export type TagInsertType = z.infer<typeof TagInsertSchema>;

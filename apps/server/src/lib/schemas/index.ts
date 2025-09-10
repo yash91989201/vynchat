@@ -8,13 +8,10 @@ import {
   blog,
   category,
   comment,
-  like,
   message,
   reaction,
   room,
-  roomBanned,
   roomMember,
-  roomModerators,
   tag,
   userFollowers,
   userFollowing,
@@ -26,13 +23,9 @@ export const SessionSchema = createSelectSchema(session);
 export const AccountSchema = createSelectSchema(account);
 export const VerificationSchema = createSelectSchema(verification);
 export const CommentSchema = createSelectSchema(comment);
-export const LikeSchema = createSelectSchema(like);
 export const MessageSchema = createSelectSchema(message);
 export const BlogSchema = createSelectSchema(blog);
 export const RoomSchema = createSelectSchema(room);
-export const RoomBannedSchema = createSelectSchema(roomBanned);
-export const RoomMembersSchema = createSelectSchema(roomMember);
-export const RoomModeratorsSchema = createSelectSchema(roomModerators);
 export const UserFollowersSchema = createSelectSchema(userFollowers);
 export const UserFollowingSchema = createSelectSchema(userFollowing);
 export const TagSchema = createSelectSchema(tag);
@@ -44,13 +37,10 @@ export const SessionInsertSchema = createInsertSchema(session);
 export const AccountInsertSchema = createInsertSchema(account);
 export const VerificationInsertSchema = createInsertSchema(verification);
 export const CommentInsertSchema = createInsertSchema(comment);
-export const LikeInsertSchema = createInsertSchema(like);
 export const MessageInsertSchema = createInsertSchema(message);
 export const BlogInsertSchema = createInsertSchema(blog);
 export const RoomInsertSchema = createInsertSchema(room);
-export const RoomBannedInsertSchema = createInsertSchema(roomBanned);
 export const RoomMembersInsertSchema = createInsertSchema(roomMember);
-export const RoomModeratorsInsertSchema = createInsertSchema(roomModerators);
 export const UserFollowersInsertSchema = createInsertSchema(userFollowers);
 export const UserFollowingInsertSchema = createInsertSchema(userFollowing);
 export const TagInsertSchema = createInsertSchema(tag);
@@ -61,13 +51,10 @@ export const SessionUpdateSchema = createUpdateSchema(session);
 export const AccountUpdateSchema = createUpdateSchema(account);
 export const VerificationUpdateSchema = createUpdateSchema(verification);
 export const CommentUpdateSchema = createUpdateSchema(comment);
-export const LikeUpdateSchema = createUpdateSchema(like);
 export const MessageUpdateSchema = createUpdateSchema(message);
 export const BlogUpdateSchema = createUpdateSchema(blog);
 export const RoomUpdateSchema = createUpdateSchema(room);
-export const RoomBannedUpdateSchema = createUpdateSchema(roomBanned);
 export const RoomMembersUpdateSchema = createUpdateSchema(roomMember);
-export const RoomModeratorsUpdateSchema = createUpdateSchema(roomModerators);
 export const UserFollowersUpdateSchema = createUpdateSchema(userFollowers);
 export const UserFollowingUpdateSchema = createUpdateSchema(userFollowing);
 export const TagUpdateSchema = createUpdateSchema(tag);

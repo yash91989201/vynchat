@@ -102,16 +102,31 @@ export const message = pgTable(
     senderId: text("sender_id")
       .notNull()
       .references(() => user.id),
-    type: text("type").notNull().default("text"),
     content: text("content").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
-      .defaultNow(),
+      .defaultNow()
+      .$onUpdateFn(() => new Date(0)),
   },
   (table) => [index("message_room_idx").on(table.roomId, table.createdAt)]
+);
+
+export const reaction = pgTable(
+  "reaction",
+  {
+    id: cuid2("id").defaultRandom().primaryKey(),
+    messageId: cuid2("message_id")
+      .notNull()
+      .references(() => message.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    emoji: text("emoji").notNull(),
+  },
+  (table) => [index("reaction_message_idx").on(table.messageId)]
 );
 
 export const room = pgTable(
@@ -125,9 +140,6 @@ export const room = pgTable(
       .notNull()
       .references(() => user.id),
     createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
@@ -145,49 +157,6 @@ export const roomMember = pgTable(
       .references(() => user.id),
   },
   (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
-);
-
-export const roomModerators = pgTable(
-  "room_moderators",
-  {
-    roomId: cuid2("room_id")
-      .notNull()
-      .references(() => room.id),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
-);
-
-export const roomBanned = pgTable(
-  "room_banned",
-  {
-    roomId: cuid2("room_id")
-      .notNull()
-      .references(() => room.id),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
-);
-
-export const like = pgTable(
-  "like",
-  {
-    id: cuid2("id").defaultRandom().primaryKey(),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id),
-    blogId: cuid2("blog_id")
-      .notNull()
-      .references(() => blog.id),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [index("like_user_idx").on(table.userId)]
 );
 
 export const userFollowers = pgTable(
@@ -262,28 +231,11 @@ export const roomRelations = relations(room, ({ one, many }) => ({
   owner: one(user, { fields: [room.ownerId], references: [user.id] }),
   messages: many(message),
   members: many(roomMember),
-  moderators: many(roomModerators),
-  banneduser: many(roomBanned),
 }));
 
 export const roomMembersRelations = relations(roomMember, ({ one }) => ({
   room: one(room, { fields: [roomMember.roomId], references: [room.id] }),
   user: one(user, { fields: [roomMember.userId], references: [user.id] }),
-}));
-
-export const roomModeratorsRelations = relations(roomModerators, ({ one }) => ({
-  room: one(room, { fields: [roomModerators.roomId], references: [room.id] }),
-  user: one(user, { fields: [roomModerators.userId], references: [user.id] }),
-}));
-
-export const roomBannedRelations = relations(roomBanned, ({ one }) => ({
-  room: one(room, { fields: [roomBanned.roomId], references: [room.id] }),
-  user: one(user, { fields: [roomBanned.userId], references: [user.id] }),
-}));
-
-export const likeRelations = relations(like, ({ one }) => ({
-  user: one(user, { fields: [like.userId], references: [user.id] }),
-  blog: one(blog, { fields: [like.blogId], references: [blog.id] }),
 }));
 
 export const userFollowersRelations = relations(userFollowers, ({ one }) => ({
@@ -301,21 +253,6 @@ export const userFollowingRelations = relations(userFollowing, ({ one }) => ({
     references: [user.id],
   }),
 }));
-
-export const reaction = pgTable(
-  "reaction",
-  {
-    id: cuid2("id").defaultRandom().primaryKey(),
-    messageId: cuid2("message_id")
-      .notNull()
-      .references(() => message.id),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id),
-    emoji: text("emoji").notNull(),
-  },
-  (table) => [index("reaction_message_idx").on(table.messageId)]
-);
 
 export const reactionRelations = relations(reaction, ({ one }) => ({
   message: one(message, {

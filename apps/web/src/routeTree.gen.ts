@@ -25,7 +25,6 @@ import { Route as authenticatedAdminDashboardRouteRouteImport } from './routes/(
 import { Route as publicBlogsSlugIndexRouteImport } from './routes/(public)/blogs/$slug/index'
 import { Route as authenticatedAdminDashboardIndexRouteImport } from './routes/(authenticated)/admin/dashboard/index'
 import { Route as authenticatedAdminDashboardTagsRouteImport } from './routes/(authenticated)/admin/dashboard/tags'
-import { Route as authenticatedAdminDashboardRoomsRouteImport } from './routes/(authenticated)/admin/dashboard/rooms'
 import { Route as authenticatedAdminDashboardCommentsRouteImport } from './routes/(authenticated)/admin/dashboard/comments'
 import { Route as authenticatedAdminDashboardCategoriesRouteImport } from './routes/(authenticated)/admin/dashboard/categories'
 import { Route as authenticatedAdminDashboardBlogsIndexRouteImport } from './routes/(authenticated)/admin/dashboard/blogs/index'
@@ -114,12 +113,6 @@ const authenticatedAdminDashboardTagsRoute =
     path: '/tags',
     getParentRoute: () => authenticatedAdminDashboardRouteRoute,
   } as any)
-const authenticatedAdminDashboardRoomsRoute =
-  authenticatedAdminDashboardRoomsRouteImport.update({
-    id: '/rooms',
-    path: '/rooms',
-    getParentRoute: () => authenticatedAdminDashboardRouteRoute,
-  } as any)
 const authenticatedAdminDashboardCommentsRoute =
   authenticatedAdminDashboardCommentsRouteImport.update({
     id: '/comments',
@@ -160,7 +153,6 @@ export interface FileRoutesByFullPath {
   '/blogs': typeof publicBlogsIndexRoute
   '/admin/dashboard/categories': typeof authenticatedAdminDashboardCategoriesRoute
   '/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
-  '/admin/dashboard/rooms': typeof authenticatedAdminDashboardRoomsRoute
   '/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
   '/admin/dashboard/': typeof authenticatedAdminDashboardIndexRoute
   '/blogs/$slug': typeof publicBlogsSlugIndexRoute
@@ -181,7 +173,6 @@ export interface FileRoutesByTo {
   '/blogs': typeof publicBlogsIndexRoute
   '/admin/dashboard/categories': typeof authenticatedAdminDashboardCategoriesRoute
   '/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
-  '/admin/dashboard/rooms': typeof authenticatedAdminDashboardRoomsRoute
   '/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
   '/admin/dashboard': typeof authenticatedAdminDashboardIndexRoute
   '/blogs/$slug': typeof publicBlogsSlugIndexRoute
@@ -205,7 +196,6 @@ export interface FileRoutesById {
   '/(public)/blogs/': typeof publicBlogsIndexRoute
   '/(authenticated)/admin/dashboard/categories': typeof authenticatedAdminDashboardCategoriesRoute
   '/(authenticated)/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
-  '/(authenticated)/admin/dashboard/rooms': typeof authenticatedAdminDashboardRoomsRoute
   '/(authenticated)/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
   '/(authenticated)/admin/dashboard/': typeof authenticatedAdminDashboardIndexRoute
   '/(public)/blogs/$slug/': typeof publicBlogsSlugIndexRoute
@@ -229,7 +219,6 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/admin/dashboard/categories'
     | '/admin/dashboard/comments'
-    | '/admin/dashboard/rooms'
     | '/admin/dashboard/tags'
     | '/admin/dashboard/'
     | '/blogs/$slug'
@@ -250,7 +239,6 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/admin/dashboard/categories'
     | '/admin/dashboard/comments'
-    | '/admin/dashboard/rooms'
     | '/admin/dashboard/tags'
     | '/admin/dashboard'
     | '/blogs/$slug'
@@ -273,7 +261,6 @@ export interface FileRouteTypes {
     | '/(public)/blogs/'
     | '/(authenticated)/admin/dashboard/categories'
     | '/(authenticated)/admin/dashboard/comments'
-    | '/(authenticated)/admin/dashboard/rooms'
     | '/(authenticated)/admin/dashboard/tags'
     | '/(authenticated)/admin/dashboard/'
     | '/(public)/blogs/$slug/'
@@ -407,13 +394,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authenticatedAdminDashboardTagsRouteImport
       parentRoute: typeof authenticatedAdminDashboardRouteRoute
     }
-    '/(authenticated)/admin/dashboard/rooms': {
-      id: '/(authenticated)/admin/dashboard/rooms'
-      path: '/rooms'
-      fullPath: '/admin/dashboard/rooms'
-      preLoaderRoute: typeof authenticatedAdminDashboardRoomsRouteImport
-      parentRoute: typeof authenticatedAdminDashboardRouteRoute
-    }
     '/(authenticated)/admin/dashboard/comments': {
       id: '/(authenticated)/admin/dashboard/comments'
       path: '/comments'
@@ -448,7 +428,6 @@ declare module '@tanstack/react-router' {
 interface authenticatedAdminDashboardRouteRouteChildren {
   authenticatedAdminDashboardCategoriesRoute: typeof authenticatedAdminDashboardCategoriesRoute
   authenticatedAdminDashboardCommentsRoute: typeof authenticatedAdminDashboardCommentsRoute
-  authenticatedAdminDashboardRoomsRoute: typeof authenticatedAdminDashboardRoomsRoute
   authenticatedAdminDashboardTagsRoute: typeof authenticatedAdminDashboardTagsRoute
   authenticatedAdminDashboardIndexRoute: typeof authenticatedAdminDashboardIndexRoute
   authenticatedAdminDashboardBlogsNewRoute: typeof authenticatedAdminDashboardBlogsNewRoute
@@ -461,8 +440,6 @@ const authenticatedAdminDashboardRouteRouteChildren: authenticatedAdminDashboard
       authenticatedAdminDashboardCategoriesRoute,
     authenticatedAdminDashboardCommentsRoute:
       authenticatedAdminDashboardCommentsRoute,
-    authenticatedAdminDashboardRoomsRoute:
-      authenticatedAdminDashboardRoomsRoute,
     authenticatedAdminDashboardTagsRoute: authenticatedAdminDashboardTagsRoute,
     authenticatedAdminDashboardIndexRoute:
       authenticatedAdminDashboardIndexRoute,

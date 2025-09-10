@@ -49,11 +49,6 @@ const navItems = [
     label: "Comments",
   },
   {
-    href: "/admin/dashboard/rooms",
-    icon: Users,
-    label: "Rooms",
-  },
-  {
     href: "/admin/dashboard/users",
     icon: Users,
     label: "Users",
