@@ -92,13 +92,46 @@ export const comment = pgTable(
   (table) => [index("comment_blog_idx").on(table.blogId)]
 );
 
+export const room = pgTable(
+  "room",
+  {
+    id: cuid2("id").defaultRandom().primaryKey(),
+    name: text("name").notNull(),
+    isDM: boolean("isDM").notNull().default(false),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [index("room_owner_idx").on(table.ownerId)]
+);
+
+export const roomMember = pgTable(
+  "room_member",
+  {
+    roomId: cuid2("room_id")
+      .notNull()
+      .references(() => room.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    joinedAt: timestamp("joined_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+
+  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
+);
+
 export const message = pgTable(
   "message",
   {
     id: cuid2("id").defaultRandom().primaryKey(),
     roomId: cuid2("room_id")
       .notNull()
-      .references(() => room.id),
+      .references(() => room.id, { onDelete: "cascade" }),
     senderId: text("sender_id")
       .notNull()
       .references(() => user.id),
@@ -106,10 +139,6 @@ export const message = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true })
-      .notNull()
-      .defaultNow()
-      .$onUpdateFn(() => new Date(0)),
   },
   (table) => [index("message_room_idx").on(table.roomId, table.createdAt)]
 );
@@ -127,36 +156,6 @@ export const reaction = pgTable(
     emoji: text("emoji").notNull(),
   },
   (table) => [index("reaction_message_idx").on(table.messageId)]
-);
-
-export const room = pgTable(
-  "room",
-  {
-    id: cuid2("id").defaultRandom().primaryKey(),
-    name: text("name").notNull(),
-    description: text("description"),
-    isPublic: boolean("is_public").notNull().default(false),
-    ownerId: text("owner_id")
-      .notNull()
-      .references(() => user.id),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
-  },
-  (table) => [index("room_owner_idx").on(table.ownerId)]
-);
-
-export const roomMember = pgTable(
-  "room_members",
-  {
-    roomId: cuid2("room_id")
-      .notNull()
-      .references(() => room.id),
-    userId: text("user_id")
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => [primaryKey({ columns: [table.roomId, table.userId] })]
 );
 
 export const userFollowers = pgTable(
