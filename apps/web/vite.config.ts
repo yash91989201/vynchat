@@ -1,9 +1,9 @@
-import { VitePWA } from 'vite-plugin-pwa';
+import path from "node:path";
 import tailwindcss from "@tailwindcss/vite";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
-import path from "node:path";
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 
 export default defineConfig({
   plugins: [
@@ -13,18 +13,25 @@ export default defineConfig({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "vynchat",
+        name: "VynChat",
         short_name: "vynchat",
-        description: "vynchat - PWA Application",
+        description:
+          "VynChat is a modern chat application that lets you connect with people from around the world in real-time.",
         theme_color: "#0c0c0c",
       },
       pwaAssets: { disabled: false, config: true },
       devOptions: { enabled: true },
-    })
+    }),
   ],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  preview: {
+    allowedHosts: process.env.VITE_ALLOWED_HOSTS
+      ? process.env.VITE_ALLOWED_HOSTS.split(",")
+      : [],
+  },
 });
+

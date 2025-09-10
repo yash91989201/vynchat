@@ -1,15 +1,15 @@
 import "dotenv/config";
 import { OpenAPIHandler } from "@orpc/openapi/fetch";
 import { OpenAPIReferencePlugin } from "@orpc/openapi/plugins";
-import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
-import { RPCHandler } from "@orpc/server/fetch";
 import { onError } from "@orpc/server";
-import { createContext } from "./lib/context";
-import { appRouter } from "./routers/index";
-import { auth } from "./lib/auth";
+import { RPCHandler } from "@orpc/server/fetch";
+import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { auth } from "@/lib/auth";
+import { createContext } from "@/lib/context";
+import { appRouter } from "@/routers";
 
 const app = new Hono();
 
@@ -52,7 +52,7 @@ app.use("/*", async (c, next) => {
 
   const rpcResult = await rpcHandler.handle(c.req.raw, {
     prefix: "/rpc",
-    context: context,
+    context,
   });
 
   if (rpcResult.matched) {
@@ -61,7 +61,7 @@ app.use("/*", async (c, next) => {
 
   const apiResult = await apiHandler.handle(c.req.raw, {
     prefix: "/api",
-    context: context,
+    context,
   });
 
   if (apiResult.matched) {
@@ -70,9 +70,6 @@ app.use("/*", async (c, next) => {
 
   await next();
 });
-
-
-
 
 app.get("/", (c) => {
   return c.text("OK");
