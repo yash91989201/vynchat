@@ -109,6 +109,7 @@ export const roomRouter = {
           message: "The stranger skipped you. Finding a new match...",
         },
       });
+      await supabase.removeChannel(notifyChannel);
 
       // Add current user back to the queue
       await supabase.schema("pgmq_public").rpc("send", {
