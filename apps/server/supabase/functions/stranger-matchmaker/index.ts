@@ -1,22 +1,11 @@
+import { createClient, type RealtimeChannel } from "@supabase/supabase-js";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
-import { createId } from "jsr:@paralleldrive/cuid2";
-import { createClient, type RealtimeChannel } from "jsr:@supabase/supabase-js";
+import { createId } from "@paralleldrive/cuid2";
 
 const supabase = createClient(
-  Deno.env.get("SUPABASE_URL")!,
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")! // service role is required
+  Deno.env.get("SUPABASE_URL"),
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
 );
-
-// Subscribe to lobby presence so we can read presenceState()
-const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
-  config: { presence: { enabled: true } },
-});
-
-lobbyChannel.subscribe();
-console.log("Subscribed to lobby:global presence");
-
-// give presence time to sync
-await new Promise((r) => setTimeout(r, 1000));
 
 const isWaiting = (presenceState: any, userId: string) => {
   const pres = presenceState[userId] as any[] | undefined;
@@ -29,15 +18,32 @@ const hasRecentlySkipped = async (user1: string, user2: string) => {
   const { data: skippedPairs, error } = await supabase
     .from("skipped_pair")
     .select("*")
-    .or(`and(user_a_id.eq.${user1},user_b_id.eq.${user2}),and(user_a_id.eq.${user2},user_b_id.eq.${user1})`)
+    .or(
+      `and(user_a_id.eq.${user1},user_b_id.eq.${user2}),and(user_a_id.eq.${user2},user_b_id.eq.${user1})`
+    )
     .gte("created_at", thirtySecondsAgo);
 
   if (error) {
     console.error("Error checking skipped pairs:", error);
-    return false; // If there's an error, allow the match
+    return false;
   }
 
-  return skippedPairs && skippedPairs.length > 0;
+  if (skippedPairs && skippedPairs.length > 0) {
+    for (const pair of skippedPairs) {
+      const { error: deleteError } = await supabase
+        .from("skipped_pair")
+        .delete()
+        .eq("user_a_id", pair.user_a_id)
+        .eq("user_b_id", pair.user_b_id);
+
+      if (deleteError) {
+        console.error("Error deleting skipped pair:", deleteError);
+      }
+    }
+    return true;
+  }
+
+  return false;
 };
 
 Deno.serve(async () => {
@@ -61,10 +67,25 @@ Deno.serve(async () => {
     const pairedRooms: any[] = [];
     const processedMessageIds: bigint[] = [];
 
-    // 2. Get current lobby presence snapshot
-    const presenceState = lobbyChannel.presenceState();
+    // 2. Get lobby presence snapshot (subscribe briefly, then close)
+    let presenceState: Record<string, unknown> = {};
+    const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
+      config: { presence: { enabled: true } },
+    });
 
-    // 3. Process in pairs, but only if both are waiting
+    await new Promise<void>((resolve, reject) => {
+      lobbyChannel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          presenceState = lobbyChannel.presenceState();
+          resolve();
+        }
+      });
+
+      // Hard timeout safeguard
+      setTimeout(() => reject(new Error("Presence subscribe timeout")), 1500);
+    });
+
+    // 3. Process in pairs
     for (let i = 0; i + 1 < users.length; i += 2) {
       const u1 = users[i];
       const u2 = users[i + 1];
@@ -77,23 +98,19 @@ Deno.serve(async () => {
         console.log(
           `Skipping pair [${user1}, ${user2}] because one or both are not waiting`
         );
-        // We'll remove their queue messages — they will be notified appropriately
         processedMessageIds.push(u1.msg_id, u2.msg_id);
         continue;
       }
 
-      // Check if they have recently skipped each other
       if (await hasRecentlySkipped(user1, user2)) {
         console.log(
           `Skipping pair [${user1}, ${user2}] because they recently skipped each other`
         );
-        // Don't remove messages, let them try to match with others
         continue;
       }
 
       console.log(`Matching users: ${user1} with ${user2}`);
 
-      // create room
       const { data: roomRes, error: roomErr } = await supabase
         .from("room")
         .insert({
@@ -113,10 +130,8 @@ Deno.serve(async () => {
         { room_id: roomId, user_id: user2 },
       ]);
 
-      // mark for removal from queue
       processedMessageIds.push(u1.msg_id, u2.msg_id);
 
-      // notify both users (clients will set their own presence to matched)
       const notify = async (uid: string) => {
         const ch = supabase.channel(`user:${uid}`);
         await ch.subscribe();
@@ -134,7 +149,7 @@ Deno.serve(async () => {
       pairedRooms.push(roomRes);
     }
 
-    // 4. Delete processed queue messages one-by-one (pgmq delete expects single id)
+    // 4. Delete processed queue messages
     for (const msgId of processedMessageIds) {
       const { error: delErr } = await supabase
         .schema("pgmq_public")
@@ -142,6 +157,7 @@ Deno.serve(async () => {
           queue_name: "stranger-queue",
           message_id: msgId,
         });
+
       if (delErr) console.error(`Error deleting msg ${msgId}:`, delErr);
     }
 
@@ -150,7 +166,6 @@ Deno.serve(async () => {
       const leftover = users.at(-1);
       const userId = leftover.message.userId as string;
 
-      // ALWAYS remove leftover msg (we will re-enqueue if client still wants to wait)
       try {
         await supabase.schema("pgmq_public").rpc("delete", {
           queue_name: "stranger-queue",
@@ -160,7 +175,6 @@ Deno.serve(async () => {
         console.error("Error deleting leftover msg:", e);
       }
 
-      // Notify client to go back to idle (client will update its own presence)
       const ch = supabase.channel(`user:${userId}`);
       await ch.subscribe();
       await ch.send({
@@ -170,6 +184,9 @@ Deno.serve(async () => {
       });
       await supabase.removeChannel(ch);
     }
+
+    // 6. Clean up lobby channel before returning
+    await supabase.removeChannel(lobbyChannel);
 
     console.log(`Matchmaker completed: matched ${pairedRooms.length} pairs`);
   } catch (err) {
