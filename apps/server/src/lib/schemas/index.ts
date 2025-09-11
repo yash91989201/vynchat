@@ -358,3 +358,7 @@ export const OnRoomLeaveOutput = z.object({
   name: z.string(),
   memberCount: z.number().int().nonnegative(),
 });
+
+export const FindStrangerOutput = z.object({
+  status: z.enum(["waiting", "matched", "idle"]),
+});

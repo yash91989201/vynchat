@@ -2,7 +2,7 @@ import type { MessageType, RoomType } from "@server/lib/types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/lib/supabase";
 import { queryUtils } from "@/utils/orpc";
@@ -19,6 +19,9 @@ function RouteComponent() {
   const [status, setStatus] = useState<"idle" | "waiting" | "matched">("idle");
   const [currentRoom, setCurrentRoom] = useState<RoomType | undefined>();
 
+  // Keep a reference to the lobby channel so we can reuse it
+  const lobbyChannelRef = useRef<RealtimeChannel | null>(null);
+
   const { mutateAsync: findStranger, isPending } = useMutation(
     queryUtils.room.findStranger.mutationOptions({})
   );
@@ -28,6 +31,9 @@ function RouteComponent() {
     const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
       config: { presence: { key: userId } },
     });
+
+    // Store reference for later use
+    lobbyChannelRef.current = lobbyChannel;
 
     lobbyChannel
       .on("presence", { event: "sync" }, () => {
@@ -42,6 +48,7 @@ function RouteComponent() {
 
     return () => {
       supabase.removeChannel(lobbyChannel);
+      lobbyChannelRef.current = null;
     };
   }, [userId]);
 
@@ -61,6 +68,12 @@ function RouteComponent() {
         console.log("Still waiting…");
         setStatus("waiting");
       })
+      .on("broadcast", { event: "stranger_idle" }, () => {
+        console.log("No match found, back to idle");
+        setStatus("idle");
+        setCurrentRoom(undefined);
+        alert("No match found. Try again!");
+      })
       .subscribe();
 
     return () => {
@@ -70,15 +83,26 @@ function RouteComponent() {
 
   const talkToStranger = async () => {
     setStatus("waiting");
+
+    // Update presence on existing channel
+    if (lobbyChannelRef.current) {
+      await lobbyChannelRef.current.track({ status: "waiting" });
+    }
+
     const result = await findStranger({}); // enqueues user
     if (result.status === "waiting") {
       console.log("Enqueued, waiting for matchmaker to run…");
     }
   };
 
-  const handleLeave = () => {
+  const handleLeave = async () => {
     setStatus("idle");
     setCurrentRoom(undefined);
+
+    // Update presence on existing channel instead of creating a new one
+    if (lobbyChannelRef.current) {
+      await lobbyChannelRef.current.track({ status: "idle" });
+    }
   };
 
   return (
@@ -125,7 +149,7 @@ export function ChatRoom({
     queryUtils.message.send.mutationOptions({})
   );
   const { mutateAsync: leaveRoom } = useMutation(
-    queryUtils.room.leave.mutationOptions({}) // 👈 you'll implement this in backend
+    queryUtils.room.leave.mutationOptions({})
   );
 
   useEffect(() => {

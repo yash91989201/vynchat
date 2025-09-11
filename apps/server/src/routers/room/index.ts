@@ -4,6 +4,7 @@ import { protectedProcedure } from "@/lib/orpc";
 import {
   CreateRoomInput,
   CreateRoomOutput,
+  FindStrangerOutput,
   LeaveRoomInput,
   LeaveRoomOutput,
 } from "@/lib/schemas";
@@ -44,18 +45,22 @@ export const roomRouter = {
     return rooms;
   }),
 
-  findStranger: protectedProcedure.handler(async ({ context }) => {
-    const userId = context.session.user.id;
+  findStranger: protectedProcedure
+    .output(FindStrangerOutput)
+    .handler(async ({ context }) => {
+      const userId = context.session.user.id;
 
-    const sendRes = await supabase.schema("pgmq_public").rpc("send", {
-      queue_name: "stranger-queue",
-      message: { userId },
-    });
+      const sendRes = await supabase.schema("pgmq_public").rpc("send", {
+        queue_name: "stranger-queue",
+        message: { userId },
+      });
 
-    if (sendRes.error) throw sendRes.error;
+      console.log(sendRes);
 
-    return { status: "waiting" as const };
-  }),
+      if (sendRes.error) throw sendRes.error;
+
+      return { status: "waiting" };
+    }),
 
   leave: protectedProcedure
     .input(LeaveRoomInput)
