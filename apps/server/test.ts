@@ -13,7 +13,7 @@ const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
   config: { presence: { enabled: true } },
 });
 
-await lobbyChannel.subscribe();
+lobbyChannel.subscribe();
 console.log("Subscribed to lobby:global presence");
 
 // give presence time to sync

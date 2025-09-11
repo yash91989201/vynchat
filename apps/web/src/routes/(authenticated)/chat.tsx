@@ -2,7 +2,19 @@ import type { MessageType, RoomType } from "@server/lib/types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext } from "@tanstack/react-router";
+import { Loader2, LogOut, Send, Users, Wifi, WifiOff } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -11,14 +23,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { queryUtils } from "@/utils/orpc";
-import { Loader2, Send, LogOut, Users, Wifi, WifiOff } from "lucide-react";
 
 export const Route = createFileRoute("/(authenticated)/chat")({
   component: RouteComponent,
@@ -31,6 +40,7 @@ function RouteComponent() {
   const [lobbyCount, setLobbyCount] = useState(0);
   const [status, setStatus] = useState<"idle" | "waiting" | "matched">("idle");
   const [currentRoom, setCurrentRoom] = useState<RoomType | undefined>();
+  const [dialogMessage, setDialogMessage] = useState<string | null>(null);
 
   const lobbyChannelRef = useRef<RealtimeChannel | null>(null);
 
@@ -78,8 +88,7 @@ function RouteComponent() {
       .on("broadcast", { event: "stranger_idle" }, () => {
         setStatus("idle");
         setCurrentRoom(undefined);
-        // Consider using a more subtle notification system like a toast
-        alert("No match found. Try again!");
+        setDialogMessage("No match found. Try again!");
       })
       .subscribe();
 
@@ -110,13 +119,32 @@ function RouteComponent() {
   if (status === "matched" && currentRoom) {
     return (
       <div className="h-full p-4">
-        <ChatRoom onLeave={handleLeave} roomId={currentRoom.id} userId={userId} />
+        <ChatRoom
+          onLeave={handleLeave}
+          roomId={currentRoom.id}
+          userId={userId}
+        />
       </div>
     );
   }
 
   return (
     <div className="flex h-full items-center justify-center p-4">
+      <AlertDialog
+        onOpenChange={() => setDialogMessage(null)}
+        open={!!dialogMessage}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Notification</AlertDialogTitle>
+            <AlertDialogDescription>{dialogMessage}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Talk to a Stranger</CardTitle>
@@ -127,10 +155,10 @@ function RouteComponent() {
         <CardContent className="flex flex-col items-center justify-center space-y-4 p-6">
           {status === "idle" && (
             <Button
-              size="lg"
+              className="w-full"
               disabled={isPending}
               onClick={talkToStranger}
-              className="w-full"
+              size="lg"
             >
               {isPending ? (
                 <>
@@ -145,13 +173,11 @@ function RouteComponent() {
           {status === "waiting" && (
             <div className="flex flex-col items-center space-y-2">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">
-                Looking for a stranger…
-              </p>
+              <p className="text-muted-foreground">Looking for a stranger…</p>
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex justify-center text-sm text-muted-foreground">
+        <CardFooter className="flex justify-center text-muted-foreground text-sm">
           <Users className="mr-2 h-4 w-4" />
           {lobbyCount} users online
         </CardFooter>
@@ -172,8 +198,13 @@ export function ChatRoom({
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [input, setInput] = useState("");
   const [isChannelReady, setIsChannelReady] = useState(false);
+  const [isStrangerTyping, setIsStrangerTyping] = useState(false);
+  const [strangerLeft, setStrangerLeft] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const strangerTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isTypingRef = useRef(false);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const { mutateAsync: sendMessage } = useMutation(
     queryUtils.message.send.mutationOptions({})
@@ -216,8 +247,20 @@ export function ChatRoom({
         });
       })
       .on("broadcast", { event: "room_closed" }, () => {
-        alert("The stranger left the chat.");
-        onLeave();
+        setStrangerLeft(true);
+      })
+      .on("broadcast", { event: "typing" }, ({ payload }) => {
+        if (payload.senderId === userId) return;
+
+        setIsStrangerTyping(true);
+
+        if (strangerTypingTimeoutRef.current) {
+          clearTimeout(strangerTypingTimeoutRef.current);
+        }
+
+        strangerTypingTimeoutRef.current = setTimeout(() => {
+          setIsStrangerTyping(false);
+        }, 3000);
       })
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
@@ -231,14 +274,14 @@ export function ChatRoom({
       supabase.removeChannel(channel);
       channelRef.current = null;
       setIsChannelReady(false);
+      if (strangerTypingTimeoutRef.current) {
+        clearTimeout(strangerTypingTimeoutRef.current);
+      }
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
     };
-  }, [userId, roomId, onLeave]);
-
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
-  }, [messages]);
+  }, [userId, roomId]);
 
   const handleSend = async () => {
     if (!(input.trim() && isChannelReady)) return;
@@ -274,85 +317,146 @@ export function ChatRoom({
     }
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newText = e.target.value;
+    setInput(newText);
+
+    if (!(channelRef.current && isChannelReady)) return;
+
+    if (newText && !isTypingRef.current) {
+      isTypingRef.current = true;
+      channelRef.current.send({
+        type: "broadcast",
+        event: "typing",
+        payload: { senderId: userId },
+      });
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
+    typingTimeoutRef.current = setTimeout(() => {
+      isTypingRef.current = false;
+    }, 2000);
+  };
+
   return (
-    <Card className="flex h-full flex-col">
-      <CardHeader className="flex flex-row items-center justify-between border-b">
-        <div className="flex items-center space-x-4">
-          <Avatar>
-            <AvatarImage src="/placeholder-user.jpg" />
-            <AvatarFallback>ST</AvatarFallback>
-          </Avatar>
-          <div>
-            <p className="text-sm font-medium leading-none">Stranger</p>
-            <p className="text-sm text-muted-foreground">
-              {isChannelReady ? (
-                <span className="flex items-center text-green-500">
-                  <Wifi className="mr-1 h-3 w-3" /> Connected
-                </span>
-              ) : (
-                <span className="flex items-center">
-                  <WifiOff className="mr-1 h-3 w-3" /> Connecting...
-                </span>
-              )}
-            </p>
-          </div>
-        </div>
-        <Button onClick={handleLeave} variant="destructive" size="icon">
-          <LogOut className="h-4 w-4" />
-        </Button>
-      </CardHeader>
-      <CardContent className="flex-1 p-0">
-        <ScrollArea className="h-[calc(100vh-220px)] p-4" ref={scrollAreaRef}>
-          <div className="space-y-4">
-            {messages.map((m) => (
-              <div
-                key={m.id}
-                className={cn(
-                  "flex items-end gap-2",
-                  m.senderId === userId ? "justify-end" : "justify-start"
+    <>
+      <AlertDialog
+        onOpenChange={() => {
+          setStrangerLeft(false);
+          onLeave();
+        }}
+        open={strangerLeft}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Chat Ended</AlertDialogTitle>
+            <AlertDialogDescription>
+              The stranger has left the chat.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction>Find New Stranger</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <Card className="flex h-full flex-col">
+        <CardHeader className="flex flex-row items-center justify-between border-b">
+          <div className="flex items-center space-x-4">
+            <Avatar>
+              <AvatarImage src="/placeholder-user.jpg" />
+              <AvatarFallback>ST</AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="font-medium text-sm leading-none">Stranger</p>
+              <p className="text-muted-foreground text-sm">
+                {isChannelReady ? (
+                  <span className="flex items-center text-green-500">
+                    <Wifi className="mr-1 h-3 w-3" /> Connected
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <WifiOff className="mr-1 h-3 w-3" /> Connecting...
+                  </span>
                 )}
-              >
-                {m.senderId !== userId && (
+              </p>
+            </div>
+          </div>
+          <Button onClick={handleLeave} size="icon" variant="destructive">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </CardHeader>
+        <CardContent className="flex-1 p-0">
+          <ScrollArea className="h-[calc(100vh-220px)] p-4" ref={scrollAreaRef}>
+            <div className="space-y-4">
+              {messages.map((m) => (
+                <div
+                  className={cn(
+                    "flex items-end gap-2",
+                    m.senderId === userId ? "justify-end" : "justify-start"
+                  )}
+                  key={m.id}
+                >
+                  {m.senderId !== userId && (
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src="/placeholder-user.jpg" />
+                      <AvatarFallback>ST</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div
+                    className={cn(
+                      "max-w-xs rounded-lg p-3 text-sm",
+                      m.senderId === userId
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-muted"
+                    )}
+                  >
+                    <p>{m.content}</p>
+                  </div>
+                </div>
+              ))}
+              {isStrangerTyping && (
+                <div className="flex items-end justify-start gap-2">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src="/placeholder-user.jpg" />
                     <AvatarFallback>ST</AvatarFallback>
                   </Avatar>
-                )}
-                <div
-                  className={cn(
-                    "max-w-xs rounded-lg p-3 text-sm",
-                    m.senderId === userId
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  )}
-                >
-                  <p>{m.content}</p>
+                  <div className="rounded-lg bg-muted p-3 text-sm">
+                    <div className="flex items-center gap-1">
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                      <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )}
+            </div>
+          </ScrollArea>
+        </CardContent>
+        <CardFooter className="border-t p-4">
+          <div className="flex w-full items-center space-x-2">
+            <Input
+              disabled={!isChannelReady}
+              onChange={handleInputChange}
+              onKeyDown={(e) => e.key === "Enter" && handleSend()}
+              placeholder={
+                isChannelReady ? "Type a message..." : "Connecting..."
+              }
+              value={input}
+            />
+            <Button
+              disabled={!(isChannelReady && input.trim())}
+              onClick={handleSend}
+              size="icon"
+            >
+              <Send className="h-4 w-4" />
+            </Button>
           </div>
-        </ScrollArea>
-      </CardContent>
-      <CardFooter className="border-t p-4">
-        <div className="flex w-full items-center space-x-2">
-          <Input
-            disabled={!isChannelReady}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSend()}
-            placeholder={
-              isChannelReady ? "Type a message..." : "Connecting..."
-            }
-            value={input}
-          />
-          <Button
-            disabled={!(isChannelReady && input.trim())}
-            onClick={handleSend}
-            size="icon"
-          >
-            <Send className="h-4 w-4" />
-          </Button>
-        </div>
-      </CardFooter>
-    </Card>
+        </CardFooter>
+      </Card>
+    </>
   );
 }
+
