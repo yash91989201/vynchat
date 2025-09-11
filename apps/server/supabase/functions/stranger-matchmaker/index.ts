@@ -23,6 +23,23 @@ const isWaiting = (presenceState: any, userId: string) => {
   return pres?.some((p) => p.status === "waiting");
 };
 
+const hasRecentlySkipped = async (user1: string, user2: string) => {
+  const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+
+  const { data: skippedPairs, error } = await supabase
+    .from("skipped_pair")
+    .select("*")
+    .or(`and(user_a_id.eq.${user1},user_b_id.eq.${user2}),and(user_a_id.eq.${user2},user_b_id.eq.${user1})`)
+    .gte("created_at", thirtySecondsAgo);
+
+  if (error) {
+    console.error("Error checking skipped pairs:", error);
+    return false; // If there's an error, allow the match
+  }
+
+  return skippedPairs && skippedPairs.length > 0;
+};
+
 Deno.serve(async () => {
   try {
     console.log("Matchmaker function started");
@@ -62,6 +79,15 @@ Deno.serve(async () => {
         );
         // We'll remove their queue messages — they will be notified appropriately
         processedMessageIds.push(u1.msg_id, u2.msg_id);
+        continue;
+      }
+
+      // Check if they have recently skipped each other
+      if (await hasRecentlySkipped(user1, user2)) {
+        console.log(
+          `Skipping pair [${user1}, ${user2}] because they recently skipped each other`
+        );
+        // Don't remove messages, let them try to match with others
         continue;
       }
 

@@ -2,8 +2,17 @@ import type { MessageType, RoomType } from "@server/lib/types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext } from "@tanstack/react-router";
-import { Loader2, LogOut, Send, Users, Wifi, WifiOff } from "lucide-react";
+import {
+  Loader2,
+  LogOut,
+  Send,
+  SkipForward,
+  Users,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -90,6 +99,35 @@ function RouteComponent() {
         setCurrentRoom(undefined);
         setDialogMessage("No match found. Try again!");
       })
+      .on("broadcast", { event: "stranger_skipped" }, ({ payload }) => {
+        // Immediately set status to waiting since server already queued us
+        setStatus("waiting");
+        setCurrentRoom(undefined);
+
+        // Show non-blocking toast notification instead of dialog
+        toast.info("Finding new match", {
+          description:
+            payload.message ||
+            "The stranger skipped you. Looking for a new match...",
+        });
+
+        // Immediately update presence to waiting (no delay needed)
+        if (lobbyChannelRef.current) {
+          lobbyChannelRef.current
+            .track({ status: "waiting" })
+            .then(() => {
+              console.log("Updated presence to waiting after being skipped");
+            })
+            .catch((error) => {
+              console.error("Failed to update presence after skip:", error);
+              // If presence update fails, try to recover by setting idle and letting user retry
+              setStatus("waiting");
+              toast.error("Connection issue", {
+                description: "Failed to rejoin matchmaking. Please try again.",
+              });
+            });
+        }
+      })
       .subscribe();
 
     return () => {
@@ -116,11 +154,20 @@ function RouteComponent() {
     }
   };
 
+  const handleSkip = async () => {
+    setStatus("waiting");
+    setCurrentRoom(undefined);
+    if (lobbyChannelRef.current) {
+      await lobbyChannelRef.current.track({ status: "waiting" });
+    }
+  };
+
   if (status === "matched" && currentRoom) {
     return (
       <div className="h-full p-4">
         <ChatRoom
           onLeave={handleLeave}
+          onSkip={handleSkip}
           roomId={currentRoom.id}
           userId={userId}
         />
@@ -190,10 +237,12 @@ export function ChatRoom({
   roomId,
   userId,
   onLeave,
+  onSkip,
 }: {
   roomId: string;
   userId: string;
   onLeave: () => void;
+  onSkip: () => void;
 }) {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [input, setInput] = useState("");
@@ -211,6 +260,9 @@ export function ChatRoom({
   );
   const { mutateAsync: leaveRoom } = useMutation(
     queryUtils.room.leave.mutationOptions({})
+  );
+  const { mutateAsync: skipStranger } = useMutation(
+    queryUtils.room.skipStranger.mutationOptions({})
   );
 
   useEffect(() => {
@@ -317,6 +369,21 @@ export function ChatRoom({
     }
   };
 
+  const handleSkip = async () => {
+    try {
+      await skipStranger({ roomId });
+      toast.success("Finding new match", {
+        description: "Looking for a new stranger to chat with...",
+      });
+      onSkip();
+    } catch (error) {
+      console.error("Error skipping stranger:", error);
+      toast.error("Error", {
+        description: "Failed to skip stranger. Please try again.",
+      });
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
     setInput(newText);
@@ -384,9 +451,14 @@ export function ChatRoom({
               </p>
             </div>
           </div>
-          <Button onClick={handleLeave} size="icon" variant="destructive">
-            <LogOut className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center space-x-2">
+            <Button onClick={handleSkip} size="icon" variant="outline">
+              <SkipForward className="h-4 w-4" />
+            </Button>
+            <Button onClick={handleLeave} size="icon" variant="destructive">
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex-1 p-0">
           <ScrollArea className="h-[calc(100vh-220px)] p-4" ref={scrollAreaRef}>
@@ -459,4 +531,3 @@ export function ChatRoom({
     </>
   );
 }
-

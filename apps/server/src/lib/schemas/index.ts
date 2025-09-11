@@ -362,3 +362,12 @@ export const OnRoomLeaveOutput = z.object({
 export const FindStrangerOutput = z.object({
   status: z.enum(["waiting", "matched", "idle"]),
 });
+
+export const SkipStrangerInput = z.object({
+  roomId: z.string(),
+});
+
+export const SkipStrangerOutput = z.object({
+  success: z.boolean(),
+  message: z.string(),
+});

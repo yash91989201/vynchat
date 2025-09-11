@@ -8,6 +8,13 @@
       "when": 1757517099067,
       "tag": "0000_old_ego",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1757586751589,
+      "tag": "0001_real_cloak",
+      "breakpoints": true
     }
   ]
 }

@@ -184,6 +184,25 @@ export const userFollowing = pgTable(
   (table) => [primaryKey({ columns: [table.userId, table.followingId] })]
 );
 
+export const skippedPair = pgTable(
+  "skipped_pair",
+  {
+    userAId: text("user_a_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    userBId: text("user_b_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userAId, table.userBId] }),
+    index("skipped_pair_created_at_idx").on(table.createdAt),
+  ]
+);
+
 export const blogRelations = relations(blog, ({ one, many }) => ({
   author: one(user, {
     fields: [blog.authorId],

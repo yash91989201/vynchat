@@ -24,6 +24,42 @@ const isWaiting = (presenceState: any, userId: string) => {
   return pres?.some((p) => p.status === "waiting");
 };
 
+const hasRecentlySkipped = async (user1: string, user2: string) => {
+  const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
+
+  const { data: skippedPairs, error } = await supabase
+    .from("skipped_pair")
+    .select("*")
+    .or(
+      `and(user_a_id.eq.${user1},user_b_id.eq.${user2}),and(user_a_id.eq.${user2},user_b_id.eq.${user1})`
+    )
+    .gte("created_at", thirtySecondsAgo);
+
+  if (error) {
+    console.error("Error checking skipped pairs:", error);
+    return false; // If there's an error, allow the match
+  }
+
+  if (skippedPairs && skippedPairs.length > 0) {
+    // Delete the skipped pairs to clean up the table and allow future matching after 30 seconds
+    for (const pair of skippedPairs) {
+      const { error: deleteError } = await supabase
+        .from("skipped_pair")
+        .delete()
+        .eq("user_a_id", pair.user_a_id)
+        .eq("user_b_id", pair.user_b_id);
+
+      if (deleteError) {
+        console.error("Error deleting skipped pair:", deleteError);
+        // Continue anyway, as the main purpose is to skip matching
+      }
+    }
+    return true;
+  }
+
+  return false;
+};
+
 while (true) {
   try {
     console.log("Matchmaker function started");
@@ -66,6 +102,15 @@ while (true) {
         continue;
       }
 
+      // Check if they have recently skipped each other
+      if (await hasRecentlySkipped(user1, user2)) {
+        console.log(
+          `Skipping pair [${user1}, ${user2}] because they recently skipped each other`
+        );
+        // Don't remove messages, let them try to match with others
+        continue;
+      }
+
       console.log(`Matching users: ${user1} with ${user2}`);
 
       // create room
@@ -94,7 +139,7 @@ while (true) {
       // notify both users (clients will set their own presence to matched)
       const notify = async (uid: string) => {
         const ch = supabase.channel(`user:${uid}`);
-        await ch.subscribe();
+        ch.subscribe();
         await ch.send({
           type: "broadcast",
           event: "stranger_matched",
@@ -122,7 +167,7 @@ while (true) {
 
     // 5. Handle leftover odd user
     if (users.length % 2 === 1) {
-      const leftover = users.at(-1)!;
+      const leftover = users.at(-1);
       const userId = leftover.message.userId as string;
 
       // ALWAYS remove leftover msg (we will re-enqueue if client still wants to wait)
@@ -137,7 +182,7 @@ while (true) {
 
       // Notify client to go back to idle (client will update its own presence)
       const ch = supabase.channel(`user:${userId}`);
-      await ch.subscribe();
+      ch.subscribe();
       await ch.send({
         type: "broadcast",
         event: "stranger_idle",
