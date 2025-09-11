@@ -1,31 +1,58 @@
-import { message } from "@/db/schema";
+import { and, eq } from "drizzle-orm";
+import z from "zod";
+import { message, roomMember } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
-import { SendMessageInput, SendMessageOutput } from "@/lib/schemas";
-import { supabase } from "@/lib/supabase";
 
 export const messageRouter = {
   send: protectedProcedure
-    .input(SendMessageInput)
-    .output(SendMessageOutput)
+    .input(
+      z.object({
+        roomId: z.string(),
+        content: z.string().min(1).max(1000),
+      })
+    )
+    .output(
+      z.object({
+        id: z.string(),
+        content: z.string(),
+        senderId: z.string(),
+        roomId: z.string(),
+        createdAt: z.date(),
+      })
+    )
     .handler(async ({ context, input }) => {
+      const { roomId, content } = input;
       const userId = context.session.user.id;
 
-      // Insert into DB
+      // Verify user is member of the room
+      const membership = await context.db.query.roomMember.findFirst({
+        where: and(
+          eq(roomMember.roomId, roomId),
+          eq(roomMember.userId, userId)
+        ),
+      });
+
+      if (!membership) {
+        throw new Error("Not a member of this room");
+      }
+
+      // Insert message into database
       const [newMessage] = await context.db
-        .insert(message)
+        .insert(message) // assuming you have a message table
         .values({
-          roomId: input.roomId,
+          content,
           senderId: userId,
-          content: input.content,
+          roomId,
+          createdAt: new Date(),
         })
         .returning();
 
-      await supabase.channel(`room:${input.roomId}`).send({
-        type: "broadcast",
-        event: "message",
-        payload: newMessage,
-      });
-
-      return newMessage;
+      return {
+        id: newMessage.id,
+        content: newMessage.content,
+        senderId: newMessage.senderId,
+        roomId: newMessage.roomId,
+        createdAt: newMessage.createdAt,
+      };
     }),
 };

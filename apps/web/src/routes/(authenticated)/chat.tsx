@@ -140,10 +140,12 @@ export function ChatRoom({
 }: {
   roomId: string;
   userId: string;
-  onLeave: () => void; // callback to reset state in parent
+  onLeave: () => void;
 }) {
   const [messages, setMessages] = useState<MessageType[]>([]);
   const [input, setInput] = useState("");
+  const [isChannelReady, setIsChannelReady] = useState(false);
+  const channelRef = useRef<RealtimeChannel | null>(null);
 
   const { mutateAsync: sendMessage } = useMutation(
     queryUtils.message.send.mutationOptions({})
@@ -152,42 +154,120 @@ export function ChatRoom({
     queryUtils.room.leave.mutationOptions({})
   );
 
+  // Load existing messages when component mounts
+  useEffect(() => {
+    const loadMessages = async () => {
+      try {
+        // Assuming you have a way to fetch existing messages
+        // If not, you'll need to add this to your backend
+        const { data: existingMessages } = await supabase
+          .from("message")
+          .select("*")
+          .eq("room_id", roomId)
+          .order("created_at", { ascending: true });
+
+        if (existingMessages) {
+          setMessages(existingMessages);
+        }
+      } catch (error) {
+        console.error("Error loading messages:", error);
+      }
+    };
+
+    loadMessages();
+  }, [roomId]);
+
   useEffect(() => {
     const channel = supabase
       .channel(`room:${roomId}`, {
-        config: { broadcast: { self: true, ack: true } },
+        config: {
+          broadcast: { self: true, ack: true },
+          presence: { key: userId },
+        },
       })
       .on("broadcast", { event: "message" }, ({ payload }) => {
-        setMessages((prev) => [...prev, payload]);
+        console.log("Received message:", payload);
+        // Add the message regardless of sender to ensure consistency
+        // We'll handle deduplication by checking if message already exists
+        setMessages((prev) => {
+          const messageExists = prev.some((msg) => msg.id === payload.id);
+          if (messageExists) {
+            return prev;
+          }
+          return [...prev, payload];
+        });
       })
       .on("broadcast", { event: "room_closed" }, () => {
-        // other user left
         alert("The stranger left the chat.");
         onLeave();
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsChannelReady(true);
+          console.log("Channel subscribed successfully");
+        }
+      });
+
+    // Store the channel reference
+    channelRef.current = channel;
 
     return () => {
-      supabase.removeChannel(channel);
+      if (channelRef.current) {
+        supabase.removeChannel(channelRef.current);
+        channelRef.current = null;
+      }
+      setIsChannelReady(false);
     };
-  }, [roomId, onLeave]);
+  }, [userId, roomId, onLeave]);
 
   const handleSend = async () => {
-    if (!input.trim()) return;
-    const msg = await sendMessage({ roomId, content: input });
-    setMessages((prev) => [...prev, msg]); // optimistic
-    setInput("");
+    if (!(input.trim() && isChannelReady)) return;
+
+    try {
+      // First, send message to backend
+      const msg = await sendMessage({ roomId, content: input });
+
+      // Then broadcast to all users in the room (including self for consistency)
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "message",
+          payload: {
+            id: msg.id,
+            content: msg.content,
+            senderId: msg.senderId,
+            roomId: msg.roomId,
+            createdAt: msg.createdAt,
+            // Add any other fields from your message type
+          },
+        });
+      }
+
+      setInput("");
+    } catch (error) {
+      console.error("Error sending message:", error);
+    }
   };
 
   const handleLeave = async () => {
-    await leaveRoom({ roomId }); // backend removes room, members, messages
-    // notify the other user
-    await supabase.channel(`room:${roomId}`).send({
-      type: "broadcast",
-      event: "room_closed",
-      payload: {},
-    });
-    onLeave();
+    try {
+      // Notify the other user first
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "room_closed",
+          payload: {},
+        });
+      }
+
+      // Then leave the room (this will delete the room and cleanup)
+      await leaveRoom({ roomId });
+
+      onLeave();
+    } catch (error) {
+      console.error("Error leaving room:", error);
+      onLeave(); // Still call onLeave to reset UI state
+    }
   };
 
   return (
@@ -198,7 +278,13 @@ export function ChatRoom({
             className={m.senderId === userId ? "text-right" : "text-left"}
             key={m.id}
           >
-            <span className="inline-block rounded bg-gray-200 px-2 py-1">
+            <span
+              className={`inline-block rounded px-2 py-1 ${
+                m.senderId === userId
+                  ? "bg-blue-500 text-white"
+                  : "bg-gray-200 text-black"
+              }`}
+            >
               {m.content}
             </span>
           </div>
@@ -207,11 +293,18 @@ export function ChatRoom({
       <div className="mt-2 flex gap-2">
         <input
           className="flex-1 rounded border px-2 py-1"
+          disabled={!isChannelReady}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleSend()}
+          placeholder={isChannelReady ? "Type a message..." : "Connecting..."}
           value={input}
         />
-        <Button onClick={handleSend}>Send</Button>
+        <Button
+          disabled={!(isChannelReady && input.trim())}
+          onClick={handleSend}
+        >
+          Send
+        </Button>
         <Button onClick={handleLeave} variant="destructive">
           Leave
         </Button>
