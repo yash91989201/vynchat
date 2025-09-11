@@ -1,46 +1,31 @@
-import { eq } from "drizzle-orm";
 import { message } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
-import { ListMessagesInput, ListMessagesOutput } from "@/lib/schemas";
+import { SendMessageInput, SendMessageOutput } from "@/lib/schemas";
+import { supabase } from "@/lib/supabase";
 
 export const messageRouter = {
-  listMessages: protectedProcedure
-    .input(ListMessagesInput)
-    .output(ListMessagesOutput)
+  send: protectedProcedure
+    .input(SendMessageInput)
+    .output(SendMessageOutput)
     .handler(async ({ context, input }) => {
-      const messageList = await context.db.query.message.findMany({
-        where: eq(message.roomId, input.roomId),
-        columns: {
-          type: false,
-          updatedAt: false,
-        },
-        with: {
-          sender: {
-            columns: {
-              name: true,
-            },
-          },
-          reactions: {
-            columns: {
-              emoji: true,
-            },
-          },
-        },
+      const userId = context.session.user.id;
+
+      // Insert into DB
+      const [newMessage] = await context.db
+        .insert(message)
+        .values({
+          roomId: input.roomId,
+          senderId: userId,
+          content: input.content,
+        })
+        .returning();
+
+      await supabase.channel(`room:${input.roomId}`).send({
+        type: "broadcast",
+        event: "message",
+        payload: newMessage,
       });
 
-      const messageListWithSenderAndReactions = messageList.map((message) => {
-        const sender = message.sender.name;
-        const reactions = message.reactions.flatMap(
-          (reaction) => reaction.emoji
-        );
-
-        return {
-          ...message,
-          sender,
-          reactions,
-        };
-      });
-
-      return messageListWithSenderAndReactions;
+      return newMessage;
     }),
 };

@@ -26,4 +26,5 @@ export const appRouter: AppRouter = {
   room: roomRouter,
   message: messageRouter,
 };
+
 export type AppRouterClient = RouterClient<typeof appRouter>;

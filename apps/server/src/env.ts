@@ -7,16 +7,12 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.url(),
     CORS_ORIGIN: z.url(),
+    SUPABASE_URL: z.url(),
+    SUPABASE_ANON_KEY: z.string(),
+    SUPABASE_SERVICE_ROLE_KEY: z.string(),
+    SUPABASE_JWT_SECRET: z.string(),
   },
-
-  runtimeEnv: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    NODE_ENV: process.env.NODE_ENV,
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
-    BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
-    CORS_ORIGIN: process.env.CORS_ORIGIN,
-  },
-
+  runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,
 });

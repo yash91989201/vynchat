@@ -29,7 +29,8 @@
         "noShadow": "off"
       },
       "style": {
-        "noMagicNumbers": "off"
+        "noMagicNumbers": "off",
+        "useBlockStatements":"off"
       },
       "suspicious": {
         "noConsole": "off"
@@ -40,4 +41,3 @@
     }
   }
 }
-

@@ -225,7 +225,10 @@ export const DeleteMessageInput = z.object({
 });
 export const DeleteMessageOutput = z.object({});
 
-export const CreateRoomInput = RoomInsertSchema;
+export const CreateRoomInput = z.object({
+  user1Id: z.string(),
+  user2Id: z.string(),
+});
 export const CreateRoomOutput = RoomSchema.optional();
 
 export const GetRoomInput = z.object({
@@ -318,18 +321,10 @@ export const LeaveRoomOutput = z.object({
 
 export const SendMessageInput = z.object({
   roomId: z.cuid2(),
-  message: z.string(),
+  content: z.string(),
 });
 
-export const SendMessageOutput = MessageSchema.pick({
-  id: true,
-  content: true,
-  createdAt: true,
-  roomId: true,
-}).extend({
-  sender: z.string(),
-  reactions: z.array(z.string()),
-});
+export const SendMessageOutput = MessageSchema;
 
 export const OnNewMessageInput = z.object({
   roomId: z.cuid2(),
