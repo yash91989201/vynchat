@@ -3,9 +3,22 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation } from "@tanstack/react-query";
 import { createFileRoute, useRouteContext } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
 import { queryUtils } from "@/utils/orpc";
+import { Loader2, Send, LogOut, Users, Wifi, WifiOff } from "lucide-react";
 
 export const Route = createFileRoute("/(authenticated)/chat")({
   component: RouteComponent,
@@ -19,20 +32,17 @@ function RouteComponent() {
   const [status, setStatus] = useState<"idle" | "waiting" | "matched">("idle");
   const [currentRoom, setCurrentRoom] = useState<RoomType | undefined>();
 
-  // Keep a reference to the lobby channel so we can reuse it
   const lobbyChannelRef = useRef<RealtimeChannel | null>(null);
 
   const { mutateAsync: findStranger, isPending } = useMutation(
     queryUtils.room.findStranger.mutationOptions({})
   );
 
-  // 1. join lobby presence
   useEffect(() => {
     const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
       config: { presence: { key: userId } },
     });
 
-    // Store reference for later use
     lobbyChannelRef.current = lobbyChannel;
 
     lobbyChannel
@@ -52,7 +62,6 @@ function RouteComponent() {
     };
   }, [userId]);
 
-  // 2. listen for personal notifications (match results)
   useEffect(() => {
     const personal = supabase.channel(`user:${userId}`, {
       config: { broadcast: { self: true } },
@@ -60,18 +69,16 @@ function RouteComponent() {
 
     personal
       .on("broadcast", { event: "stranger_matched" }, ({ payload }) => {
-        console.log("Matched!", payload.room);
         setStatus("matched");
         setCurrentRoom(payload.room);
       })
       .on("broadcast", { event: "stranger_waiting" }, () => {
-        console.log("Still waiting…");
         setStatus("waiting");
       })
       .on("broadcast", { event: "stranger_idle" }, () => {
-        console.log("No match found, back to idle");
         setStatus("idle");
         setCurrentRoom(undefined);
+        // Consider using a more subtle notification system like a toast
         alert("No match found. Try again!");
       })
       .subscribe();
@@ -83,13 +90,10 @@ function RouteComponent() {
 
   const talkToStranger = async () => {
     setStatus("waiting");
-
-    // Update presence on existing channel
     if (lobbyChannelRef.current) {
       await lobbyChannelRef.current.track({ status: "waiting" });
     }
-
-    const result = await findStranger({}); // enqueues user
+    const result = await findStranger({});
     if (result.status === "waiting") {
       console.log("Enqueued, waiting for matchmaker to run…");
     }
@@ -98,37 +102,60 @@ function RouteComponent() {
   const handleLeave = async () => {
     setStatus("idle");
     setCurrentRoom(undefined);
-
-    // Update presence on existing channel instead of creating a new one
     if (lobbyChannelRef.current) {
       await lobbyChannelRef.current.track({ status: "idle" });
     }
   };
 
+  if (status === "matched" && currentRoom) {
+    return (
+      <div className="h-full p-4">
+        <ChatRoom onLeave={handleLeave} roomId={currentRoom.id} userId={userId} />
+      </div>
+    );
+  }
+
   return (
-    <div className="h-full space-y-4 p-4">
-      <p>Users online: {lobbyCount}</p>
-
-      {status === "idle" && (
-        <Button disabled={isPending} onClick={talkToStranger}>
-          {isPending ? "Finding..." : "Talk to Stranger"}
-        </Button>
-      )}
-
-      {status === "waiting" && <p>Looking for a stranger…</p>}
-
-      {status === "matched" && currentRoom && (
-        <div className="h-[80vh]">
-          <h2 className="mb-2 font-semibold text-lg">
-            Matched! Room: {currentRoom.id}
-          </h2>
-          <ChatRoom
-            onLeave={handleLeave}
-            roomId={currentRoom.id}
-            userId={userId}
-          />
-        </div>
-      )}
+    <div className="flex h-full items-center justify-center p-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle>Talk to a Stranger</CardTitle>
+          <CardDescription>
+            Find a random person to chat with anonymously.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center justify-center space-y-4 p-6">
+          {status === "idle" && (
+            <Button
+              size="lg"
+              disabled={isPending}
+              onClick={talkToStranger}
+              className="w-full"
+            >
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Finding...
+                </>
+              ) : (
+                "Talk to Stranger"
+              )}
+            </Button>
+          )}
+          {status === "waiting" && (
+            <div className="flex flex-col items-center space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-muted-foreground">
+                Looking for a stranger…
+              </p>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-center text-sm text-muted-foreground">
+          <Users className="mr-2 h-4 w-4" />
+          {lobbyCount} users online
+        </CardFooter>
+      </Card>
     </div>
   );
 }
@@ -146,6 +173,7 @@ export function ChatRoom({
   const [input, setInput] = useState("");
   const [isChannelReady, setIsChannelReady] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const { mutateAsync: sendMessage } = useMutation(
     queryUtils.message.send.mutationOptions({})
@@ -154,18 +182,14 @@ export function ChatRoom({
     queryUtils.room.leave.mutationOptions({})
   );
 
-  // Load existing messages when component mounts
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        // Assuming you have a way to fetch existing messages
-        // If not, you'll need to add this to your backend
         const { data: existingMessages } = await supabase
           .from("message")
           .select("*")
           .eq("room_id", roomId)
           .order("created_at", { ascending: true });
-
         if (existingMessages) {
           setMessages(existingMessages);
         }
@@ -173,27 +197,21 @@ export function ChatRoom({
         console.error("Error loading messages:", error);
       }
     };
-
     loadMessages();
   }, [roomId]);
 
   useEffect(() => {
-    const channel = supabase
-      .channel(`room:${roomId}`, {
-        config: {
-          broadcast: { self: true, ack: true },
-          presence: { key: userId },
-        },
-      })
+    const channel = supabase.channel(`room:${roomId}`, {
+      config: {
+        broadcast: { self: true, ack: true },
+        presence: { key: userId },
+      },
+    });
+
+    channel
       .on("broadcast", { event: "message" }, ({ payload }) => {
-        console.log("Received message:", payload);
-        // Add the message regardless of sender to ensure consistency
-        // We'll handle deduplication by checking if message already exists
         setMessages((prev) => {
-          const messageExists = prev.some((msg) => msg.id === payload.id);
-          if (messageExists) {
-            return prev;
-          }
+          if (prev.some((msg) => msg.id === payload.id)) return prev;
           return [...prev, payload];
         });
       })
@@ -204,45 +222,35 @@ export function ChatRoom({
       .subscribe((status) => {
         if (status === "SUBSCRIBED") {
           setIsChannelReady(true);
-          console.log("Channel subscribed successfully");
         }
       });
 
-    // Store the channel reference
     channelRef.current = channel;
 
     return () => {
-      if (channelRef.current) {
-        supabase.removeChannel(channelRef.current);
-        channelRef.current = null;
-      }
+      supabase.removeChannel(channel);
+      channelRef.current = null;
       setIsChannelReady(false);
     };
   }, [userId, roomId, onLeave]);
 
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
+
   const handleSend = async () => {
     if (!(input.trim() && isChannelReady)) return;
-
     try {
-      // First, send message to backend
       const msg = await sendMessage({ roomId, content: input });
-
-      // Then broadcast to all users in the room (including self for consistency)
       if (channelRef.current) {
         await channelRef.current.send({
           type: "broadcast",
           event: "message",
-          payload: {
-            id: msg.id,
-            content: msg.content,
-            senderId: msg.senderId,
-            roomId: msg.roomId,
-            createdAt: msg.createdAt,
-            // Add any other fields from your message type
-          },
+          payload: msg,
         });
       }
-
       setInput("");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -251,7 +259,6 @@ export function ChatRoom({
 
   const handleLeave = async () => {
     try {
-      // Notify the other user first
       if (channelRef.current) {
         await channelRef.current.send({
           type: "broadcast",
@@ -259,56 +266,93 @@ export function ChatRoom({
           payload: {},
         });
       }
-
-      // Then leave the room (this will delete the room and cleanup)
       await leaveRoom({ roomId });
-
       onLeave();
     } catch (error) {
       console.error("Error leaving room:", error);
-      onLeave(); // Still call onLeave to reset UI state
+      onLeave();
     }
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex-1 space-y-2 overflow-y-auto rounded border p-2">
-        {messages.map((m) => (
-          <div
-            className={m.senderId === userId ? "text-right" : "text-left"}
-            key={m.id}
-          >
-            <span
-              className={`inline-block rounded px-2 py-1 ${
-                m.senderId === userId
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-200 text-black"
-              }`}
-            >
-              {m.content}
-            </span>
+    <Card className="flex h-full flex-col">
+      <CardHeader className="flex flex-row items-center justify-between border-b">
+        <div className="flex items-center space-x-4">
+          <Avatar>
+            <AvatarImage src="/placeholder-user.jpg" />
+            <AvatarFallback>ST</AvatarFallback>
+          </Avatar>
+          <div>
+            <p className="text-sm font-medium leading-none">Stranger</p>
+            <p className="text-sm text-muted-foreground">
+              {isChannelReady ? (
+                <span className="flex items-center text-green-500">
+                  <Wifi className="mr-1 h-3 w-3" /> Connected
+                </span>
+              ) : (
+                <span className="flex items-center">
+                  <WifiOff className="mr-1 h-3 w-3" /> Connecting...
+                </span>
+              )}
+            </p>
           </div>
-        ))}
-      </div>
-      <div className="mt-2 flex gap-2">
-        <input
-          className="flex-1 rounded border px-2 py-1"
-          disabled={!isChannelReady}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && handleSend()}
-          placeholder={isChannelReady ? "Type a message..." : "Connecting..."}
-          value={input}
-        />
-        <Button
-          disabled={!(isChannelReady && input.trim())}
-          onClick={handleSend}
-        >
-          Send
+        </div>
+        <Button onClick={handleLeave} variant="destructive" size="icon">
+          <LogOut className="h-4 w-4" />
         </Button>
-        <Button onClick={handleLeave} variant="destructive">
-          Leave
-        </Button>
-      </div>
-    </div>
+      </CardHeader>
+      <CardContent className="flex-1 p-0">
+        <ScrollArea className="h-[calc(100vh-220px)] p-4" ref={scrollAreaRef}>
+          <div className="space-y-4">
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={cn(
+                  "flex items-end gap-2",
+                  m.senderId === userId ? "justify-end" : "justify-start"
+                )}
+              >
+                {m.senderId !== userId && (
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src="/placeholder-user.jpg" />
+                    <AvatarFallback>ST</AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={cn(
+                    "max-w-xs rounded-lg p-3 text-sm",
+                    m.senderId === userId
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted"
+                  )}
+                >
+                  <p>{m.content}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </ScrollArea>
+      </CardContent>
+      <CardFooter className="border-t p-4">
+        <div className="flex w-full items-center space-x-2">
+          <Input
+            disabled={!isChannelReady}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSend()}
+            placeholder={
+              isChannelReady ? "Type a message..." : "Connecting..."
+            }
+            value={input}
+          />
+          <Button
+            disabled={!(isChannelReady && input.trim())}
+            onClick={handleSend}
+            size="icon"
+          >
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardFooter>
+    </Card>
   );
 }
