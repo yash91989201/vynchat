@@ -11,4 +11,4 @@ COPY matchmaking-service.ts .
 RUN bun add @paralleldrive/cuid2 @supabase/supabase-js
 
 # Run the loop
-CMD ["bun", "matchmaking-service.ts.ts"]
+ENTRYPOINT ["bun", "matchmaking-service.ts"]
