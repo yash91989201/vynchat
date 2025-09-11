@@ -5,7 +5,7 @@ FROM oven/bun:1.2.21
 WORKDIR /app
 
 # Copy only your file
-COPY matchmaking-service.ts.ts .
+COPY matchmaking-service.ts .
 
 # Install dependencies manually
 RUN bun add @paralleldrive/cuid2 @supabase/supabase-js
