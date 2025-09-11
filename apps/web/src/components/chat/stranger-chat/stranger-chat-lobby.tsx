@@ -83,7 +83,7 @@ export const StrangerChatLobby = ({
         </CardContent>
         <CardFooter className="flex justify-center text-muted-foreground text-sm">
           <Users className="mr-2 h-4 w-4" />
-          {lobbyCount - 1} users online
+          {lobbyCount - 1} user(s) online
         </CardFooter>
       </Card>
     </div>

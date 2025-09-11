@@ -20,7 +20,6 @@ function RouteComponent() {
             </TabsTrigger>
             <TabsTrigger value="stranger-chat">
               <HatGlasses />
-
               <span>Stranger Chat</span>
             </TabsTrigger>
           </TabsList>
@@ -28,7 +27,6 @@ function RouteComponent() {
             <p>chat rooms</p>
           </TabsContent>
           <TabsContent value="stranger-chat">
-            {" "}
             <StrangerChat />
           </TabsContent>
         </Tabs>
