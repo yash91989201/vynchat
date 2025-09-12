@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { authClient } from "@/lib/auth-client";
-import { orpcClient } from "@/utils/orpc";
+import { orpcClient, queryUtils } from "@/utils/orpc";
 import type { Member } from "./types";
 
 export const RoomMembers = ({ members }: { members: Member[] }) => {
@@ -51,6 +51,10 @@ export const RoomMembers = ({ members }: { members: Member[] }) => {
         })
       );
       toast.success("User followed successfully");
+
+      queryClient.invalidateQueries({
+        queryKey: queryUtils.user.userFollowing.queryKey(),
+      });
     },
     onError: () => {
       toast.error("Failed to follow user");
@@ -71,6 +75,10 @@ export const RoomMembers = ({ members }: { members: Member[] }) => {
         })
       );
       toast.success("User unfollowed successfully");
+
+      queryClient.invalidateQueries({
+        queryKey: queryUtils.user.userFollowing.queryKey(),
+      });
     },
     onError: () => {
       toast.error("Failed to unfollow user");

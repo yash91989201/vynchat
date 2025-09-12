@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { userFollowers } from "@/db/schema";
+import { userFollowing } from "@/db/schema";
 import { user } from "@/db/schema/auth";
 import { protectedProcedure } from "@/lib/orpc";
 import { UpdateProfileInput } from "@/lib/schemas";
@@ -10,9 +10,9 @@ export const userBaseRouter = {
   follow: protectedProcedure
     .input(z.object({ userId: z.string() }))
     .handler(async ({ input, context }) => {
-      await db.insert(userFollowers).values({
-        userId: input.userId,
-        followerId: context.session.user.id,
+      await db.insert(userFollowing).values({
+        userId: context.session.user.id,
+        followingId: input.userId,
       });
       return { success: true };
     }),
@@ -21,11 +21,11 @@ export const userBaseRouter = {
     .input(z.object({ userId: z.string() }))
     .handler(async ({ input, context }) => {
       await db
-        .delete(userFollowers)
+        .delete(userFollowing)
         .where(
           and(
-            eq(userFollowers.userId, input.userId),
-            eq(userFollowers.followerId, context.session.user.id)
+            eq(userFollowing.userId, input.userId),
+            eq(userFollowing.followingId, context.session.user.id)
           )
         );
       return { success: true };
@@ -36,11 +36,11 @@ export const userBaseRouter = {
     .handler(async ({ input, context }) => {
       const result = await db
         .select()
-        .from(userFollowers)
+        .from(userFollowing)
         .where(
           and(
-            eq(userFollowers.userId, input.userId),
-            eq(userFollowers.followerId, context.session.user.id)
+            eq(userFollowing.userId, context.session.user.id),
+            eq(userFollowing.followingId, input.userId)
           )
         );
       return result.length > 0;
