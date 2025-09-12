@@ -19,7 +19,6 @@ import { link } from "@/utils/orpc";
 import "@/styles/index.css";
 import { Footer } from "@/components/shared/footer";
 import { FullScreenLoader } from "@/components/shared/full-screen-loader";
-import { AgeWarningDialog } from "@/components/user/age-warning-dialog";
 import { authClient } from "@/lib/auth-client";
 
 export interface RouterAppContext {
@@ -74,7 +73,6 @@ function RootComponent() {
         disableTransitionOnChange
         storageKey="vite-ui-theme"
       >
-        <AgeWarningDialog />
         <div className="grid min-h-screen grid-rows-[auto_1fr]">
           <Header />
           {isFetching ? <FullScreenLoader /> : <Outlet />}
