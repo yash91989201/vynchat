@@ -81,7 +81,6 @@ Deno.serve(async () => {
         }
       });
 
-      // Hard timeout safeguard
       setTimeout(() => reject(new Error("Presence subscribe timeout")), 1500);
     });
 
@@ -134,7 +133,7 @@ Deno.serve(async () => {
 
       const notify = async (uid: string) => {
         const ch = supabase.channel(`user:${uid}`);
-        await ch.subscribe();
+        ch.subscribe();
         await ch.send({
           type: "broadcast",
           event: "stranger_matched",
@@ -176,7 +175,7 @@ Deno.serve(async () => {
       }
 
       const ch = supabase.channel(`user:${userId}`);
-      await ch.subscribe();
+      ch.subscribe();
       await ch.send({
         type: "broadcast",
         event: "stranger_idle",
@@ -189,7 +188,42 @@ Deno.serve(async () => {
     await supabase.removeChannel(lobbyChannel);
 
     console.log(`Matchmaker completed: matched ${pairedRooms.length} pairs`);
+
+    // EXPLICIT RESPONSE RETURN - This fixes the InvalidWorkerResponse error
+    return new Response(
+      JSON.stringify({
+        success: true,
+        message: "Matchmaker completed successfully",
+        stats: {
+          totalUsers: users.length,
+          pairedRooms: pairedRooms.length,
+          processedMessages: processedMessageIds.length,
+        },
+        rooms: pairedRooms,
+      }),
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   } catch (err) {
     console.error("Matchmaker error:", err);
+
+    // EXPLICIT ERROR RESPONSE - Also return proper response on error
+    return new Response(
+      JSON.stringify({
+        success: false,
+        error: "Matchmaker function failed",
+        message: err instanceof Error ? err.message : "Unknown error occurred",
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
   }
 });
