@@ -3,12 +3,11 @@ import { HatGlasses, MessagesSquare } from "lucide-react";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { StrangerChat } from "@/components/chat/stranger-chat";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { WelcomeDialog } from "@/components/user/welcome-dialog";
 
 export const Route = createFileRoute("/(authenticated)/chat")({
   component: RouteComponent,
 });
-
-import { WelcomeDialog } from "@/components/user/welcome-dialog";
 
 function RouteComponent() {
   return (
