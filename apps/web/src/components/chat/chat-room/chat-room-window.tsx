@@ -16,7 +16,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
+import { checkProfanity } from "@/lib/profanity-checker";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { RoomList } from "./room-list";
@@ -194,7 +194,9 @@ export const ChatRoomWindow = ({
                     {msg.sender.name}
                   </p>
                 )}
-                <p className="mt-1">{msg.content}</p>
+                <p className="mt-1">
+                  {checkProfanity(msg.content).autoReplaced}
+                </p>
                 <p className="mt-2 text-right text-xs opacity-70">
                   {new Date(msg.createdAt).toLocaleTimeString()}
                 </p>

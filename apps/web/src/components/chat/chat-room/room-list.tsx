@@ -99,7 +99,7 @@ export const RoomList = ({
                   ))}
                 </div>
               ) : (
-                <p className="p-4 text-center text-sm text-muted-foreground">
+                <p className="p-4 text-center text-muted-foreground text-sm">
                   No global rooms available.
                 </p>
               )}
