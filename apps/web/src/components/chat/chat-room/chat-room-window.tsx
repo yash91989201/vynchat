@@ -1,5 +1,12 @@
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
-import { MessageSquarePlus, Paperclip, Send, Smile, Users } from "lucide-react";
+import {
+  MessageSquarePlus,
+  PanelRightOpen,
+  Paperclip,
+  Send,
+  Smile,
+  Users,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -16,11 +23,19 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { checkProfanity } from "@/lib/profanity-checker";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { RoomList } from "./room-list";
-import type { Room } from "./types";
+import { RoomMembers } from "./room-members";
+import type { Member, Room } from "./types";
 
 interface ChatRoomWindowProps {
   isMobile?: boolean;
@@ -36,6 +51,7 @@ interface ChatRoomWindowProps {
   handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   userId: string;
   createRoom: (values: { name: string }) => void;
+  members: Member[];
 }
 
 export const ChatRoomWindow = ({
@@ -52,6 +68,7 @@ export const ChatRoomWindow = ({
   handleInputChange,
   userId,
   createRoom,
+  members,
 }: ChatRoomWindowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -139,28 +156,43 @@ export const ChatRoomWindow = ({
             <h3 className="font-semibold text-lg">{room.name}</h3>
             <p className="flex items-center text-muted-foreground text-sm">
               <Users className="mr-1.5 h-4 w-4" />
-              {room.memberCount} members
+              {members.length} members
             </p>
           </div>
         </div>
         {isMobile && (
-          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
-            <DialogTrigger asChild>
-              <Button variant="outline">Change Room</Button>
-            </DialogTrigger>
-            <DialogContent className="flex h-[80vh] max-w-[90vw] flex-col sm:max-w-lg">
-              <DialogHeader>
-                <DialogTitle>Select a Room</DialogTitle>
-              </DialogHeader>
-              <RoomList
-                createRoom={createRoom}
-                globalRooms={globalRooms}
-                myRooms={myRooms}
-                onRoomSelect={handleRoomSelection}
-                selectedRoomId={selectedRoomId}
-              />
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-2">
+            <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline">Change Room</Button>
+              </DialogTrigger>
+              <DialogContent className="flex h-[80vh] max-w-[90vw] flex-col sm:max-w-lg">
+                <DialogHeader>
+                  <DialogTitle>Select a Room</DialogTitle>
+                </DialogHeader>
+                <RoomList
+                  createRoom={createRoom}
+                  globalRooms={globalRooms}
+                  myRooms={myRooms}
+                  onRoomSelect={handleRoomSelection}
+                  selectedRoomId={selectedRoomId}
+                />
+              </DialogContent>
+            </Dialog>
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button size="icon" variant="outline">
+                  <PanelRightOpen className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent>
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Room Members</SheetTitle>
+                </SheetHeader>
+                <RoomMembers members={members} />
+              </SheetContent>
+            </Sheet>
+          </div>
         )}
       </div>
 

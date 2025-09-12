@@ -14,3 +14,10 @@ export interface RoomListProps {
   onRoomSelect: (roomId: string) => void;
   createRoom: (values: { name: string }) => void;
 }
+
+export type Member = {
+  id: string;
+  name: string;
+  image?: string | null;
+};
+

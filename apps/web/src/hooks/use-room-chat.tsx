@@ -3,14 +3,16 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import type { Member } from "@/components/chat/chat-room/types";
 import { supabase } from "@/lib/supabase";
 import { queryUtils } from "@/utils/orpc";
 
-export const useRoomChat = (userId: string) => {
+export const useRoomChat = (user: Member) => {
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>();
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [strangerTyping, setStrangerTyping] = useState(false);
+  const [members, setMembers] = useState<Member[]>([]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -81,11 +83,16 @@ export const useRoomChat = (userId: string) => {
     const channel = supabase.channel(`room:${selectedRoomId}`, {
       config: {
         broadcast: { self: true, ack: true },
-        presence: { key: userId },
+        presence: { key: user.id },
       },
     });
 
     channel
+      .on("presence", { event: "sync" }, () => {
+        const presenceState = channel.presenceState<Member>();
+        const members = Object.values(presenceState).flat();
+        setMembers(members);
+      })
       .on("broadcast", { event: "message" }, ({ payload }) => {
         queryClient.setQueryData<MessageType[]>(
           queryUtils.message.list.queryKey({
@@ -100,7 +107,7 @@ export const useRoomChat = (userId: string) => {
         );
       })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
-        if (payload.senderId === userId) return;
+        if (payload.senderId === user.id) return;
         setStrangerTyping(true);
         if (strangerTypingTimeoutRef.current)
           clearTimeout(strangerTypingTimeoutRef.current);
@@ -109,7 +116,11 @@ export const useRoomChat = (userId: string) => {
           3000
         );
       })
-      .subscribe();
+      .subscribe(async (status) => {
+        if (status === "SUBSCRIBED") {
+          await channel.track(user);
+        }
+      });
 
     channelRef.current = channel;
 
@@ -118,7 +129,7 @@ export const useRoomChat = (userId: string) => {
       channelRef.current = null;
       clearTimeouts();
     };
-  }, [selectedRoomId, userId, queryClient, clearTimeouts]);
+  }, [selectedRoomId, user, queryClient, clearTimeouts]);
 
   const handleSend = async () => {
     if (!(input.trim() && selectedRoomId)) return;
@@ -148,7 +159,7 @@ export const useRoomChat = (userId: string) => {
       channelRef.current.send({
         type: "broadcast",
         event: "typing",
-        payload: { senderId: userId },
+        payload: { senderId: user.id },
       });
     }
 
@@ -173,5 +184,6 @@ export const useRoomChat = (userId: string) => {
     handleSend,
     handleInputChange,
     createRoom,
+    members,
   };
 };
