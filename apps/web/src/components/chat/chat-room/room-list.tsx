@@ -7,7 +7,6 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { RoomListItem } from "./room-list-item";
 import type { RoomListProps } from "./types";
 
@@ -41,7 +40,7 @@ export const RoomList = ({
           />
         </div>
       </div>
-      <ScrollArea className="h-96 px-2">
+      <div className="flex-1 overflow-y-auto px-2">
         <Accordion
           className="w-full"
           defaultValue={["my-rooms", "global-rooms"]}
@@ -84,8 +83,7 @@ export const RoomList = ({
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-      </ScrollArea>
+      </div>
     </div>
   );
 };
-

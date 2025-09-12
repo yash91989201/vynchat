@@ -40,6 +40,18 @@ const globalRoomsData: Room[] = [
   { id: "room6", name: "Tech Talk", members: 42 },
   { id: "room7", name: "Gaming Lobby", members: 256 },
   { id: "room8", name: "Music Fans", members: 98 },
+  { id: "room9", name: "Art & Design", members: 55 },
+  { id: "room10", name: "Photography", members: 67 },
+  { id: "room11", name: "Book Club", members: 89 },
+  { id: "room12", name: "Movies & TV", members: 110 },
+  { id: "room13", name: "Science", members: 78 },
+  { id: "room14", name: "History", members: 45 },
+  { id: "room15", name: "Travel", members: 92 },
+  { id: "room16", name: "Foodies", members: 130 },
+  { id: "room17", name: "Fitness", members: 88 },
+  { id: "room18", name: "Programming", members: 200 },
+  { id: "room19", name: "Philosophy", members: 60 },
+  { id: "room20", name: "Gardening", members: 35 },
 ];
 
 const allRooms: Room[] = [...myRoomsData, ...globalRoomsData];
