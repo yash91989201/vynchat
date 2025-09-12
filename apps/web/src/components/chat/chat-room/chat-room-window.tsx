@@ -19,6 +19,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { RoomList } from "./room-list";
+import type { Room } from "./types";
 
 const messages = [
   {
@@ -54,16 +55,6 @@ const messages = [
     timestamp: "10:33 AM",
   },
 ];
-
-interface Room {
-  id: string;
-  name: string;
-  members: number;
-  lastMessage?: string;
-  time?: string;
-  unread?: number;
-  avatar?: string;
-}
 
 interface ChatRoomWindowProps {
   isMobile?: boolean;
@@ -148,7 +139,7 @@ export const ChatRoomWindow = ({
   }
 
   return (
-    <div className="flex h-full flex-col bg-card">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
       {/* Header */}
       <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-3">

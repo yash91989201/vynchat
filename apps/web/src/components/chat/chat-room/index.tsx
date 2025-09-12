@@ -2,8 +2,9 @@ import { useState } from "react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ChatRoomWindow } from "./chat-room-window";
 import { RoomList } from "./room-list";
+import type { Room } from "./types";
 
-const myRoomsData = [
+const myRoomsData: Room[] = [
   {
     id: "room1",
     name: "Design Team",
@@ -33,7 +34,7 @@ const myRoomsData = [
   },
 ];
 
-const globalRoomsData = [
+const globalRoomsData: Room[] = [
   { id: "room4", name: "General", members: 128 },
   { id: "room5", name: "Random", members: 73 },
   { id: "room6", name: "Tech Talk", members: 42 },
@@ -41,7 +42,7 @@ const globalRoomsData = [
   { id: "room8", name: "Music Fans", members: 98 },
 ];
 
-const allRooms = [...myRoomsData, ...globalRoomsData];
+const allRooms: Room[] = [...myRoomsData, ...globalRoomsData];
 
 const LG_BREAKPOINT = 1024;
 
