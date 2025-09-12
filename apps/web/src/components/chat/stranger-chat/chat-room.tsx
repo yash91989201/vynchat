@@ -71,8 +71,8 @@ export const ChatRoom = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card className="flex h-full flex-col">
-        <CardHeader className="flex flex-row items-center justify-between border-b">
+      <Card className="flex h-full flex-col overflow-hidden rounded-lg">
+        <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/40 p-4">
           <div className="flex items-center space-x-4">
             <Avatar>
               <AvatarImage src="/placeholder-user.jpg" />
@@ -100,6 +100,7 @@ export const ChatRoom = ({
               variant="outline"
             >
               <SkipForward className="h-4 w-4" />
+              <span className="sr-only">Skip</span>
             </Button>
             <Button
               onClick={() => handleLeave(onLeave)}
@@ -107,18 +108,19 @@ export const ChatRoom = ({
               variant="destructive"
             >
               <LogOut className="h-4 w-4" />
+              <span className="sr-only">Leave</span>
             </Button>
           </div>
         </CardHeader>
 
         <CardContent className="flex-1 p-0">
-          <ScrollArea className="h-[calc(100vh-220px)] p-4" ref={scrollAreaRef}>
-            <div className="space-y-4">
+          <ScrollArea className="h-full" ref={scrollAreaRef}>
+            <div className="space-y-4 p-4">
               {messages.map((m) => (
                 <div
                   className={cn(
                     "flex items-end gap-2",
-                    m.senderId === userId ? "justify-end" : "justify-start"
+                    m.senderId === userId ? "justify-end" : "justify-start",
                   )}
                   key={m.id}
                 >
@@ -130,10 +132,10 @@ export const ChatRoom = ({
                   )}
                   <div
                     className={cn(
-                      "max-w-xs rounded-lg p-3 text-sm",
+                      "max-w-md rounded-lg p-3 text-sm shadow-md",
                       m.senderId === userId
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
+                        ? "rounded-br-none bg-primary text-primary-foreground"
+                        : "rounded-bl-none bg-muted",
                     )}
                   >
                     <p>{m.content}</p>
@@ -147,7 +149,7 @@ export const ChatRoom = ({
                     <AvatarImage src="/placeholder-user.jpg" />
                     <AvatarFallback>ST</AvatarFallback>
                   </Avatar>
-                  <div className="rounded-lg bg-muted p-3 text-sm">
+                  <div className="rounded-lg bg-muted p-3 text-sm shadow-md">
                     <div className="flex items-center gap-1">
                       <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
                       <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
@@ -160,12 +162,18 @@ export const ChatRoom = ({
           </ScrollArea>
         </CardContent>
 
-        <CardFooter className="border-t p-4">
-          <div className="flex w-full items-center space-x-2">
+        <CardFooter className="border-t bg-muted/40 p-4">
+          <form
+            className="flex w-full items-center space-x-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
+          >
             <Input
+              autoComplete="off"
               disabled={!isChannelReady}
               onChange={handleInputChange}
-              onKeyDown={(e) => e.key === "Enter" && handleSend()}
               placeholder={
                 isChannelReady ? "Type a message..." : "Connecting..."
               }
@@ -173,12 +181,13 @@ export const ChatRoom = ({
             />
             <Button
               disabled={!(isChannelReady && input.trim())}
-              onClick={handleSend}
               size="icon"
+              type="submit"
             >
               <Send className="h-4 w-4" />
+              <span className="sr-only">Send</span>
             </Button>
-          </div>
+          </form>
         </CardFooter>
       </Card>
     </>

@@ -1,4 +1,4 @@
-import { Loader2, Users } from "lucide-react";
+import { HatGlasses, Loader2, Users } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,14 +9,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 
 interface StrangerChatLobbyProps {
   status: "idle" | "waiting" | "matched";
@@ -36,7 +28,7 @@ export const StrangerChatLobby = ({
   onCloseDialog,
 }: StrangerChatLobbyProps) => {
   return (
-    <div className="flex h-full items-center justify-center p-4">
+    <div className="flex h-[75vh] items-center justify-center">
       <AlertDialog onOpenChange={onCloseDialog} open={!!dialogMessage}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -49,24 +41,28 @@ export const StrangerChatLobby = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Talk to a Stranger</CardTitle>
-          <CardDescription>
-            Find a random person to chat with anonymously.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="flex flex-col items-center justify-center space-y-4 p-6">
+      <div className="w-full max-w-md text-center">
+        <div className="mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full bg-primary/10">
+          <HatGlasses className="h-16 w-16 text-primary" />
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight">
+          Talk to a Stranger
+        </h1>
+        <p className="mt-3 text-lg text-muted-foreground">
+          Find a random person to chat with anonymously.
+        </p>
+
+        <div className="mt-10">
           {status === "idle" && (
             <Button
-              className="w-full"
+              className="w-full max-w-xs transform rounded-full px-8 py-6 text-lg font-semibold transition-transform duration-200 hover:scale-105"
               disabled={isPending}
               onClick={onTalkToStranger}
               size="lg"
             >
               {isPending ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                   Finding...
                 </>
               ) : (
@@ -75,17 +71,25 @@ export const StrangerChatLobby = ({
             </Button>
           )}
           {status === "waiting" && (
-            <div className="flex flex-col items-center space-y-2">
-              <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <p className="text-muted-foreground">Looking for a stranger…</p>
+            <div className="flex flex-col items-center space-y-4">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+              <p className="text-lg text-muted-foreground">
+                Looking for a stranger…
+              </p>
             </div>
           )}
-        </CardContent>
-        <CardFooter className="flex justify-center text-muted-foreground text-sm">
-          <Users className="mr-2 h-4 w-4" />
-          {lobbyCount - 1} user(s) online
-        </CardFooter>
-      </Card>
+        </div>
+
+        <div className="mt-10 text-muted-foreground">
+          <div className="inline-flex items-center">
+            <Users className="mr-2 h-5 w-5" />
+            <span>
+              <strong>{lobbyCount > 0 ? lobbyCount - 1 : 0}</strong> user(s)
+              online
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
