@@ -1,4 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import z from "zod";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,7 @@ interface CreateRoomFormProps {
 }
 
 export const CreateRoomForm = ({ createRoom }: CreateRoomFormProps) => {
+  const [open, setOpen] = useState(false);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -39,10 +41,11 @@ export const CreateRoomForm = ({ createRoom }: CreateRoomFormProps) => {
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     createRoom(values);
+    setOpen(false);
   };
 
   return (
-    <Dialog>
+    <Dialog onOpenChange={setOpen} open={open}>
       <DialogTrigger asChild>
         <Button className="w-full">Create Room</Button>
       </DialogTrigger>
@@ -77,4 +80,3 @@ export const CreateRoomForm = ({ createRoom }: CreateRoomFormProps) => {
     </Dialog>
   );
 };
-

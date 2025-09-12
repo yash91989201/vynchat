@@ -1,10 +1,10 @@
-import type { MessageType } from "@server/lib/types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Member } from "@/components/chat/chat-room/types";
 import { supabase } from "@/lib/supabase";
+import type { ChatMessage } from "@/lib/types";
 import { queryUtils } from "@/utils/orpc";
 
 export const useRoomChat = (user: Member) => {
@@ -13,6 +13,7 @@ export const useRoomChat = (user: Member) => {
   const [isTyping, setIsTyping] = useState(false);
   const [strangerTyping, setStrangerTyping] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -26,25 +27,12 @@ export const useRoomChat = (user: Member) => {
   const userRef = useRef(user);
   userRef.current = user;
 
-  // Store queryClient in ref for stable access
-  const queryClientRef = useRef(queryClient);
-  queryClientRef.current = queryClient;
-
   const { data: globalRooms = [] } = useQuery(
     queryUtils.room.listRooms.queryOptions()
   );
   const { data: myRooms = [] } = useQuery(
     queryUtils.room.getMyRooms.queryOptions()
   );
-
-  const { data: messages = [] } = useQuery({
-    ...queryUtils.message.list.queryOptions({
-      input: {
-        roomId: selectedRoomId ?? "",
-      },
-    }),
-    enabled: !!selectedRoomId,
-  });
 
   const { mutateAsync: sendMessage } = useMutation(
     queryUtils.message.send.mutationOptions({})
@@ -84,19 +72,22 @@ export const useRoomChat = (user: Member) => {
     })
   );
 
-  const handleSelectRoom = useCallback((roomId: string) => {
-    // If we're switching from one room to another, leave the current room first
-    if (selectedRoomId && selectedRoomId !== roomId) {
-      leaveRoom({ roomId: selectedRoomId });
-    }
+  const handleSelectRoom = useCallback(
+    (roomId: string) => {
+      // If we're switching from one room to another, leave the current room first
+      if (selectedRoomId && selectedRoomId !== roomId) {
+        leaveRoom({ roomId: selectedRoomId });
+      }
 
-    const isMyRoom = myRooms.some((r) => r.id === roomId);
-    if (isMyRoom) {
-      setSelectedRoomId(roomId);
-    } else {
-      joinRoom({ roomId });
-    }
-  }, [selectedRoomId, myRooms, joinRoom, leaveRoom]);
+      const isMyRoom = myRooms.some((r) => r.id === roomId);
+      if (isMyRoom) {
+        setSelectedRoomId(roomId);
+      } else {
+        joinRoom({ roomId });
+      }
+    },
+    [selectedRoomId, myRooms, joinRoom, leaveRoom]
+  );
 
   const handleLeaveRoom = useCallback(() => {
     if (selectedRoomId) {
@@ -104,6 +95,39 @@ export const useRoomChat = (user: Member) => {
       setSelectedRoomId(undefined);
     }
   }, [selectedRoomId, leaveRoom]);
+
+  // Effect to load messages when room changes
+  useEffect(() => {
+    if (!selectedRoomId) {
+      setMessages([]);
+      return;
+    }
+
+    const loadMessages = async () => {
+      try {
+        const { data: existingMessages } = await supabase
+          .from("message")
+          .select(`
+            *,
+            sender:sender_id (
+              id,
+              name,
+              image
+            )
+          `)
+          .eq("room_id", selectedRoomId)
+          .order("created_at", { ascending: true });
+        if (existingMessages) {
+          setMessages(existingMessages);
+        }
+      } catch (error) {
+        console.error("Error loading messages:", error);
+        setMessages([]);
+      }
+    };
+
+    loadMessages();
+  }, [selectedRoomId]);
 
   // Effect to handle room subscription and member tracking
   useEffect(() => {
@@ -115,7 +139,6 @@ export const useRoomChat = (user: Member) => {
 
     // Get current user from ref
     const currentUser = userRef.current;
-    const currentQueryClient = queryClientRef.current;
 
     // Generate a unique session-based presence key
     const presenceKey = `${currentUser.id}_${sessionIdRef.current}`;
@@ -193,17 +216,19 @@ export const useRoomChat = (user: Member) => {
         .on("presence", { event: "join" }, updateMembersList)
         .on("presence", { event: "leave" }, updateMembersList)
         .on("broadcast", { event: "message" }, ({ payload }) => {
-          currentQueryClient.setQueryData<MessageType[]>(
-            queryUtils.message.list.queryKey({
-              input: { roomId: selectedRoomId },
-            }),
-            (oldData) => {
-              if (oldData?.some((msg) => msg.id === payload.id)) {
-                return oldData;
-              }
-              return oldData ? [...oldData, payload] : [payload];
+          if (!payload) return;
+          if (!selectedRoomId) return;
+
+          // Update local state directly instead of query cache
+          setMessages((prev) => {
+            // Check if message already exists to prevent duplicates
+            const messageExists = prev.some((msg) => msg.id === payload.id);
+            if (messageExists) {
+              return prev;
             }
-          );
+            // Add new message to the end
+            return [...prev, payload];
+          });
         })
         .on("broadcast", { event: "typing" }, ({ payload }) => {
           if (payload.senderId === currentUser.id) return;
@@ -249,6 +274,10 @@ export const useRoomChat = (user: Member) => {
 
     try {
       const msg = await sendMessage({ roomId: selectedRoomId, content: input });
+
+      // Update local state immediately
+      setMessages((prev) => [...prev, msg]);
+
       if (channelRef.current) {
         await channelRef.current.send({
           type: "broadcast",
