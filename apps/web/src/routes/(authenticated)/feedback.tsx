@@ -16,21 +16,19 @@ function RouteComponent() {
   );
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 md:gap-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Send Feedback</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FeedbackForm />
-        </CardContent>
-      </Card>
+    <main className="container mx-auto my-6 flex-1 px-3 md:px-6">
+      <div className="flex flex-col gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Send Feedback</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <FeedbackForm />
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Feedbacks</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <section>
+          <h2 className="mb-4 font-semibold text-lg">Your Feedbacks</h2>
           {data.feedbacks.length > 0 ? (
             <ul className="space-y-2">
               {data.feedbacks.map((fb) => (
@@ -47,8 +45,8 @@ function RouteComponent() {
               You have not sent any feedback yet.
             </div>
           )}
-        </CardContent>
-      </Card>
-    </div>
+        </section>
+      </div>
+    </main>
   );
 }
