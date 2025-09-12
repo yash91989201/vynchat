@@ -2,8 +2,8 @@ import { eq } from "drizzle-orm";
 import { room, roomMember, skippedPair } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
 import {
-  CreateRoomInput,
-  CreateRoomOutput,
+  CreateDMRoomInput,
+  CreateDMRoomOutput,
   FindStrangerOutput,
   LeaveRoomInput,
   LeaveRoomOutput,
@@ -14,8 +14,8 @@ import { supabase } from "@/lib/supabase";
 
 export const roomRouter = {
   createDM: protectedProcedure
-    .input(CreateRoomInput)
-    .output(CreateRoomOutput)
+    .input(CreateDMRoomInput)
+    .output(CreateDMRoomOutput)
     .handler(async ({ context, input }) => {
       const { user1Id, user2Id } = input;
 

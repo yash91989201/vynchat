@@ -225,11 +225,17 @@ export const DeleteMessageInput = z.object({
 });
 export const DeleteMessageOutput = z.object({});
 
-export const CreateRoomInput = z.object({
+export const CreateDMRoomInput = z.object({
   user1Id: z.string(),
   user2Id: z.string(),
 });
-export const CreateRoomOutput = RoomSchema.optional();
+export const CreateDMRoomOutput = RoomSchema.optional();
+
+export const CreateRoomInput = RoomInsertSchema.pick({
+  name: true,
+});
+
+export const CreateRoomOutput = RoomSchema;
 
 export const GetRoomInput = z.object({
   id: z.cuid2(),

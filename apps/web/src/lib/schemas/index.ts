@@ -48,12 +48,6 @@ export const CreateTagFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
 });
 
-export const CreateRoomFormSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
-  isPublic: z.boolean(),
-});
-
 export const CreateCommentFormSchema = z.object({
   text: z.string().min(1, "Comment cannot be empty."),
 });
@@ -79,4 +73,8 @@ export const ChangePasswordFormSchema = z
 export const SendMessageFormSchema = z.object({
   roomId: z.string(),
   message: z.string().min(1),
+});
+
+export const CreateRoomFormSchema = z.object({
+  name: z.string().min(3).max(90),
 });

@@ -52,7 +52,7 @@ export const ChatRoom = () => {
   }
 
   return (
-    <div className="grid h-[75vh] grid-cols-[360px_1fr] overflow-hidden rounded-lg border xl:grid-cols-[400px_1fr]">
+    <div className="grid h-[75vh] grid-cols-[320px_1fr] overflow-hidden rounded-lg border xl:grid-cols-[400px_1fr]">
       <RoomList
         globalRooms={globalRoomsData}
         myRooms={myRoomsData}

@@ -16,8 +16,8 @@ import type {
   CreateCategoryInput,
   CreateMessageInput,
   CreateMessageOutput,
-  CreateRoomInput,
-  CreateRoomOutput,
+  CreateDMRoomInput,
+  CreateDMRoomOutput,
   CreateTagInput,
   CreateTagOutput,
   DeleteBlogInput,
@@ -145,8 +145,8 @@ export type UpdateMessageOutputType = z.infer<typeof UpdateMessageOutput>;
 export type DeleteMessageType = z.infer<typeof DeleteMessageInput>;
 export type DeleteMessageOutputType = z.infer<typeof DeleteMessageOutput>;
 
-export type CreateRoomType = z.infer<typeof CreateRoomInput>;
-export type CreateRoomOutputType = z.infer<typeof CreateRoomOutput>;
+export type CreateRoomType = z.infer<typeof CreateDMRoomInput>;
+export type CreateDMRoomOutputType = z.infer<typeof CreateDMRoomOutput>;
 export type GetRoomType = z.infer<typeof GetRoomInput>;
 export type GetRoomOutputType = z.infer<typeof GetRoomOutput>;
 export type ListRoomsType = z.infer<typeof ListRoomsInput>;

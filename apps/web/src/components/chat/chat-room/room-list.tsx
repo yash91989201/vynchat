@@ -6,72 +6,10 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useIsMobile } from "@/hooks/use-mobile";
+import { CreateRoomForm } from "@/components/user/create-room-form";
 import { RoomListItem } from "./room-list-item";
 import type { RoomListProps } from "./types";
-
-const CreateRoomForm = () => (
-  <form className="grid items-start gap-4" onSubmit={(e) => e.preventDefault()}>
-    <div className="grid gap-2">
-      <Label htmlFor="name">Room Name</Label>
-      <Input id="name" placeholder="e.g. Gamers United" />
-    </div>
-    <Button type="submit">Create Room</Button>
-  </form>
-);
-
-const CreateRoom = ({ isMobile }: { isMobile: boolean }) => {
-  if (isMobile) {
-    return (
-      <Drawer>
-        <DrawerTrigger asChild>
-          <Button className="w-full" variant="secondary">
-            Create a room
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent className="px-4 pb-4">
-          <DrawerHeader className="sr-only">
-            <DrawerTitle>Create a new room</DrawerTitle>
-          </DrawerHeader>
-          <CreateRoomForm />
-        </DrawerContent>
-      </Drawer>
-    );
-  }
-
-  return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button className="w-full" variant="secondary">
-          Create a room
-        </Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Create a new room</DialogTitle>
-        </DialogHeader>
-        <CreateRoomForm />
-      </DialogContent>
-    </Dialog>
-  );
-};
 
 export const RoomList = ({
   myRooms,
@@ -80,7 +18,6 @@ export const RoomList = ({
   onRoomSelect,
 }: RoomListProps) => {
   const [search, setSearch] = useState("");
-  const isMobile = useIsMobile(1024);
 
   const filteredMyRooms = myRooms.filter((room) =>
     room.name.toLowerCase().includes(search.toLowerCase())
@@ -138,7 +75,7 @@ export const RoomList = ({
                       You haven't created any rooms yet.
                     </p>
                   </div>
-                  <CreateRoom isMobile={isMobile} />
+                  <CreateRoomForm onCreateRoom={onRoomSelect} />
                 </div>
               )}
             </AccordionContent>
