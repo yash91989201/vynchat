@@ -1,6 +1,7 @@
 import type { RouterClient } from "@orpc/server";
 import { adminRouter } from "@/routers/admin";
 import { blogRouter } from "./blog";
+import { feedbackRouter } from "./feedback";
 import { healthCheckRouter } from "./health-check";
 import { messageRouter } from "./message";
 import { roomRouter } from "./room";
@@ -15,6 +16,7 @@ export type AppRouter = {
   user: typeof userRouter;
   room: typeof roomRouter;
   message: typeof messageRouter;
+  feedback: typeof feedbackRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -25,6 +27,7 @@ export const appRouter: AppRouter = {
   user: userRouter,
   room: roomRouter,
   message: messageRouter,
+  feedback: feedbackRouter,
 };
 
 export type AppRouterClient = RouterClient<typeof appRouter>;

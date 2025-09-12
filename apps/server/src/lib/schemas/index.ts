@@ -8,6 +8,7 @@ import {
   blog,
   category,
   comment,
+  feedback,
   message,
   reaction,
   room,
@@ -31,6 +32,7 @@ export const UserFollowingSchema = createSelectSchema(userFollowing);
 export const TagSchema = createSelectSchema(tag);
 export const CategorySchema = createSelectSchema(category);
 export const ReactionSchema = createSelectSchema(reaction);
+export const FeedbackSchema = createSelectSchema(feedback);
 
 export const UserInsertSchema = createInsertSchema(user);
 export const SessionInsertSchema = createInsertSchema(session);
@@ -45,6 +47,7 @@ export const UserFollowersInsertSchema = createInsertSchema(userFollowers);
 export const UserFollowingInsertSchema = createInsertSchema(userFollowing);
 export const TagInsertSchema = createInsertSchema(tag);
 export const CategoryInsertSchema = createInsertSchema(category);
+export const FeedbackInsertSchema = createInsertSchema(feedback);
 
 export const UserUpdateSchema = createUpdateSchema(user);
 export const SessionUpdateSchema = createUpdateSchema(session);
@@ -384,4 +387,42 @@ export const SkipStrangerInput = z.object({
 export const SkipStrangerOutput = z.object({
   success: z.boolean(),
   message: z.string(),
+});
+
+export const CreateFeedbackInput = z.object({
+  message: z
+    .string()
+    .min(1, "Feedback message cannot be empty")
+    .max(1000, "Feedback message must be less than 1000 characters"),
+});
+
+export const CreateFeedbackOutput = FeedbackSchema.optional();
+
+export const GetFeedbackInput = z.object({
+  id: z.cuid2(),
+});
+
+export const GetFeedbackOutput = FeedbackSchema.extend({
+  user: UserSchema.pick({
+    id: true,
+    name: true,
+    email: true,
+  }),
+}).optional();
+
+export const ListFeedbacksInput = z.object({
+  limit: z.number().min(1).max(100).default(20),
+  offset: z.number().min(0).default(0),
+});
+
+export const ListFeedbacksOutput = z.object({
+  feedbacks: z.array(
+    FeedbackSchema.extend({
+      user: UserSchema.pick({
+        id: true,
+        name: true,
+        email: true,
+      }),
+    })
+  ),
 });

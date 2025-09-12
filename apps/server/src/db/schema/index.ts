@@ -203,6 +203,17 @@ export const skippedPair = pgTable(
   ]
 );
 
+export const feedback = pgTable("feedback", {
+  id: cuid2("id").defaultRandom().primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id),
+  message: text("message").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
 export const blogRelations = relations(blog, ({ one, many }) => ({
   author: one(user, {
     fields: [blog.authorId],
@@ -278,4 +289,8 @@ export const reactionRelations = relations(reaction, ({ one }) => ({
     references: [message.id],
   }),
   user: one(user, { fields: [reaction.userId], references: [user.id] }),
+}));
+
+export const feedbackRelations = relations(feedback, ({ one }) => ({
+  user: one(user, { fields: [feedback.userId], references: [user.id] }),
 }));
