@@ -38,9 +38,6 @@ export const RoomListItem = ({
       </Avatar>
       <div className="flex-1 overflow-hidden">
         <p className="truncate font-semibold">{room.name}</p>
-        <p className="truncate text-muted-foreground text-sm">
-          {isMyRoom ? room.lastMessage : `${room.memberCount} members`}
-        </p>
       </div>
       {isMyRoom && (
         <div className="flex flex-col items-end text-xs">

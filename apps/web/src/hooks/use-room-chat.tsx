@@ -1,7 +1,7 @@
 import type { MessageType } from "@server/lib/types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { Member } from "@/components/chat/chat-room/types";
 import { supabase } from "@/lib/supabase";
@@ -17,7 +17,18 @@ export const useRoomChat = (user: Member) => {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const strangerTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionIdRef = useRef<string>(
+    `${Date.now()}_${Math.random().toString(36).substring(2)}`
+  );
   const queryClient = useQueryClient();
+
+  // Store user in ref to avoid recreating stable references
+  const userRef = useRef(user);
+  userRef.current = user;
+
+  // Store queryClient in ref for stable access
+  const queryClientRef = useRef(queryClient);
+  queryClientRef.current = queryClient;
 
   const { data: globalRooms = [] } = useQuery(
     queryUtils.room.listRooms.queryOptions()
@@ -62,76 +73,178 @@ export const useRoomChat = (user: Member) => {
     })
   );
 
-  const handleSelectRoom = (roomId: string) => {
+  const { mutate: leaveRoom } = useMutation(
+    queryUtils.room.leave.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.room.getMyRooms.queryKey(),
+        });
+        toast.success("Left room successfully");
+      },
+    })
+  );
+
+  const handleSelectRoom = useCallback((roomId: string) => {
+    // If we're switching from one room to another, leave the current room first
+    if (selectedRoomId && selectedRoomId !== roomId) {
+      leaveRoom({ roomId: selectedRoomId });
+    }
+
     const isMyRoom = myRooms.some((r) => r.id === roomId);
     if (isMyRoom) {
       setSelectedRoomId(roomId);
     } else {
       joinRoom({ roomId });
     }
-  };
+  }, [selectedRoomId, myRooms, joinRoom, leaveRoom]);
 
-  const clearTimeouts = useCallback(() => {
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    if (strangerTypingTimeoutRef.current)
-      clearTimeout(strangerTypingTimeoutRef.current);
-  }, []);
+  const handleLeaveRoom = useCallback(() => {
+    if (selectedRoomId) {
+      leaveRoom({ roomId: selectedRoomId });
+      setSelectedRoomId(undefined);
+    }
+  }, [selectedRoomId, leaveRoom]);
 
+  // Effect to handle room subscription and member tracking
   useEffect(() => {
-    if (!selectedRoomId) return;
+    // Clear members when no room is selected
+    if (!selectedRoomId) {
+      setMembers([]);
+      return;
+    }
 
-    const channel = supabase.channel(`room:${selectedRoomId}`, {
-      config: {
-        broadcast: { self: true, ack: true },
-        presence: { key: user.id },
-      },
-    });
+    // Get current user from ref
+    const currentUser = userRef.current;
+    const currentQueryClient = queryClientRef.current;
 
-    channel
-      .on("presence", { event: "sync" }, () => {
-        const presenceState = channel.presenceState<Member>();
-        const members = Object.values(presenceState).flat();
-        setMembers(members);
-      })
-      .on("broadcast", { event: "message" }, ({ payload }) => {
-        queryClient.setQueryData<MessageType[]>(
-          queryUtils.message.list.queryKey({
-            input: { roomId: selectedRoomId },
-          }),
-          (oldData) => {
-            if (oldData?.some((msg) => msg.id === payload.id)) {
-              return oldData;
-            }
-            return oldData ? [...oldData, payload] : [payload];
+    // Generate a unique session-based presence key
+    const presenceKey = `${currentUser.id}_${sessionIdRef.current}`;
+    let isSubscribed = false;
+    let channel: RealtimeChannel | null = null;
+
+    // Helper function to clear timeouts
+    const clearTimeouts = () => {
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      if (strangerTypingTimeoutRef.current)
+        clearTimeout(strangerTypingTimeoutRef.current);
+    };
+
+    // Function to process presence state - defined inside useEffect
+    const processPresenceState = (presenceState: Record<string, Member[]>) => {
+      const memberMap = new Map<string, Member>();
+
+      // Iterate through all presence entries
+      for (const presenceList of Object.values(presenceState)) {
+        for (const member of presenceList) {
+          if (member?.id) {
+            // Keep the most recent entry for each user ID
+            memberMap.set(member.id, member);
           }
-        );
-      })
-      .on("broadcast", { event: "typing" }, ({ payload }) => {
-        if (payload.senderId === user.id) return;
-        setStrangerTyping(true);
-        if (strangerTypingTimeoutRef.current)
-          clearTimeout(strangerTypingTimeoutRef.current);
-        strangerTypingTimeoutRef.current = setTimeout(
-          () => setStrangerTyping(false),
-          3000
-        );
-      })
-      .subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await channel.track(user);
         }
+      }
+
+      return Array.from(memberMap.values());
+    };
+
+    // Function to update members with comparison - defined inside useEffect
+    const updateMembersState = (newMembers: Member[]) => {
+      setMembers((prevMembers) => {
+        // Quick length check first
+        if (prevMembers.length !== newMembers.length) {
+          return newMembers;
+        }
+
+        // Deep comparison of member IDs
+        const prevIds = new Set(prevMembers.map((m) => m.id));
+        const newIds = new Set(newMembers.map((m) => m.id));
+
+        // Check if any new member is not in previous list
+        for (const id of newIds) {
+          if (!prevIds.has(id)) {
+            return newMembers;
+          }
+        }
+
+        // No changes detected
+        return prevMembers;
+      });
+    };
+
+    const initializeChannel = () => {
+      channel = supabase.channel(`room:${selectedRoomId}`, {
+        config: {
+          broadcast: { self: false, ack: false },
+          presence: { key: presenceKey },
+        },
       });
 
-    channelRef.current = channel;
+      // Helper function to update members list
+      const updateMembersList = () => {
+        if (!isSubscribed) return;
+        if (!channel) return;
+
+        const presenceState = channel.presenceState<Member>();
+        const uniqueMembers = processPresenceState(presenceState);
+        updateMembersState(uniqueMembers);
+      };
+
+      channel
+        .on("presence", { event: "sync" }, updateMembersList)
+        .on("presence", { event: "join" }, updateMembersList)
+        .on("presence", { event: "leave" }, updateMembersList)
+        .on("broadcast", { event: "message" }, ({ payload }) => {
+          currentQueryClient.setQueryData<MessageType[]>(
+            queryUtils.message.list.queryKey({
+              input: { roomId: selectedRoomId },
+            }),
+            (oldData) => {
+              if (oldData?.some((msg) => msg.id === payload.id)) {
+                return oldData;
+              }
+              return oldData ? [...oldData, payload] : [payload];
+            }
+          );
+        })
+        .on("broadcast", { event: "typing" }, ({ payload }) => {
+          if (payload.senderId === currentUser.id) return;
+          setStrangerTyping(true);
+          if (strangerTypingTimeoutRef.current)
+            clearTimeout(strangerTypingTimeoutRef.current);
+          strangerTypingTimeoutRef.current = setTimeout(
+            () => setStrangerTyping(false),
+            3000
+          );
+        })
+        .subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            isSubscribed = true;
+            await channel?.track({
+              id: currentUser.id,
+              name: currentUser.name,
+              image: currentUser.image,
+            });
+            // Initial sync after tracking
+            updateMembersList();
+          }
+        });
+
+      channelRef.current = channel;
+    };
+
+    initializeChannel();
 
     return () => {
-      supabase.removeChannel(channel);
+      isSubscribed = false;
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
       channelRef.current = null;
       clearTimeouts();
+      setMembers([]);
     };
-  }, [selectedRoomId, user, queryClient, clearTimeouts]);
+  }, [selectedRoomId]); // Only selectedRoomId as dependency
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!(input.trim() && selectedRoomId)) return;
 
     try {
@@ -148,28 +261,33 @@ export const useRoomChat = (user: Member) => {
       console.error("Error sending message:", error);
       toast.error("Failed to send message");
     }
-  };
+  }, [input, selectedRoomId, sendMessage]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-    if (!channelRef.current) return;
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value;
+      setInput(newValue);
 
-    if (e.target.value && !isTyping) {
-      setIsTyping(true);
-      channelRef.current.send({
-        type: "broadcast",
-        event: "typing",
-        payload: { senderId: user.id },
-      });
-    }
+      if (!channelRef.current) return;
 
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
-    typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
-  };
+      if (newValue && !isTyping) {
+        setIsTyping(true);
+        channelRef.current.send({
+          type: "broadcast",
+          event: "typing",
+          payload: { senderId: userRef.current.id },
+        });
+      }
 
-  const selectedRoom = [...myRooms, ...globalRooms].find(
-    (r) => r.id === selectedRoomId
+      if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+      typingTimeoutRef.current = setTimeout(() => setIsTyping(false), 2000);
+    },
+    [isTyping]
   );
+
+  const selectedRoom = useMemo(() => {
+    return [...myRooms, ...globalRooms].find((r) => r.id === selectedRoomId);
+  }, [myRooms, globalRooms, selectedRoomId]);
 
   return {
     globalRooms,
@@ -185,5 +303,6 @@ export const useRoomChat = (user: Member) => {
     handleInputChange,
     createRoom,
     members,
+    handleLeaveRoom,
   };
 };

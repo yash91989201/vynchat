@@ -29,6 +29,7 @@ export const ChatRoom = () => {
     handleInputChange,
     createRoom,
     members,
+    handleLeaveRoom,
   } = useRoomChat(user);
 
   if (isMobile) {
@@ -38,6 +39,7 @@ export const ChatRoom = () => {
           createRoom={createRoom}
           globalRooms={globalRooms}
           handleInputChange={handleInputChange}
+          handleLeaveRoom={handleLeaveRoom}
           handleSend={handleSend}
           input={input}
           isMobile={true}
@@ -67,6 +69,7 @@ export const ChatRoom = () => {
         createRoom={createRoom}
         globalRooms={globalRooms}
         handleInputChange={handleInputChange}
+        handleLeaveRoom={handleLeaveRoom}
         handleSend={handleSend}
         input={input}
         members={members}

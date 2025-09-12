@@ -1,5 +1,6 @@
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import {
+  LogOut,
   MessageSquarePlus,
   PanelRightOpen,
   Paperclip,
@@ -52,6 +53,7 @@ interface ChatRoomWindowProps {
   userId: string;
   createRoom: (values: { name: string }) => void;
   members: Member[];
+  handleLeaveRoom?: () => void;
 }
 
 export const ChatRoomWindow = ({
@@ -69,6 +71,7 @@ export const ChatRoomWindow = ({
   userId,
   createRoom,
   members,
+  handleLeaveRoom,
 }: ChatRoomWindowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -160,40 +163,53 @@ export const ChatRoomWindow = ({
             </p>
           </div>
         </div>
-        {isMobile && (
-          <div className="flex items-center gap-2">
-            <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="outline">Change Room</Button>
-              </DialogTrigger>
-              <DialogContent className="flex h-[80vh] max-w-[90vw] flex-col sm:max-w-lg">
-                <DialogHeader>
-                  <DialogTitle>Select a Room</DialogTitle>
-                </DialogHeader>
-                <RoomList
-                  createRoom={createRoom}
-                  globalRooms={globalRooms}
-                  myRooms={myRooms}
-                  onRoomSelect={handleRoomSelection}
-                  selectedRoomId={selectedRoomId}
-                />
-              </DialogContent>
-            </Dialog>
-            <Sheet>
-              <SheetTrigger asChild>
-                <Button className="sr-only" size="icon" variant="outline">
-                  <PanelRightOpen className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent>
-                <SheetHeader className="sr-only">
-                  <SheetTitle>Room Members</SheetTitle>
-                </SheetHeader>
-                <RoomMembers members={members} />
-              </SheetContent>
-            </Sheet>
-          </div>
-        )}
+        <div className="flex items-center gap-2">
+          {handleLeaveRoom && (
+            <Button
+              onClick={handleLeaveRoom}
+              size="sm"
+              variant="outline"
+              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              Leave Room
+            </Button>
+          )}
+          {isMobile && (
+            <>
+              <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline">Change Room</Button>
+                </DialogTrigger>
+                <DialogContent className="flex h-[80vh] max-w-[90vw] flex-col sm:max-w-lg">
+                  <DialogHeader>
+                    <DialogTitle>Select a Room</DialogTitle>
+                  </DialogHeader>
+                  <RoomList
+                    createRoom={createRoom}
+                    globalRooms={globalRooms}
+                    myRooms={myRooms}
+                    onRoomSelect={handleRoomSelection}
+                    selectedRoomId={selectedRoomId}
+                  />
+                </DialogContent>
+              </Dialog>
+              <Sheet>
+                <SheetTrigger asChild>
+                  <Button className="sr-only" size="icon" variant="outline">
+                    <PanelRightOpen className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent>
+                  <SheetHeader className="sr-only">
+                    <SheetTitle>Room Members</SheetTitle>
+                  </SheetHeader>
+                  <RoomMembers members={members} />
+                </SheetContent>
+              </Sheet>
+            </>
+          )}
+        </div>
       </div>
 
       {/* Messages */}
