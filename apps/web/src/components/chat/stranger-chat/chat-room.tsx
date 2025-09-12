@@ -79,8 +79,8 @@ export const ChatRoom = ({
               <AvatarFallback>ST</AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium text-sm leading-none">Stranger</p>
-              <p className="text-muted-foreground text-sm">
+              <p className="text-sm font-medium leading-none">Stranger</p>
+              <p className="text-sm text-muted-foreground">
                 {isChannelReady ? (
                   <span className="flex items-center text-green-500">
                     <Wifi className="mr-1 h-3 w-3" /> Connected
@@ -132,7 +132,7 @@ export const ChatRoom = ({
                   )}
                   <div
                     className={cn(
-                      "max-w-md rounded-lg p-3 text-sm shadow-md",
+                      "max-w-[80%] rounded-lg p-3 text-sm shadow-md sm:max-w-[70%]",
                       m.senderId === userId
                         ? "rounded-br-none bg-primary text-primary-foreground"
                         : "rounded-bl-none bg-muted",

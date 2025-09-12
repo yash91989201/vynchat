@@ -28,7 +28,7 @@ export const StrangerChatLobby = ({
   onCloseDialog,
 }: StrangerChatLobbyProps) => {
   return (
-    <div className="flex h-[75vh] items-center justify-center">
+    <div className="flex h-full items-center justify-center p-4">
       <AlertDialog onOpenChange={onCloseDialog} open={!!dialogMessage}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -42,10 +42,10 @@ export const StrangerChatLobby = ({
       </AlertDialog>
 
       <div className="w-full max-w-md text-center">
-        <div className="mx-auto mb-6 flex h-28 w-28 items-center justify-center rounded-full bg-primary/10">
-          <HatGlasses className="h-16 w-16 text-primary" />
+        <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 sm:h-28 sm:w-28">
+          <HatGlasses className="h-12 w-12 text-primary sm:h-16 sm:w-16" />
         </div>
-        <h1 className="text-4xl font-bold tracking-tight">
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
           Talk to a Stranger
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">

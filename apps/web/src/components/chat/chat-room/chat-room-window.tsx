@@ -1,8 +1,15 @@
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
-import { Paperclip, Send, Smile, Users } from "lucide-react";
+import { MessageSquarePlus, Paperclip, Send, Smile, Users } from "lucide-react";
 import { useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -11,6 +18,7 @@ import {
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import { RoomList } from "./room-list";
 
 const messages = [
   {
@@ -47,30 +55,129 @@ const messages = [
   },
 ];
 
-export const ChatRoomWindow = () => {
-  const [input, setInput] = useState("");
+interface Room {
+  id: string;
+  name: string;
+  members: number;
+  lastMessage?: string;
+  time?: string;
+  unread?: number;
+  avatar?: string;
+}
 
-  const currentRoom = {
-    name: "Design Team",
-    members: 8,
-  };
+interface ChatRoomWindowProps {
+  isMobile?: boolean;
+  room?: Room | null;
+  myRooms: Room[];
+  globalRooms: Room[];
+  onRoomSelect?: (roomId: string) => void;
+  selectedRoomId?: string;
+}
+
+export const ChatRoomWindow = ({
+  isMobile,
+  room,
+  myRooms,
+  globalRooms,
+  onRoomSelect,
+  selectedRoomId,
+}: ChatRoomWindowProps) => {
+  const [input, setInput] = useState("");
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     setInput((prev) => prev + emojiData.emoji);
   };
 
+  const handleRoomSelection = (roomId: string) => {
+    if (onRoomSelect) {
+      onRoomSelect(roomId);
+    }
+    setIsDialogOpen(false);
+  };
+
+  if (isMobile && !room) {
+    return (
+      <div className="flex h-full items-center justify-center bg-card p-4">
+        <div className="w-full max-w-md text-center">
+          <div className="mx-auto mb-6 flex size-24 items-center justify-center rounded-full bg-primary/10 sm:h-28 sm:w-28">
+            <MessageSquarePlus className="h-12 w-12 text-primary sm:h-16 sm:w-16" />
+          </div>
+          <h1 className="font-bold text-2xl tracking-tight">Select a Room</h1>
+          <p className="text-muted-foreground">
+            Choose a room to start chatting with others.
+          </p>
+          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
+            <DialogTrigger asChild>
+              <Button
+                className="mt-6 transform rounded-full font-semibold transition-transform duration-200"
+                size="lg"
+              >
+                Select Room
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="flex h-[80vh] max-w-[90vw] flex-col sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Select a Room</DialogTitle>
+              </DialogHeader>
+              <RoomList
+                globalRooms={globalRooms}
+                myRooms={myRooms}
+                onRoomSelect={handleRoomSelection}
+                selectedRoomId={selectedRoomId}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+    );
+  }
+
+  if (!room) {
+    return (
+      <div className="hidden h-full flex-col items-center justify-center bg-card lg:flex">
+        <div className="text-center">
+          <Users className="mx-auto h-12 w-12 text-muted-foreground" />
+          <h3 className="mt-4 font-semibold text-lg">Welcome to Chat</h3>
+          <p className="mt-2 text-muted-foreground text-sm">
+            Select a room to start messaging.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-full flex-col bg-card">
       {/* Header */}
       <div className="flex items-center justify-between border-b p-4">
-        <div>
-          <h3 className="font-semibold text-lg">{currentRoom.name}</h3>
-          <p className="flex items-center text-muted-foreground text-sm">
-            <Users className="mr-1.5 h-4 w-4" />
-            {currentRoom.members} members
-          </p>
+        <div className="flex items-center gap-3">
+          <div>
+            <h3 className="font-semibold text-lg">{room.name}</h3>
+            <p className="flex items-center text-muted-foreground text-sm">
+              <Users className="mr-1.5 h-4 w-4" />
+              {room.members} members
+            </p>
+          </div>
         </div>
-        {/* Maybe some room actions here later */}
+        {isMobile && (
+          <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
+            <DialogTrigger asChild>
+              <Button variant="outline">Change Room</Button>
+            </DialogTrigger>
+            <DialogContent className="flex h-[80vh] max-w-[90vw] flex-col sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Select a Room</DialogTitle>
+              </DialogHeader>
+              <RoomList
+                globalRooms={globalRooms}
+                myRooms={myRooms}
+                onRoomSelect={handleRoomSelection}
+                selectedRoomId={selectedRoomId}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {/* Messages */}
@@ -148,4 +255,3 @@ export const ChatRoomWindow = () => {
     </div>
   );
 };
-
