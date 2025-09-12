@@ -10,7 +10,7 @@ export const FacebookSignInButton = () => {
     mutationFn: () => {
       return authClient.signIn.social({
         provider: "facebook",
-        callbackURL: `${env.VITE_SERVER_URL}/chat`,
+        callbackURL: `${env.VITE_WEB_URL}/chat`,
       });
     },
   });

@@ -21,8 +21,8 @@ export const UserMenu = () => {
     from: "__root__",
   });
 
-  const { mutateAsync: signOut, isPending: isSigningOut } = useMutation({
-    mutationKey: ["sign-out"],
+  const { mutateAsync: logOut, isPending: isLoggingOut } = useMutation({
+    mutationKey: ["log-out"],
     mutationFn: async () => {
       await authClient.signOut();
 
@@ -31,13 +31,13 @@ export const UserMenu = () => {
       });
     },
     onSuccess: () => {
-      toast.success("Signed out successfully");
+      toast.success("Logged out successfully");
       navigate({
         to: "/",
       });
     },
     onError: () => {
-      toast.error("There was an error signing out. Please try again.");
+      toast.error("There was an error logging out. Please try again.");
     },
   });
 
@@ -145,11 +145,11 @@ export const UserMenu = () => {
         <DropdownMenuItem asChild>
           <Button
             className="w-full"
-            disabled={isSigningOut}
-            onClick={() => signOut()}
+            disabled={isLoggingOut}
+            onClick={() => logOut()}
             variant="destructive"
           >
-            {isSigningOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isLoggingOut && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             <span>Log Out</span>
           </Button>
         </DropdownMenuItem>

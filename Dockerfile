@@ -14,6 +14,9 @@ RUN bun install --frozen-lockfile
 COPY apps/web ./apps/web
 COPY apps/server ./apps/server
 
+ARG VITE_WEB_URL
+ENV VITE_WEB_URL=$VITE_WEB_URL
+
 ARG VITE_SERVER_URL
 ENV VITE_SERVER_URL=$VITE_SERVER_URL
 

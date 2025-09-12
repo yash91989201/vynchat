@@ -3,6 +3,8 @@ import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { FacebookSignInButton } from "@/components/shared/auth/facebook-sign-in-button";
+import { GoogleSignInButton } from "@/components/shared/auth/google-sign-in-button";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,6 +24,8 @@ export const UpdateProfileForm = () => {
   const { session } = useRouteContext({
     from: "/(authenticated)",
   });
+
+  const isAnonymous = session.user?.isAnonymous ?? false;
 
   const { data: bio } = useSuspenseQuery(
     queryUtils.user.getBio.queryOptions({})
@@ -79,7 +83,14 @@ export const UpdateProfileForm = () => {
             </FormItem>
           )}
         />
-        <Button type="submit">Update Profile</Button>
+        <Button>Update Profile</Button>
+        {isAnonymous && (
+          <div className="flex max-w-md flex-col gap-3">
+            <h3>Link your account</h3>
+            <GoogleSignInButton />
+            <FacebookSignInButton />
+          </div>
+        )}
       </form>
     </Form>
   );

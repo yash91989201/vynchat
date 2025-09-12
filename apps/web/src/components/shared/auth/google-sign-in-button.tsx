@@ -10,7 +10,7 @@ export const GoogleSignInButton = () => {
     mutationFn: () => {
       return authClient.signIn.social({
         provider: "google",
-        callbackURL: `${env.VITE_SERVER_URL}/chat`,
+        callbackURL: `${env.VITE_WEB_URL}/chat`,
       });
     },
   });
