@@ -26,7 +26,7 @@ export const StrangerChat = () => {
 
   if (status === "matched" && currentRoom) {
     return (
-      <div className="h-[85vh] md:h-[75vh] rounded-lg border">
+      <div className="h-[85vh] rounded-lg border md:h-[75vh]">
         <ChatRoom
           onLeave={handleLeave}
           onSkip={handleSkip}
@@ -38,7 +38,7 @@ export const StrangerChat = () => {
   }
 
   return (
-    <div className="h-[85vh] md:h-[75vh] rounded-lg border">
+    <div className="h-[85vh] rounded-lg border md:h-[75vh]">
       <StrangerChatLobby
         dialogMessage={dialogMessage}
         isPending={isPending}
@@ -50,3 +50,4 @@ export const StrangerChat = () => {
     </div>
   );
 };
+

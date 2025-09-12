@@ -60,6 +60,14 @@ export const UserFollowingUpdateSchema = createUpdateSchema(userFollowing);
 export const TagUpdateSchema = createUpdateSchema(tag);
 export const CategoryUpdateSchema = createUpdateSchema(category);
 
+export const MessageOutput = MessageSchema.extend({
+  sender: UserSchema.pick({
+    id: true,
+    name: true,
+    image: true,
+  }),
+});
+
 export const BlogDataSchema = BlogSchema.extend({
   category: CategorySchema,
   tags: z.array(TagSchema),

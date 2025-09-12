@@ -1,6 +1,6 @@
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import { MessageSquarePlus, Paperclip, Send, Smile, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,45 +16,11 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
+import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { RoomList } from "./room-list";
 import type { Room } from "./types";
-
-const messages = [
-  {
-    id: "msg1",
-    senderId: "user2",
-    senderName: "Jane Doe",
-    avatar: "/avatars/jane-doe.png",
-    content: "Hey everyone, what's the plan for the weekend?",
-    timestamp: "10:30 AM",
-  },
-  {
-    id: "msg2",
-    senderId: "user3",
-    senderName: "John Smith",
-    avatar: "/avatars/john-smith.png",
-    content: "I'm thinking of going for a hike. Anyone interested?",
-    timestamp: "10:31 AM",
-  },
-  {
-    id: "msg3",
-    senderId: "me",
-    senderName: "You",
-    avatar: "/avatars/me.png",
-    content: "That sounds great! I'm in.",
-    timestamp: "10:32 AM",
-  },
-  {
-    id: "msg4",
-    senderId: "user2",
-    senderName: "Jane Doe",
-    avatar: "/avatars/jane-doe.png",
-    content: "Awesome! Let's coordinate.",
-    timestamp: "10:33 AM",
-  },
-];
 
 interface ChatRoomWindowProps {
   isMobile?: boolean;
@@ -63,6 +29,13 @@ interface ChatRoomWindowProps {
   globalRooms: Room[];
   onRoomSelect?: (roomId: string) => void;
   selectedRoomId?: string;
+  messages: ChatMessage[];
+  input: string;
+  strangerTyping: boolean;
+  handleSend: () => void;
+  handleInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  userId: string;
+  createRoom: (values: { name: string }) => void;
 }
 
 export const ChatRoomWindow = ({
@@ -72,12 +45,21 @@ export const ChatRoomWindow = ({
   globalRooms,
   onRoomSelect,
   selectedRoomId,
+  messages,
+  input,
+  strangerTyping,
+  handleSend,
+  handleInputChange,
+  userId,
+  createRoom,
 }: ChatRoomWindowProps) => {
-  const [input, setInput] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
-    setInput((prev) => prev + emojiData.emoji);
+    handleInputChange({
+      target: { value: input + emojiData.emoji },
+    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   const handleRoomSelection = (roomId: string) => {
@@ -86,6 +68,15 @@ export const ChatRoomWindow = ({
     }
     setIsDialogOpen(false);
   };
+
+  useEffect(() => {
+    if (scrollAreaRef.current && messages.length > 0) {
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: "smooth",
+      });
+    }
+  }, [messages]);
 
   if (isMobile && !room) {
     return (
@@ -112,6 +103,7 @@ export const ChatRoomWindow = ({
                 <DialogTitle>Select a Room</DialogTitle>
               </DialogHeader>
               <RoomList
+                createRoom={createRoom}
                 globalRooms={globalRooms}
                 myRooms={myRooms}
                 onRoomSelect={handleRoomSelection}
@@ -147,7 +139,7 @@ export const ChatRoomWindow = ({
             <h3 className="font-semibold text-lg">{room.name}</h3>
             <p className="flex items-center text-muted-foreground text-sm">
               <Users className="mr-1.5 h-4 w-4" />
-              {room.members} members
+              {room.memberCount} members
             </p>
           </div>
         </div>
@@ -161,6 +153,7 @@ export const ChatRoomWindow = ({
                 <DialogTitle>Select a Room</DialogTitle>
               </DialogHeader>
               <RoomList
+                createRoom={createRoom}
                 globalRooms={globalRooms}
                 myRooms={myRooms}
                 onRoomSelect={handleRoomSelection}
@@ -172,42 +165,58 @@ export const ChatRoomWindow = ({
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1">
+      <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
         <div className="space-y-6 p-4">
           {messages.map((msg) => (
             <div
               className={cn(
                 "flex items-start gap-3",
-                msg.senderId === "me" && "flex-row-reverse"
+                msg.sender.id === userId && "flex-row-reverse"
               )}
               key={msg.id}
             >
               <Avatar>
-                <AvatarImage src={msg.avatar} />
+                <AvatarImage src={msg.sender.image ?? undefined} />
                 <AvatarFallback>
-                  {msg.senderName.substring(0, 2)}
+                  {msg.sender.name?.substring(0, 2)}
                 </AvatarFallback>
               </Avatar>
               <div
                 className={cn(
                   "max-w-md rounded-lg p-3 text-sm shadow-sm",
-                  msg.senderId === "me"
+                  msg.sender.id === userId
                     ? "rounded-br-none bg-primary text-primary-foreground"
                     : "rounded-bl-none bg-muted"
                 )}
               >
-                {msg.senderId !== "me" && (
-                  <p className="font-semibold text-primary">{msg.senderName}</p>
+                {msg.sender.id !== userId && (
+                  <p className="font-semibold text-primary">
+                    {msg.sender.name}
+                  </p>
                 )}
                 <p className="mt-1">{msg.content}</p>
                 <p className="mt-2 text-right text-xs opacity-70">
-                  {msg.timestamp}
+                  {new Date(msg.createdAt).toLocaleTimeString()}
                 </p>
               </div>
             </div>
           ))}
+          {strangerTyping && (
+            <div className="flex items-end justify-start gap-2">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback>...</AvatarFallback>
+              </Avatar>
+              <div className="rounded-lg bg-muted p-3 text-sm shadow-md">
+                <div className="flex items-center gap-1">
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
-      </ScrollArea>
+      </div>
 
       {/* Input */}
       <div className="border-t p-4">
@@ -215,11 +224,12 @@ export const ChatRoomWindow = ({
           className="flex items-center gap-3"
           onSubmit={(e) => {
             e.preventDefault();
+            handleSend();
           }}
         >
           <Input
             autoComplete="off"
-            onChange={(e) => setInput(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type a message..."
             value={input}
           />
@@ -237,7 +247,12 @@ export const ChatRoomWindow = ({
             <Button size="icon" type="button" variant="ghost">
               <Paperclip className="h-5 w-5 text-muted-foreground" />
             </Button>
-            <Button className="ml-2" size="icon" type="submit">
+            <Button
+              className="ml-2"
+              disabled={!input.trim()}
+              size="icon"
+              type="submit"
+            >
               <Send className="h-5 w-5" />
             </Button>
           </div>

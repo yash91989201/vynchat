@@ -27,3 +27,27 @@ export type UpdateProfileFormType = z.infer<typeof UpdateProfileFormSchema>;
 export type ChangePasswordFormType = z.infer<typeof ChangePasswordFormSchema>;
 
 export type SendMessageFormType = z.infer<typeof SendMessageFormSchema>;
+
+export interface ChatMessageSender {
+  id: string;
+  name: string | null;
+  image: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  roomId: string;
+  content: string;
+  createdAt: Date;
+  senderId: string;
+  sender: ChatMessageSender;
+}
+
+export interface ChatRoom {
+  id: string;
+  name: string;
+  isDM: boolean;
+  ownerId: string;
+  createdAt: Date;
+  memberCount: number;
+}

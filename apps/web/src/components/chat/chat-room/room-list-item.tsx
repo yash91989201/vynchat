@@ -21,7 +21,7 @@ export const RoomListItem = ({
     <Button
       className={cn(
         "h-auto w-full justify-start gap-3 whitespace-normal rounded-lg p-3 text-left",
-        isSelected && "bg-muted",
+        isSelected && "bg-muted"
       )}
       onClick={() => onSelect(room.id)}
       variant="ghost"
@@ -39,7 +39,7 @@ export const RoomListItem = ({
       <div className="flex-1 overflow-hidden">
         <p className="truncate font-semibold">{room.name}</p>
         <p className="truncate text-muted-foreground text-sm">
-          {isMyRoom ? room.lastMessage : `${room.members} members`}
+          {isMyRoom ? room.lastMessage : `${room.memberCount} members`}
         </p>
       </div>
       {isMyRoom && (

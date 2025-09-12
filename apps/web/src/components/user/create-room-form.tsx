@@ -1,22 +1,16 @@
-import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
-import { useMutation } from "@tanstack/react-query";
-import { Loader2 } from "lucide-react";
-import { type SubmitHandler, useForm } from "react-hook-form";
-
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import z from "zod";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import {
-  Drawer,
-  DrawerContent,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
 import {
   Form,
   FormControl,
@@ -26,111 +20,61 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { CreateRoomFormSchema } from "@/lib/schemas";
-import type { CreateRoomFormType } from "@/lib/types";
-import { queryUtils } from "@/utils/orpc";
-import { Button } from "../ui/button";
 
-export const CreateRoomForm = ({
-  onCreateRoom,
-}: {
-  onCreateRoom: (roomId: string) => void;
-}) => {
-  const isMobile = useIsMobile(1024);
+const formSchema = z.object({
+  name: z.string().min(3, "Name must be at least 3 characters"),
+});
 
-  const { mutateAsync: createRoom } = useMutation(
-    queryUtils.user.createRoom.mutationOptions({})
-  );
-  const form = useForm({
-    resolver: standardSchemaResolver(CreateRoomFormSchema),
+interface CreateRoomFormProps {
+  createRoom: (values: { name: string }) => void;
+}
+
+export const CreateRoomForm = ({ createRoom }: CreateRoomFormProps) => {
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       name: "",
     },
   });
 
-  const onSubmit: SubmitHandler<CreateRoomFormType> = async (formData) => {
-    const createRoomRes = await createRoom(formData);
-    onCreateRoom(createRoomRes.id);
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    createRoom(values);
   };
-
-  if (isMobile) {
-    return (
-      <Drawer>
-        <DrawerTrigger asChild>
-          <Button className="w-full" variant="secondary">
-            Create a room
-          </Button>
-        </DrawerTrigger>
-        <DrawerContent className="px-4 pb-4">
-          <DrawerHeader className="sr-only">
-            <DrawerTitle>Create a new room</DrawerTitle>
-          </DrawerHeader>
-          <Form {...form}>
-            <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Discussion Room" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <Button className="w-full" disabled={form.formState.isSubmitting}>
-                {form.formState.isSubmitting && (
-                  <Loader2 className="mr-1.5 size-4.5 animate-spin" />
-                )}
-                <span>Create Room</span>
-              </Button>
-            </form>
-          </Form>
-        </DrawerContent>
-      </Drawer>
-    );
-  }
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button className="w-full" variant="secondary">
-          Create a room
-        </Button>
+        <Button className="w-full">Create Room</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create a new room</DialogTitle>
+          <DialogDescription>
+            Enter a name for your new room. You can invite others later.
+          </DialogDescription>
         </DialogHeader>
         <Form {...form}>
-          <form className="space-y-6" onSubmit={form.handleSubmit(onSubmit)}>
+          <form className="space-y-8" onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
               control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>Room Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="(e.g Movies Discussion)" {...field} />
+                    <Input placeholder="e.g. Tech Talk" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-
-            <Button className="w-full" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting && (
-                <Loader2 className="mr-1.5 size-4.5 animate-spin" />
-              )}
-              <span>Create Room</span>
-            </Button>
+            <DialogFooter>
+              <Button type="submit">Create</Button>
+            </DialogFooter>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
 };
+

@@ -1,9 +1,31 @@
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 import z from "zod";
 import { message, roomMember } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
+import { MessageOutput } from "@/lib/schemas";
 
 export const messageRouter = {
+  list: protectedProcedure
+    .input(z.object({ roomId: z.string() }))
+    .output(z.array(MessageOutput))
+    .handler(async ({ context, input }) => {
+      const messages = await context.db.query.message.findMany({
+        where: eq(message.roomId, input.roomId),
+        with: {
+          sender: {
+            columns: {
+              id: true,
+              name: true,
+              image: true,
+            },
+          },
+        },
+        orderBy: asc(message.createdAt),
+        limit: 50,
+      });
+
+      return messages;
+    }),
   send: protectedProcedure
     .input(
       z.object({
@@ -11,15 +33,7 @@ export const messageRouter = {
         content: z.string().min(1).max(1000),
       })
     )
-    .output(
-      z.object({
-        id: z.string(),
-        content: z.string(),
-        senderId: z.string(),
-        roomId: z.string(),
-        createdAt: z.date(),
-      })
-    )
+    .output(MessageOutput)
     .handler(async ({ context, input }) => {
       const { roomId, content } = input;
       const userId = context.session.user.id;
@@ -43,16 +57,15 @@ export const messageRouter = {
           content,
           senderId: userId,
           roomId,
-          createdAt: new Date(),
         })
         .returning();
 
       return {
-        id: newMessage.id,
-        content: newMessage.content,
-        senderId: newMessage.senderId,
-        roomId: newMessage.roomId,
-        createdAt: newMessage.createdAt,
+        ...newMessage,
+        sender: {
+          ...context.session.user,
+          image: null,
+        },
       };
     }),
 };

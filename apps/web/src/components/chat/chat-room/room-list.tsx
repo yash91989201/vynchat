@@ -16,6 +16,7 @@ export const RoomList = ({
   globalRooms,
   selectedRoomId,
   onRoomSelect,
+  createRoom,
 }: RoomListProps) => {
   const [search, setSearch] = useState("");
 
@@ -51,7 +52,7 @@ export const RoomList = ({
             <AccordionTrigger className="px-2 font-semibold text-muted-foreground text-sm hover:no-underline">
               My Rooms
             </AccordionTrigger>
-            <AccordionContent>
+            <AccordionContent className="space-y-3">
               {filteredMyRooms.length > 0 ? (
                 <div className="flex flex-col gap-1 py-1">
                   {filteredMyRooms.map((room) => (
@@ -75,9 +76,9 @@ export const RoomList = ({
                       You haven't created any rooms yet.
                     </p>
                   </div>
-                  <CreateRoomForm onCreateRoom={onRoomSelect} />
                 </div>
               )}
+              <CreateRoomForm createRoom={createRoom} />
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="global-rooms">
@@ -85,17 +86,23 @@ export const RoomList = ({
               Global Rooms
             </AccordionTrigger>
             <AccordionContent>
-              <div className="flex flex-col gap-1 py-1">
-                {filteredGlobalRooms.map((room) => (
-                  <RoomListItem
-                    isMyRoom={false}
-                    isSelected={selectedRoomId === room.id}
-                    key={room.id}
-                    onSelect={onRoomSelect}
-                    room={room}
-                  />
-                ))}
-              </div>
+              {filteredGlobalRooms.length > 0 ? (
+                <div className="flex flex-col gap-1 py-1">
+                  {filteredGlobalRooms.map((room) => (
+                    <RoomListItem
+                      isMyRoom={false}
+                      isSelected={selectedRoomId === room.id}
+                      key={room.id}
+                      onSelect={onRoomSelect}
+                      room={room}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <p className="p-4 text-center text-sm text-muted-foreground">
+                  No global rooms available.
+                </p>
+              )}
             </AccordionContent>
           </AccordionItem>
         </Accordion>
