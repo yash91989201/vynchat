@@ -3,5 +3,9 @@
     "@supabase/supabase-js": "jsr:@supabase/supabase-js@2.57.4",
     "@supabase/functions-js": "jsr:@supabase/functions-js@2.4.6",
     "@paralleldrive/cuid2": "npm:@paralleldrive/cuid2@2.2.2"
+  },
+  "compilerOptions": {
+    "lib": ["deno.window"],
+    "strict": true
   }
 }

@@ -2,17 +2,31 @@ import { createClient, type RealtimeChannel } from "@supabase/supabase-js";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createId } from "@paralleldrive/cuid2";
 
+// Initialize Supabase client with service role key
 const supabase = createClient(
-  Deno.env.get("SUPABASE_URL"),
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const isWaiting = (presenceState: any, userId: string) => {
+/**
+ * Check if a user is currently in waiting status based on presence state
+ */
+const isWaiting = (
+  presenceState: Record<string, any>,
+  userId: string
+): boolean => {
   const pres = presenceState[userId] as any[] | undefined;
-  return pres?.some((p) => p.status === "waiting");
+  return pres?.some((p) => p.status === "waiting") ?? false;
 };
 
-const hasRecentlySkipped = async (user1: string, user2: string) => {
+/**
+ * Check if two users have recently skipped each other (within 30 seconds)
+ * If found, clean up the skipped pairs to allow future matching
+ */
+const hasRecentlySkipped = async (
+  user1: string,
+  user2: string
+): Promise<boolean> => {
   const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
 
   const { data: skippedPairs, error } = await supabase
@@ -25,10 +39,11 @@ const hasRecentlySkipped = async (user1: string, user2: string) => {
 
   if (error) {
     console.error("Error checking skipped pairs:", error);
-    return false;
+    return false; // Allow matching if there's an error
   }
 
   if (skippedPairs && skippedPairs.length > 0) {
+    // Clean up skipped pairs to allow future matching
     for (const pair of skippedPairs) {
       const { error: deleteError } = await supabase
         .from("skipped_pair")
@@ -46,11 +61,97 @@ const hasRecentlySkipped = async (user1: string, user2: string) => {
   return false;
 };
 
-Deno.serve(async () => {
-  try {
-    console.log("Matchmaker function started");
+/**
+ * Create a new room and add both users as members
+ */
+const createMatchRoom = async (user1: string, user2: string) => {
+  const roomId = createId();
 
-    // 1. Read up to 10 queue messages WITHOUT removing
+  const { data: roomRes, error: roomErr } = await supabase
+    .from("room")
+    .insert({
+      id: roomId,
+      name: `${user1}-${user2}`,
+      isDM: true,
+      owner_id: user1,
+    })
+    .select("*")
+    .single();
+
+  if (roomErr) throw roomErr;
+
+  // Add both users to the room
+  const { error: memberErr } = await supabase.from("room_member").insert([
+    { room_id: roomId, user_id: user1 },
+    { room_id: roomId, user_id: user2 },
+  ]);
+
+  if (memberErr) throw memberErr;
+
+  return roomRes;
+};
+
+/**
+ * Notify a user via realtime channel
+ */
+const notifyUser = async (userId: string, event: string, payload: any) => {
+  const channel = supabase.channel(`user:${userId}`);
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      channel.subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          resolve();
+        }
+      });
+      setTimeout(() => reject(new Error("Subscribe timeout")), 2000);
+    });
+
+    await channel.send({
+      type: "broadcast",
+      event,
+      payload,
+    });
+  } catch (error) {
+    console.error(`Error notifying user ${userId}:`, error);
+  } finally {
+    await supabase.removeChannel(channel);
+  }
+};
+
+/**
+ * Delete queue messages in batch
+ */
+const deleteQueueMessages = async (messageIds: bigint[]) => {
+  const results = await Promise.allSettled(
+    messageIds.map(async (msgId) => {
+      const { error } = await supabase.schema("pgmq_public").rpc("delete", {
+        queue_name: "stranger-queue",
+        message_id: msgId,
+      });
+
+      if (error) {
+        console.error(`Error deleting message ${msgId}:`, error);
+        throw error;
+      }
+      return msgId;
+    })
+  );
+
+  const failures = results.filter((result) => result.status === "rejected");
+  if (failures.length > 0) {
+    console.warn(`Failed to delete ${failures.length} messages`);
+  }
+};
+
+/**
+ * Main matchmaking handler
+ */
+Deno.serve(async (req: Request) => {
+  try {
+    console.log("🎯 Matchmaker function started");
+
+    // 1. Read pending queue messages (up to 10)
     const { data: msgs, error: readErr } = await supabase
       .schema("pgmq_public")
       .rpc("read", {
@@ -59,170 +160,177 @@ Deno.serve(async () => {
         sleep_seconds: 0,
       });
 
-    if (readErr) throw readErr;
+    if (readErr) {
+      throw new Error(`Failed to read queue: ${readErr.message}`);
+    }
 
     const users = msgs ?? [];
-    console.log(`Found ${users.length} users in queue`);
+    console.log(`📋 Found ${users.length} users in queue`);
 
-    const pairedRooms: any[] = [];
-    const processedMessageIds: bigint[] = [];
+    if (users.length === 0) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "No users in queue",
+          stats: { totalUsers: 0, pairedRooms: 0, processedMessages: 0 },
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+    }
 
-    // 2. Get lobby presence snapshot (subscribe briefly, then close)
-    let presenceState: Record<string, unknown> = {};
+    // 2. Subscribe to lobby presence to get current user statuses
+    let presenceState: Record<string, any> = {};
     const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
       config: { presence: { enabled: true } },
     });
 
-    await new Promise<void>((resolve, reject) => {
-      lobbyChannel.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          presenceState = lobbyChannel.presenceState();
-          resolve();
-        }
+    try {
+      await new Promise<void>((resolve, reject) => {
+        lobbyChannel.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            presenceState = lobbyChannel.presenceState();
+            console.log(
+              `👥 Got presence for ${Object.keys(presenceState).length} users`
+            );
+            resolve();
+          } else if (status === "CHANNEL_ERROR") {
+            reject(new Error("Failed to subscribe to presence"));
+          }
+        });
+
+        setTimeout(() => reject(new Error("Presence subscribe timeout")), 3000);
       });
+    } catch (presenceError) {
+      console.warn(
+        "! Failed to get presence state, proceeding anyway:",
+        presenceError
+      );
+      // Continue without presence validation
+    }
 
-      setTimeout(() => reject(new Error("Presence subscribe timeout")), 1500);
-    });
+    // 3. Process users in pairs
+    const pairedRooms: any[] = [];
+    const processedMessageIds: bigint[] = [];
 
-    // 3. Process in pairs
     for (let i = 0; i + 1 < users.length; i += 2) {
       const u1 = users[i];
       const u2 = users[i + 1];
       const user1 = u1.message.userId as string;
       const user2 = u2.message.userId as string;
 
-      if (
-        !(isWaiting(presenceState, user1) && isWaiting(presenceState, user2))
-      ) {
-        console.log(
-          `Skipping pair [${user1}, ${user2}] because one or both are not waiting`
-        );
-        processedMessageIds.push(u1.msg_id, u2.msg_id);
-        continue;
+      console.log(`🔍 Evaluating pair: ${user1} <-> ${user2}`);
+
+      // Check if both users are still waiting
+      if (Object.keys(presenceState).length > 0) {
+        if (
+          !isWaiting(presenceState, user1) ||
+          !isWaiting(presenceState, user2)
+        ) {
+          console.log(`⏭ Skipping pair - not both waiting`);
+          processedMessageIds.push(u1.msg_id, u2.msg_id);
+          continue;
+        }
       }
 
+      // Check if they recently skipped each other
       if (await hasRecentlySkipped(user1, user2)) {
-        console.log(
-          `Skipping pair [${user1}, ${user2}] because they recently skipped each other`
-        );
-        continue;
+        console.log(`⏭ Skipping pair - recently skipped each other`);
+        continue; // Don't remove messages, let them match with others
       }
 
-      console.log(`Matching users: ${user1} with ${user2}`);
+      try {
+        console.log(`✅ Matching users: ${user1} with ${user2}`);
 
-      const { data: roomRes, error: roomErr } = await supabase
-        .from("room")
-        .insert({
-          id: createId(),
-          name: `${user1}-${user2}`,
-          isDM: true,
-          owner_id: user1,
-        })
-        .select("*")
-        .single();
+        // Create room and add members
+        const roomRes = await createMatchRoom(user1, user2);
 
-      if (roomErr) throw roomErr;
-      const roomId = roomRes.id;
+        // Mark messages for deletion
+        processedMessageIds.push(u1.msg_id, u2.msg_id);
 
-      await supabase.from("room_member").insert([
-        { room_id: roomId, user_id: user1 },
-        { room_id: roomId, user_id: user2 },
-      ]);
+        // Notify both users
+        await Promise.all([
+          notifyUser(user1, "stranger_matched", { room: roomRes }),
+          notifyUser(user2, "stranger_matched", { room: roomRes }),
+        ]);
 
-      processedMessageIds.push(u1.msg_id, u2.msg_id);
-
-      const notify = async (uid: string) => {
-        const ch = supabase.channel(`user:${uid}`);
-        ch.subscribe();
-        await ch.send({
-          type: "broadcast",
-          event: "stranger_matched",
-          payload: { room: roomRes },
-        });
-        await supabase.removeChannel(ch);
-      };
-
-      await notify(user1);
-      await notify(user2);
-
-      pairedRooms.push(roomRes);
+        pairedRooms.push(roomRes);
+        console.log(`🎉 Successfully matched pair ${pairedRooms.length}`);
+      } catch (matchError) {
+        console.error(`❌ Error matching ${user1} and ${user2}:`, matchError);
+        // Don't add to processedMessageIds so they can try again
+      }
     }
 
-    // 4. Delete processed queue messages
-    for (const msgId of processedMessageIds) {
-      const { error: delErr } = await supabase
-        .schema("pgmq_public")
-        .rpc("delete", {
-          queue_name: "stranger-queue",
-          message_id: msgId,
-        });
-
-      if (delErr) console.error(`Error deleting msg ${msgId}:`, delErr);
+    // 4. Clean up processed queue messages
+    if (processedMessageIds.length > 0) {
+      console.log(
+        `🧹 Deleting ${processedMessageIds.length} processed messages`
+      );
+      await deleteQueueMessages(processedMessageIds);
     }
 
     // 5. Handle leftover odd user
     if (users.length % 2 === 1) {
-      const leftover = users.at(-1);
+      const leftover = users.at(-1)!;
       const userId = leftover.message.userId as string;
 
+      console.log(`👤 Handling leftover user: ${userId}`);
+
+      // Always remove leftover message
       try {
         await supabase.schema("pgmq_public").rpc("delete", {
           queue_name: "stranger-queue",
           message_id: leftover.msg_id,
         });
-      } catch (e) {
-        console.error("Error deleting leftover msg:", e);
+      } catch (deleteError) {
+        console.error("Error deleting leftover message:", deleteError);
       }
 
-      const ch = supabase.channel(`user:${userId}`);
-      ch.subscribe();
-      await ch.send({
-        type: "broadcast",
-        event: "stranger_idle",
-        payload: { reason: "No match found this round, back to idle" },
+      // Notify user to return to idle
+      await notifyUser(userId, "stranger_idle", {
+        reason: "No match found this round, back to idle",
       });
-      await supabase.removeChannel(ch);
     }
 
-    // 6. Clean up lobby channel before returning
+    // 6. Clean up lobby channel
     await supabase.removeChannel(lobbyChannel);
 
-    console.log(`Matchmaker completed: matched ${pairedRooms.length} pairs`);
+    const stats = {
+      totalUsers: users.length,
+      pairedRooms: pairedRooms.length,
+      processedMessages: processedMessageIds.length,
+    };
 
-    // EXPLICIT RESPONSE RETURN - This fixes the InvalidWorkerResponse error
+    console.log(`✨ Matchmaker completed:`, stats);
+
     return new Response(
       JSON.stringify({
         success: true,
         message: "Matchmaker completed successfully",
-        stats: {
-          totalUsers: users.length,
-          pairedRooms: pairedRooms.length,
-          processedMessages: processedMessageIds.length,
-        },
+        stats,
         rooms: pairedRooms,
       }),
       {
         status: 200,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       }
     );
-  } catch (err) {
-    console.error("Matchmaker error:", err);
+  } catch (error) {
+    console.error("💥 Matchmaker error:", error);
 
-    // EXPLICIT ERROR RESPONSE - Also return proper response on error
     return new Response(
       JSON.stringify({
         success: false,
         error: "Matchmaker function failed",
-        message: err instanceof Error ? err.message : "Unknown error occurred",
+        message:
+          error instanceof Error ? error.message : "Unknown error occurred",
       }),
       {
         status: 500,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       }
     );
   }

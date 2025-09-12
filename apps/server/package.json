@@ -11,13 +11,14 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate"
+    "db:migrate": "drizzle-kit migrate",
+    "update": "bun update --latest"
   },
   "dependencies": {
-    "@orpc/client": "^1.8.7",
-    "@orpc/openapi": "^1.8.7",
-    "@orpc/server": "^1.8.7",
-    "@orpc/zod": "^1.8.7",
+    "@orpc/client": "^1.8.8",
+    "@orpc/openapi": "^1.8.8",
+    "@orpc/server": "^1.8.8",
+    "@orpc/zod": "^1.8.8",
     "@paralleldrive/cuid2": "^2.2.2",
     "@supabase/supabase-js": "^2.57.4",
     "@t3-oss/env-core": "^0.13.8",
@@ -28,7 +29,7 @@
     "drizzle-zod": "^0.8.3",
     "hono": "^4.9.6",
     "pg": "^8.16.3",
-    "zod": "^4.1.5"
+    "zod": "^4.1.8"
   },
   "trustedDependencies": [
     "supabase"
@@ -37,7 +38,7 @@
     "@types/bun": "^1.2.21",
     "@types/pg": "^8.15.5",
     "drizzle-kit": "^0.31.4",
-    "tsdown": "^0.14.2",
+    "tsdown": "^0.15.0",
     "typescript": "^5.9.2"
   }
 }
