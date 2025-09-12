@@ -181,7 +181,7 @@ export const ChatRoomWindow = ({
             </Dialog>
             <Sheet>
               <SheetTrigger asChild>
-                <Button size="icon" variant="outline">
+                <Button className="sr-only" size="icon" variant="outline">
                   <PanelRightOpen className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
