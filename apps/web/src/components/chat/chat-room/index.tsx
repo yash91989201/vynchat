@@ -4,35 +4,7 @@ import { ChatRoomWindow } from "./chat-room-window";
 import { RoomList } from "./room-list";
 import type { Room } from "./types";
 
-const myRoomsData: Room[] = [
-  {
-    id: "room1",
-    name: "Design Team",
-    lastMessage: "Let's review the new mockups.",
-    time: "10:45 AM",
-    unread: 2,
-    avatar: "/avatars/team-design.png",
-    members: 8,
-  },
-  {
-    id: "room2",
-    name: "Frontend Devs",
-    lastMessage: "I've pushed the latest changes.",
-    time: "9:30 AM",
-    unread: 0,
-    avatar: "/avatars/team-frontend.png",
-    members: 12,
-  },
-  {
-    id: "room3",
-    name: "Project Phoenix",
-    lastMessage: "Meeting at 2 PM.",
-    time: "Yesterday",
-    unread: 5,
-    avatar: "/avatars/project-phoenix.png",
-    members: 5,
-  },
-];
+const myRoomsData: Room[] = [];
 
 const globalRoomsData: Room[] = [
   { id: "room4", name: "General", members: 128 },

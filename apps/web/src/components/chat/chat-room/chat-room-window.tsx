@@ -108,7 +108,7 @@ export const ChatRoomWindow = ({
               </Button>
             </DialogTrigger>
             <DialogContent className="flex h-[80vh] max-w-[90vw] flex-col sm:max-w-lg">
-              <DialogHeader>
+              <DialogHeader className="sr-only">
                 <DialogTitle>Select a Room</DialogTitle>
               </DialogHeader>
               <RoomList
