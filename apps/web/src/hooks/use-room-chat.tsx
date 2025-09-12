@@ -38,6 +38,15 @@ export const useRoomChat = (user: Member) => {
     queryUtils.message.send.mutationOptions({})
   );
 
+  const { data: initialMessages } = useQuery(
+    queryUtils.message.list.queryOptions({
+      input: {
+        roomId: selectedRoomId ?? "",
+      },
+      enabled: !!selectedRoomId,
+    })
+  );
+
   const { mutate: createRoom } = useMutation(
     queryUtils.room.create.mutationOptions({
       onSuccess: () => {
@@ -103,31 +112,11 @@ export const useRoomChat = (user: Member) => {
       return;
     }
 
-    const loadMessages = async () => {
-      try {
-        const { data: existingMessages } = await supabase
-          .from("message")
-          .select(`
-            *,
-            sender:sender_id (
-              id,
-              name,
-              image
-            )
-          `)
-          .eq("room_id", selectedRoomId)
-          .order("created_at", { ascending: true });
-        if (existingMessages) {
-          setMessages(existingMessages);
-        }
-      } catch (error) {
-        console.error("Error loading messages:", error);
-        setMessages([]);
-      }
-    };
-
-    loadMessages();
-  }, [selectedRoomId]);
+    // Use initialMessages from React Query instead of direct Supabase query
+    if (initialMessages) {
+      setMessages(initialMessages);
+    }
+  }, [selectedRoomId, initialMessages]);
 
   // Effect to handle room subscription and member tracking
   useEffect(() => {
