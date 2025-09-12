@@ -8,35 +8,40 @@ export const Route = createFileRoute("/(authenticated)/chat")({
   component: RouteComponent,
 });
 
+import { WelcomeDialog } from "@/components/user/welcome-dialog";
+
 function RouteComponent() {
   return (
-    <main className="container mx-auto my-6 flex-1 px-3 md:px-6">
-      <div className="flex-col gap-6">
-        <Tabs className="h-full" defaultValue="chat-rooms">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger
-              className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-              value="chat-rooms"
-            >
-              <MessagesSquare className="mr-2" />
-              <span>Chat Rooms</span>
-            </TabsTrigger>
-            <TabsTrigger
-              className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
-              value="stranger-chat"
-            >
-              <HatGlasses className="mr-2" />
-              <span>Stranger Chat</span>
-            </TabsTrigger>
-          </TabsList>
-          <TabsContent value="chat-rooms">
-            <ChatRoom />
-          </TabsContent>
-          <TabsContent value="stranger-chat">
-            <StrangerChat />
-          </TabsContent>
-        </Tabs>
-      </div>
-    </main>
+    <>
+      <WelcomeDialog />
+      <main className="container mx-auto my-6 flex-1 px-3 md:px-6">
+        <div className="flex-col gap-6">
+          <Tabs className="h-full" defaultValue="chat-rooms">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger
+                className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                value="chat-rooms"
+              >
+                <MessagesSquare className="mr-2" />
+                <span>Chat Rooms</span>
+              </TabsTrigger>
+              <TabsTrigger
+                className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
+                value="stranger-chat"
+              >
+                <HatGlasses className="mr-2" />
+                <span>Stranger Chat</span>
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="chat-rooms">
+              <ChatRoom />
+            </TabsContent>
+            <TabsContent value="stranger-chat">
+              <StrangerChat />
+            </TabsContent>
+          </Tabs>
+        </div>
+      </main>
+    </>
   );
 }
