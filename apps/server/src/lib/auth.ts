@@ -20,6 +20,18 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
   },
+  socialProviders: {
+    google: {
+      clientId: env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      prompt: "select_account",
+    },
+    facebook: {
+      clientId: env.FACEBOOK_CLIENT_ID,
+      clientSecret: env.FACEBOOK_CLIENT_SECRET,
+      scopes: ["email"],
+    },
+  },
   advanced: {
     defaultCookieAttributes: {
       sameSite: "none",

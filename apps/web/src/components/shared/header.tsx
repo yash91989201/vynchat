@@ -6,8 +6,8 @@ import { UserMenu } from "@/components/shared/user-menu";
 export const Header = () => {
   const links = [
     { to: "/", label: "Home" },
-    { to: "/chat", label: "Chat" },
     { to: "/blogs", label: "Blogs" },
+    { to: "/chat", label: "Chat" },
     { to: "/feedback", label: "Feedback" },
     { to: "/about", label: "About" },
   ] as const;

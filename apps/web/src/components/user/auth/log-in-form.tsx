@@ -2,6 +2,8 @@ import { standardSchemaResolver } from "@hookform/resolvers/standard-schema";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "sonner";
+import { FacebookSignInButton } from "@/components/shared/auth/facebook-sign-in-button";
+import { GoogleSignInButton } from "@/components/shared/auth/google-sign-in-button";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Card,
@@ -26,7 +28,6 @@ import type { LogInFormType } from "@/lib/types";
 
 export const LogInForm = () => {
   const navigate = useNavigate({ from: "/" });
-
   const form = useForm<LogInFormType>({
     resolver: standardSchemaResolver(LogInFormSchema),
     defaultValues: {
@@ -60,9 +61,9 @@ export const LogInForm = () => {
         <CardDescription>Sign in to your account to continue</CardDescription>
       </CardHeader>
 
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <CardContent className="space-y-4">
+      <CardContent className="space-y-4">
+        <Form {...form}>
+          <form className="space-y-4" onSubmit={form.handleSubmit(onSubmit)}>
             <FormField
               control={form.control}
               name="email"
@@ -80,7 +81,6 @@ export const LogInForm = () => {
                 </FormItem>
               )}
             />
-
             <FormField
               control={form.control}
               name="password"
@@ -94,25 +94,36 @@ export const LogInForm = () => {
                 </FormItem>
               )}
             />
-          </CardContent>
 
-          <CardFooter className="mt-6 flex flex-col">
             <Button className="w-full" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? "Logging In" : "Log In"}
             </Button>
+          </form>
+        </Form>
 
-            <p className="text-muted-foreground text-sm">
-              Don’t have an account?{" "}
-              <Link
-                className={buttonVariants({ variant: "link" })}
-                to="/sign-up"
-              >
-                Sign Up
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Form>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-muted-foreground">
+              Or sign in with Google
+            </span>
+          </div>
+        </div>
+
+        <GoogleSignInButton />
+        <FacebookSignInButton />
+      </CardContent>
+
+      <CardFooter className="flex flex-col">
+        <p className="text-muted-foreground text-sm">
+          Don't have an account?{" "}
+          <Link className={buttonVariants({ variant: "link" })} to="/sign-up">
+            Sign Up
+          </Link>
+        </p>
+      </CardFooter>
     </Card>
   );
 };
