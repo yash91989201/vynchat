@@ -52,6 +52,10 @@ export const CreateCommentFormSchema = z.object({
   text: z.string().min(1, "Comment cannot be empty."),
 });
 
+export const CreateFeedbackFormSchema = z.object({
+  message: z.string().min(1, "Feedback cannot be empty."),
+});
+
 export const UpdateProfileFormSchema = z.object({
   name: z.string().min(1, "Name is required"),
   bio: z.string().optional(),

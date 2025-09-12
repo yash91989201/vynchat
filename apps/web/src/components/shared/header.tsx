@@ -8,6 +8,7 @@ export const Header = () => {
     { to: "/", label: "Home" },
     { to: "/chat", label: "Chat" },
     { to: "/blogs", label: "Blogs" },
+    { to: "/feedback", label: "Feedback" },
     { to: "/about", label: "About" },
   ] as const;
 

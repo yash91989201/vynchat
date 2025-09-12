@@ -33,7 +33,10 @@ export const feedbackRouter = {
     .handler(async ({ input, context }) => {
       const feedbackData = await context.db.query.feedback.findFirst({
         where: (feedback, { eq, and }) =>
-          and(eq(feedback.id, input.id), eq(feedback.userId, context.session.user.id)),
+          and(
+            eq(feedback.id, input.id),
+            eq(feedback.userId, context.session.user.id)
+          ),
         with: {
           user: {
             columns: {
@@ -56,7 +59,8 @@ export const feedbackRouter = {
       const { limit = 20, offset = 0 } = input;
 
       const feedbacks = await context.db.query.feedback.findMany({
-        where: (feedback, { eq }) => eq(feedback.userId, context.session.user.id),
+        where: (feedback, { eq }) =>
+          eq(feedback.userId, context.session.user.id),
         limit,
         offset,
         orderBy: (feedback, { desc }) => desc(feedback.createdAt),

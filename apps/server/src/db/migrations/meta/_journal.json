@@ -15,6 +15,13 @@
       "when": 1757586751589,
       "tag": "0001_real_cloak",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1757686455650,
+      "tag": "0002_heavy_runaways",
+      "breakpoints": true
     }
   ]
 }

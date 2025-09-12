@@ -13,6 +13,7 @@ import { Route as authenticatedRouteRouteImport } from './routes/(authenticated)
 import { Route as publicIndexRouteImport } from './routes/(public)/index'
 import { Route as publicAboutRouteImport } from './routes/(public)/about'
 import { Route as authenticatedProfileRouteImport } from './routes/(authenticated)/profile'
+import { Route as authenticatedFeedbackRouteImport } from './routes/(authenticated)/feedback'
 import { Route as authenticatedChatRouteImport } from './routes/(authenticated)/chat'
 import { Route as authSignUpRouteImport } from './routes/(auth)/sign-up'
 import { Route as authLogInRouteImport } from './routes/(auth)/log-in'
@@ -25,6 +26,7 @@ import { Route as authenticatedAdminDashboardRouteRouteImport } from './routes/(
 import { Route as publicBlogsSlugIndexRouteImport } from './routes/(public)/blogs/$slug/index'
 import { Route as authenticatedAdminDashboardIndexRouteImport } from './routes/(authenticated)/admin/dashboard/index'
 import { Route as authenticatedAdminDashboardTagsRouteImport } from './routes/(authenticated)/admin/dashboard/tags'
+import { Route as authenticatedAdminDashboardFeedbacksRouteImport } from './routes/(authenticated)/admin/dashboard/feedbacks'
 import { Route as authenticatedAdminDashboardCommentsRouteImport } from './routes/(authenticated)/admin/dashboard/comments'
 import { Route as authenticatedAdminDashboardCategoriesRouteImport } from './routes/(authenticated)/admin/dashboard/categories'
 import { Route as authenticatedAdminDashboardBlogsIndexRouteImport } from './routes/(authenticated)/admin/dashboard/blogs/index'
@@ -47,6 +49,11 @@ const publicAboutRoute = publicAboutRouteImport.update({
 const authenticatedProfileRoute = authenticatedProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => authenticatedRouteRoute,
+} as any)
+const authenticatedFeedbackRoute = authenticatedFeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
   getParentRoute: () => authenticatedRouteRoute,
 } as any)
 const authenticatedChatRoute = authenticatedChatRouteImport.update({
@@ -113,6 +120,12 @@ const authenticatedAdminDashboardTagsRoute =
     path: '/tags',
     getParentRoute: () => authenticatedAdminDashboardRouteRoute,
   } as any)
+const authenticatedAdminDashboardFeedbacksRoute =
+  authenticatedAdminDashboardFeedbacksRouteImport.update({
+    id: '/feedbacks',
+    path: '/feedbacks',
+    getParentRoute: () => authenticatedAdminDashboardRouteRoute,
+  } as any)
 const authenticatedAdminDashboardCommentsRoute =
   authenticatedAdminDashboardCommentsRouteImport.update({
     id: '/comments',
@@ -144,6 +157,7 @@ export interface FileRoutesByFullPath {
   '/log-in': typeof authLogInRoute
   '/sign-up': typeof authSignUpRoute
   '/chat': typeof authenticatedChatRoute
+  '/feedback': typeof authenticatedFeedbackRoute
   '/profile': typeof authenticatedProfileRoute
   '/about': typeof publicAboutRoute
   '/admin/dashboard': typeof authenticatedAdminDashboardRouteRouteWithChildren
@@ -153,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/blogs': typeof publicBlogsIndexRoute
   '/admin/dashboard/categories': typeof authenticatedAdminDashboardCategoriesRoute
   '/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
+  '/admin/dashboard/feedbacks': typeof authenticatedAdminDashboardFeedbacksRoute
   '/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
   '/admin/dashboard/': typeof authenticatedAdminDashboardIndexRoute
   '/blogs/$slug': typeof publicBlogsSlugIndexRoute
@@ -165,6 +180,7 @@ export interface FileRoutesByTo {
   '/log-in': typeof authLogInRoute
   '/sign-up': typeof authSignUpRoute
   '/chat': typeof authenticatedChatRoute
+  '/feedback': typeof authenticatedFeedbackRoute
   '/profile': typeof authenticatedProfileRoute
   '/about': typeof publicAboutRoute
   '/admin/log-in': typeof authAdminLogInRoute
@@ -173,6 +189,7 @@ export interface FileRoutesByTo {
   '/blogs': typeof publicBlogsIndexRoute
   '/admin/dashboard/categories': typeof authenticatedAdminDashboardCategoriesRoute
   '/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
+  '/admin/dashboard/feedbacks': typeof authenticatedAdminDashboardFeedbacksRoute
   '/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
   '/admin/dashboard': typeof authenticatedAdminDashboardIndexRoute
   '/blogs/$slug': typeof publicBlogsSlugIndexRoute
@@ -186,6 +203,7 @@ export interface FileRoutesById {
   '/(auth)/log-in': typeof authLogInRoute
   '/(auth)/sign-up': typeof authSignUpRoute
   '/(authenticated)/chat': typeof authenticatedChatRoute
+  '/(authenticated)/feedback': typeof authenticatedFeedbackRoute
   '/(authenticated)/profile': typeof authenticatedProfileRoute
   '/(public)/about': typeof publicAboutRoute
   '/(public)/': typeof publicIndexRoute
@@ -196,6 +214,7 @@ export interface FileRoutesById {
   '/(public)/blogs/': typeof publicBlogsIndexRoute
   '/(authenticated)/admin/dashboard/categories': typeof authenticatedAdminDashboardCategoriesRoute
   '/(authenticated)/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
+  '/(authenticated)/admin/dashboard/feedbacks': typeof authenticatedAdminDashboardFeedbacksRoute
   '/(authenticated)/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
   '/(authenticated)/admin/dashboard/': typeof authenticatedAdminDashboardIndexRoute
   '/(public)/blogs/$slug/': typeof publicBlogsSlugIndexRoute
@@ -210,6 +229,7 @@ export interface FileRouteTypes {
     | '/log-in'
     | '/sign-up'
     | '/chat'
+    | '/feedback'
     | '/profile'
     | '/about'
     | '/admin/dashboard'
@@ -219,6 +239,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/admin/dashboard/categories'
     | '/admin/dashboard/comments'
+    | '/admin/dashboard/feedbacks'
     | '/admin/dashboard/tags'
     | '/admin/dashboard/'
     | '/blogs/$slug'
@@ -231,6 +252,7 @@ export interface FileRouteTypes {
     | '/log-in'
     | '/sign-up'
     | '/chat'
+    | '/feedback'
     | '/profile'
     | '/about'
     | '/admin/log-in'
@@ -239,6 +261,7 @@ export interface FileRouteTypes {
     | '/blogs'
     | '/admin/dashboard/categories'
     | '/admin/dashboard/comments'
+    | '/admin/dashboard/feedbacks'
     | '/admin/dashboard/tags'
     | '/admin/dashboard'
     | '/blogs/$slug'
@@ -251,6 +274,7 @@ export interface FileRouteTypes {
     | '/(auth)/log-in'
     | '/(auth)/sign-up'
     | '/(authenticated)/chat'
+    | '/(authenticated)/feedback'
     | '/(authenticated)/profile'
     | '/(public)/about'
     | '/(public)/'
@@ -261,6 +285,7 @@ export interface FileRouteTypes {
     | '/(public)/blogs/'
     | '/(authenticated)/admin/dashboard/categories'
     | '/(authenticated)/admin/dashboard/comments'
+    | '/(authenticated)/admin/dashboard/feedbacks'
     | '/(authenticated)/admin/dashboard/tags'
     | '/(authenticated)/admin/dashboard/'
     | '/(public)/blogs/$slug/'
@@ -308,6 +333,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof authenticatedProfileRouteImport
+      parentRoute: typeof authenticatedRouteRoute
+    }
+    '/(authenticated)/feedback': {
+      id: '/(authenticated)/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof authenticatedFeedbackRouteImport
       parentRoute: typeof authenticatedRouteRoute
     }
     '/(authenticated)/chat': {
@@ -394,6 +426,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authenticatedAdminDashboardTagsRouteImport
       parentRoute: typeof authenticatedAdminDashboardRouteRoute
     }
+    '/(authenticated)/admin/dashboard/feedbacks': {
+      id: '/(authenticated)/admin/dashboard/feedbacks'
+      path: '/feedbacks'
+      fullPath: '/admin/dashboard/feedbacks'
+      preLoaderRoute: typeof authenticatedAdminDashboardFeedbacksRouteImport
+      parentRoute: typeof authenticatedAdminDashboardRouteRoute
+    }
     '/(authenticated)/admin/dashboard/comments': {
       id: '/(authenticated)/admin/dashboard/comments'
       path: '/comments'
@@ -428,6 +467,7 @@ declare module '@tanstack/react-router' {
 interface authenticatedAdminDashboardRouteRouteChildren {
   authenticatedAdminDashboardCategoriesRoute: typeof authenticatedAdminDashboardCategoriesRoute
   authenticatedAdminDashboardCommentsRoute: typeof authenticatedAdminDashboardCommentsRoute
+  authenticatedAdminDashboardFeedbacksRoute: typeof authenticatedAdminDashboardFeedbacksRoute
   authenticatedAdminDashboardTagsRoute: typeof authenticatedAdminDashboardTagsRoute
   authenticatedAdminDashboardIndexRoute: typeof authenticatedAdminDashboardIndexRoute
   authenticatedAdminDashboardBlogsNewRoute: typeof authenticatedAdminDashboardBlogsNewRoute
@@ -440,6 +480,8 @@ const authenticatedAdminDashboardRouteRouteChildren: authenticatedAdminDashboard
       authenticatedAdminDashboardCategoriesRoute,
     authenticatedAdminDashboardCommentsRoute:
       authenticatedAdminDashboardCommentsRoute,
+    authenticatedAdminDashboardFeedbacksRoute:
+      authenticatedAdminDashboardFeedbacksRoute,
     authenticatedAdminDashboardTagsRoute: authenticatedAdminDashboardTagsRoute,
     authenticatedAdminDashboardIndexRoute:
       authenticatedAdminDashboardIndexRoute,
@@ -474,12 +516,14 @@ const authenticatedAdminRouteRouteWithChildren =
 interface authenticatedRouteRouteChildren {
   authenticatedAdminRouteRoute: typeof authenticatedAdminRouteRouteWithChildren
   authenticatedChatRoute: typeof authenticatedChatRoute
+  authenticatedFeedbackRoute: typeof authenticatedFeedbackRoute
   authenticatedProfileRoute: typeof authenticatedProfileRoute
 }
 
 const authenticatedRouteRouteChildren: authenticatedRouteRouteChildren = {
   authenticatedAdminRouteRoute: authenticatedAdminRouteRouteWithChildren,
   authenticatedChatRoute: authenticatedChatRoute,
+  authenticatedFeedbackRoute: authenticatedFeedbackRoute,
   authenticatedProfileRoute: authenticatedProfileRoute,
 }
 

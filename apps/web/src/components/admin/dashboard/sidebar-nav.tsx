@@ -8,7 +8,6 @@ import {
   PanelLeft,
   Plus,
   Tag,
-  Users,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -44,14 +43,14 @@ const navItems = [
     label: "Tags",
   },
   {
+    href: "/admin/dashboard/feedbacks",
+    icon: MessageSquare,
+    label: "Feedbacks",
+  },
+  {
     href: "/admin/dashboard/comments",
     icon: MessageSquare,
     label: "Comments",
-  },
-  {
-    href: "/admin/dashboard/users",
-    icon: Users,
-    label: "Users",
   },
 ];
 

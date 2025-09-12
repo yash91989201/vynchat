@@ -4,6 +4,7 @@ import type {
   CreateBlogFormSchema,
   CreateCategoryFormSchema,
   CreateCommentFormSchema,
+  CreateFeedbackFormSchema,
   CreateRoomFormSchema,
   CreateTagFormSchema,
   LogInFormSchema,
@@ -22,6 +23,7 @@ export type CreateTagFormType = z.infer<typeof CreateTagFormSchema>;
 export type CreateRoomFormType = z.infer<typeof CreateRoomFormSchema>;
 
 export type CreateCommentFormType = z.infer<typeof CreateCommentFormSchema>;
+export type CreateFeedbackFormType = z.infer<typeof CreateFeedbackFormSchema>;
 
 export type UpdateProfileFormType = z.infer<typeof UpdateProfileFormSchema>;
 export type ChangePasswordFormType = z.infer<typeof ChangePasswordFormSchema>;
