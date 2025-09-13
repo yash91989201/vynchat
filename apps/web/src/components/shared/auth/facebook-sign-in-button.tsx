@@ -22,7 +22,7 @@ export const FacebookSignInButton = () => {
   return (
     <Button
       className="w-full"
-      disabled={facebookAuthMutation.isPending || 5 > 2}
+      disabled={facebookAuthMutation.isPending}
       onClick={handleFacebookAuth}
       type="button"
       variant="outline"
