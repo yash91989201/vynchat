@@ -1,11 +1,14 @@
+import { useMutation } from "@tanstack/react-query";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import {
   LogOut,
   MessageSquarePlus,
+  MoreHorizontal,
   PanelRightOpen,
   Paperclip,
   Send,
   Smile,
+  Trash2,
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +21,13 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   Popover,
@@ -34,6 +44,7 @@ import {
 import { checkProfanity } from "@/lib/profanity-checker";
 import type { ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { queryUtils } from "@/utils/orpc";
 import { RoomList } from "./room-list";
 import { RoomMembers } from "./room-members";
 import type { Member, Room } from "./types";
@@ -54,6 +65,7 @@ interface ChatRoomWindowProps {
   createRoom: (values: { name: string }) => void;
   members: Member[];
   handleLeaveRoom?: () => void;
+  isRoomOwner: boolean;
 }
 
 export const ChatRoomWindow = ({
@@ -72,9 +84,33 @@ export const ChatRoomWindow = ({
   createRoom,
   members,
   handleLeaveRoom,
+  isRoomOwner,
 }: ChatRoomWindowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // Delete room mutation
+  const { mutate: deleteRoom, isPending: isDeleting } = useMutation(
+    queryUtils.room.delete.mutationOptions({
+      onSuccess: () => {
+        // Navigate to another room after deletion
+        if (onRoomSelect && myRooms.length > 1) {
+          const nextRoom = myRooms.find((r) => r.id !== room?.id);
+          if (nextRoom) {
+            onRoomSelect(nextRoom.id);
+          } else if (globalRooms.length > 0) {
+            onRoomSelect(globalRooms[0].id);
+          }
+        }
+      },
+      onError: (error) => {
+        console.error("Error deleting room:", error);
+        alert(
+          `Failed to delete room: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
+      },
+    })
+  );
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     handleInputChange({
@@ -87,6 +123,21 @@ export const ChatRoomWindow = ({
       onRoomSelect(roomId);
     }
     setIsDialogOpen(false);
+  };
+
+  const onDeleteClick = () => {
+    if (!room || isDeleting) return;
+
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${room.name}"? This action cannot be undone.`
+    );
+
+    if (!confirmed) return;
+    if (handleLeaveRoom) {
+      handleLeaveRoom();
+    }
+
+    deleteRoom({ id: room.id });
   };
 
   useEffect(() => {
@@ -164,17 +215,6 @@ export const ChatRoomWindow = ({
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {handleLeaveRoom && (
-            <Button
-              onClick={handleLeaveRoom}
-              size="sm"
-              variant="outline"
-              className="text-destructive hover:bg-destructive hover:text-destructive-foreground"
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Leave Room
-            </Button>
-          )}
           {isMobile && (
             <>
               <Dialog onOpenChange={setIsDialogOpen} open={isDialogOpen}>
@@ -208,6 +248,36 @@ export const ChatRoomWindow = ({
                 </SheetContent>
               </Sheet>
             </>
+          )}
+
+          {/* Room Actions Dropdown */}
+          {(handleLeaveRoom || isRoomOwner) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="outline">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {handleLeaveRoom && (
+                  <DropdownMenuItem onClick={handleLeaveRoom}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Leave Room
+                  </DropdownMenuItem>
+                )}
+                {handleLeaveRoom && isRoomOwner && <DropdownMenuSeparator />}
+                {isRoomOwner && (
+                  <DropdownMenuItem
+                    className="text-destructive focus:text-destructive"
+                    disabled={isDeleting}
+                    onClick={onDeleteClick}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    {isDeleting ? "Deleting..." : "Delete Room"}
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
         </div>
       </div>

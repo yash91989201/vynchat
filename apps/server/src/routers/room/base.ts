@@ -6,7 +6,11 @@ import {
   CreateDMRoomOutput,
   CreateRoomInput,
   CreateRoomOutput,
+  DeleteRoomInput,
+  DeleteRoomOutput,
 } from "@/lib/schemas";
+
+import { ORPCError } from "@orpc/server"; // Removed ORPC_ERROR_CODES as per user's instruction
 
 export const roomBaseRouter = {
   create: protectedProcedure
@@ -27,6 +31,36 @@ export const roomBaseRouter = {
       });
 
       return newRoom;
+    }),
+
+  delete: protectedProcedure
+    .input(DeleteRoomInput)
+    .output(DeleteRoomOutput)
+    .handler(async ({ context, input }) => {
+      const { id: roomId } = input;
+      const userId = context.session.user.id;
+
+      const [roomToDelete] = await context.db
+        .select()
+        .from(room)
+        .where(eq(room.id, roomId));
+
+      if (!roomToDelete) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Room not found.",
+        });
+      }
+
+      if (roomToDelete.ownerId !== userId) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "You are not the owner of this room.",
+        });
+      }
+
+      await context.db.delete(roomMember).where(eq(roomMember.roomId, roomId));
+      await context.db.delete(room).where(eq(room.id, roomId));
+
+      return {};
     }),
 
   getMyRooms: protectedProcedure.handler(async ({ context }) => {

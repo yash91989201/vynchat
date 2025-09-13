@@ -43,6 +43,7 @@ export const ChatRoom = () => {
           handleSend={handleSend}
           input={input}
           isMobile={true}
+          isRoomOwner={user.id === selectedRoom?.ownerId}
           members={members}
           messages={messages}
           myRooms={myRooms}
@@ -72,6 +73,7 @@ export const ChatRoom = () => {
         handleLeaveRoom={handleLeaveRoom}
         handleSend={handleSend}
         input={input}
+        isRoomOwner={user.id === selectedRoom?.ownerId}
         members={members}
         messages={messages}
         myRooms={myRooms}
