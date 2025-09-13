@@ -62,7 +62,7 @@ function RouteComponent() {
       <WelcomeDialog />
       <main className="container mx-auto my-6 flex-1 px-3 md:px-6">
         <div className="flex-col gap-6">
-          <Tabs className="h-full" defaultValue="chat-rooms">
+          <Tabs className="h-full" defaultValue="stranger-chat">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger
                 className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
