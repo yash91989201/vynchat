@@ -147,7 +147,7 @@ const deleteQueueMessages = async (messageIds: bigint[]) => {
 /**
  * Main matchmaking handler
  */
-Deno.serve(async (req: Request) => {
+Deno.serve(async () => {
   try {
     console.log("🎯 Matchmaker function started");
 
@@ -224,20 +224,18 @@ Deno.serve(async (req: Request) => {
       console.log(`🔍 Evaluating pair: ${user1} <-> ${user2}`);
 
       // Check if both users are still waiting
-      if (Object.keys(presenceState).length > 0) {
-        if (
-          !isWaiting(presenceState, user1) ||
-          !isWaiting(presenceState, user2)
-        ) {
-          console.log(`⏭ Skipping pair - not both waiting`);
-          processedMessageIds.push(u1.msg_id, u2.msg_id);
-          continue;
-        }
+      if (
+        Object.keys(presenceState).length > 0 &&
+        !(isWaiting(presenceState, user1) && isWaiting(presenceState, user2))
+      ) {
+        console.log("⏭ Skipping pair - not both waiting");
+        processedMessageIds.push(u1.msg_id, u2.msg_id);
+        continue;
       }
 
       // Check if they recently skipped each other
       if (await hasRecentlySkipped(user1, user2)) {
-        console.log(`⏭ Skipping pair - recently skipped each other`);
+        console.log("⏭ Skipping pair - recently skipped each other");
         continue; // Don't remove messages, let them match with others
       }
 
@@ -274,7 +272,7 @@ Deno.serve(async (req: Request) => {
 
     // 5. Handle leftover odd user
     if (users.length % 2 === 1) {
-      const leftover = users.at(-1)!;
+      const leftover = users.at(-1);
       const userId = leftover.message.userId as string;
 
       console.log(`👤 Handling leftover user: ${userId}`);
@@ -304,7 +302,7 @@ Deno.serve(async (req: Request) => {
       processedMessages: processedMessageIds.length,
     };
 
-    console.log(`✨ Matchmaker completed:`, stats);
+    console.log("✨ Matchmaker completed:", stats);
 
     return new Response(
       JSON.stringify({

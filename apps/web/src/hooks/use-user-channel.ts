@@ -43,11 +43,10 @@ export const useUserChannel = ({
     });
 
     userChannel
-      // Original events for internal communication
-      .on("broadcast", { event: "idle" }, onIdle)
-      .on("broadcast", { event: "matched" }, onMatched)
-      .on("broadcast", { event: "waiting" }, onWaiting)
-      .on("broadcast", { event: "skipped" }, onSkipped)
+      .on("broadcast", { event: "stranger_idle" }, onIdle)
+      .on("broadcast", { event: "stranger_matched" }, onMatched)
+      .on("broadcast", { event: "stranger_waiting" }, onWaiting)
+      .on("broadcast", { event: "stranger_skipped" }, onSkipped)
       .subscribe();
 
     channelRef.current = userChannel;
