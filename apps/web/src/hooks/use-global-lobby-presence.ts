@@ -9,7 +9,7 @@ export const useLobbyPresence = (
   const [lobbyCount, setLobbyCount] = useState(0);
 
   useEffect(() => {
-    const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
+    const lobbyChannel: RealtimeChannel = supabase.channel("global:lobby", {
       config: { presence: { key: userId } },
     });
 

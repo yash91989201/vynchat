@@ -43,21 +43,22 @@ export const ChatRoom = ({
     isChannelReady,
     isStrangerTyping,
     strangerLeft,
-    setStrangerLeft,
-    handleSend,
-    handleLeave,
-    handleSkip,
-    handleInputChange,
+    actions,
   } = useChatRoom(roomId, userId);
 
-  const onStrangerLeftClose = () => {
-    setStrangerLeft(false);
+  const handleStrangerLeftClose = () => {
+    actions.setStrangerLeft(false);
     onLeave();
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    actions.sendMessage();
   };
 
   return (
     <>
-      <AlertDialog onOpenChange={onStrangerLeftClose} open={strangerLeft}>
+      <AlertDialog onOpenChange={handleStrangerLeftClose} open={strangerLeft}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Chat Ended</AlertDialogTitle>
@@ -95,7 +96,7 @@ export const ChatRoom = ({
           </div>
           <div className="flex items-center space-x-2">
             <Button
-              onClick={() => handleSkip(onSkip)}
+              onClick={() => actions.skipStranger(onSkip)}
               size="icon"
               variant="outline"
             >
@@ -103,7 +104,7 @@ export const ChatRoom = ({
               <span className="sr-only">Skip</span>
             </Button>
             <Button
-              onClick={() => handleLeave(onLeave)}
+              onClick={() => actions.leaveRoom(onLeave)}
               size="icon"
               variant="destructive"
             >
@@ -116,15 +117,17 @@ export const ChatRoom = ({
         <CardContent className="flex-1 p-0">
           <ScrollArea className="h-full" ref={scrollAreaRef}>
             <div className="space-y-4 p-4">
-              {messages.map((m) => (
+              {messages.map((message) => (
                 <div
                   className={cn(
                     "flex items-end gap-2",
-                    m.senderId === userId ? "justify-end" : "justify-start"
+                    message.senderId === userId
+                      ? "justify-end"
+                      : "justify-start"
                   )}
-                  key={m.id}
+                  key={message.id}
                 >
-                  {m.senderId !== userId && (
+                  {message.senderId !== userId && (
                     <Avatar className="h-8 w-8">
                       <AvatarImage src="/placeholder-user.jpg" />
                       <AvatarFallback>ST</AvatarFallback>
@@ -133,12 +136,12 @@ export const ChatRoom = ({
                   <div
                     className={cn(
                       "max-w-[80%] rounded-lg p-3 text-sm shadow-md sm:max-w-[70%]",
-                      m.senderId === userId
+                      message.senderId === userId
                         ? "rounded-br-none bg-primary text-primary-foreground"
                         : "rounded-bl-none bg-muted"
                     )}
                   >
-                    <p>{m.content}</p>
+                    <p>{message.content}</p>
                   </div>
                 </div>
               ))}
@@ -165,15 +168,12 @@ export const ChatRoom = ({
         <CardFooter className="border-t bg-muted/40 p-4">
           <form
             className="flex w-full items-center space-x-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSend();
-            }}
+            onSubmit={handleSubmit}
           >
             <Input
               autoComplete="off"
               disabled={!isChannelReady}
-              onChange={handleInputChange}
+              onChange={actions.handleInputChange}
               placeholder={
                 isChannelReady ? "Type a message..." : "Connecting..."
               }
@@ -193,4 +193,3 @@ export const ChatRoom = ({
     </>
   );
 };
-

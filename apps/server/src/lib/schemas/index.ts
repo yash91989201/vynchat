@@ -426,3 +426,5 @@ export const ListFeedbacksOutput = z.object({
     })
   ),
 });
+
+export const GlobalLobbyPresenceSchema = z.enum(["idle", "waiting", "matched"]);

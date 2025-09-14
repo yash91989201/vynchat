@@ -36,6 +36,7 @@ import type {
   GetRoomOutput,
   GetTagInput,
   GetTagOutput,
+  GlobalLobbyPresenceSchema,
   ListBlogCommentsInput,
   ListBlogCommentsOutput,
   ListBlogsInput,
@@ -157,3 +158,5 @@ export type DeleteRoomType = z.infer<typeof DeleteRoomInput>;
 export type DeleteRoomOutputType = z.infer<typeof DeleteRoomOutput>;
 
 export type CreateCategoryInputType = z.infer<typeof CreateCategoryInput>;
+
+export type GlobalLobbyPresenceType = z.infer<typeof GlobalLobbyPresenceSchema>;
