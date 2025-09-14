@@ -4,6 +4,10 @@ import z from "zod";
 import { ChatRoom } from "@/components/chat/chat-room";
 import { FollowingList } from "@/components/chat/following-list";
 import { StrangerChat } from "@/components/chat/stranger-chat";
+import {
+  AbsoluteLeftAd,
+  AbsoluteRightAd,
+} from "@/components/shared/google-ads";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WelcomeDialog } from "@/components/user/welcome-dialog";
 
@@ -27,6 +31,8 @@ function RouteComponent() {
 
   return (
     <>
+      <AbsoluteLeftAd />
+      <AbsoluteRightAd />
       <WelcomeDialog />
       <main className="container mx-auto my-6 flex-1 px-3 md:px-6">
         <div className="flex-col gap-6">

@@ -45,6 +45,12 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         href: "/favicon.ico",
       },
     ],
+    scripts: [
+      {
+        async: true,
+        src: "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js",
+      },
+    ],
   }),
   beforeLoad: async () => {
     const session = await authClient.getSession();
@@ -73,7 +79,7 @@ function RootComponent() {
         disableTransitionOnChange
         storageKey="vite-ui-theme"
       >
-        <div className="grid min-h-screen grid-rows-[auto_1fr]">
+        <div className="relative grid min-h-screen grid-rows-[auto_1fr]">
           <Header />
           {isFetching ? <FullScreenLoader /> : <Outlet />}
           <Footer />

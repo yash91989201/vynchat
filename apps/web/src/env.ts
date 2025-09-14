@@ -8,6 +8,8 @@ export const env = createEnv({
     VITE_SERVER_URL: z.url(),
     VITE_SUPABASE_URL: z.url(),
     VITE_SUPABASE_ANON_KEY: z.string(),
+    VITE_AD_SENSE_CLIENT: z.string(),
+    VITE_AD_SENSE_SLOT: z.string(),
   },
   runtimeEnv: import.meta.env,
   skipValidation: !!import.meta.env.SKIP_ENV_VALIDATION,
