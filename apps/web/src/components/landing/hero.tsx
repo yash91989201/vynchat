@@ -1,10 +1,56 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowRightLeft, Ban, ImageUp, User } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { Link, useNavigate, useRouteContext } from "@tanstack/react-router";
+import { ArrowRightLeft, Ban, ImageUp, Loader2, User } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { authClient } from "@/lib/auth-client";
 
 export function Hero() {
+  const navigate = useNavigate();
+  const { session } = useRouteContext({
+    from: "__root__",
+  });
+
+  const isLoggedIn = !!session;
+
+  const {
+    mutateAsync: guestSignInStrangerChat,
+    isPending: isGuestSigningInStrangerChat,
+  } = useMutation({
+    mutationKey: ["guest-sign-in"],
+    mutationFn: () => authClient.signIn.anonymous(),
+    onSuccess: () => {
+      toast.success("Signed in as guest");
+      navigate({
+        to: "/chat",
+        search: { tab: "stranger-chat" },
+      });
+    },
+    onError: () => {
+      toast.error("There was an error signing in. Please try again.");
+    },
+  });
+
+  const {
+    mutateAsync: guestSignInChatRoom,
+    isPending: isGuestSigningInChatRoom,
+  } = useMutation({
+    mutationKey: ["guest-sign-in"],
+    mutationFn: () => authClient.signIn.anonymous(),
+    onSuccess: () => {
+      toast.success("Signed in as guest");
+      navigate({
+        to: "/chat",
+        search: { tab: "chat-rooms" },
+      });
+    },
+    onError: () => {
+      toast.error("There was an error signing in. Please try again.");
+    },
+  });
+
   return (
     <section className="py-12 md:py-24">
       <div className="container z-10 mx-auto grid items-center gap-8 px-4 text-center md:px-6 lg:grid-cols-2 lg:gap-16 lg:text-left">
@@ -21,16 +67,51 @@ export function Hero() {
             VynChat lets you join live rooms, share photos, and connect with
             people across the globe — all in a fast, fun, and safe environment.
           </p>
-          <div className="flex flex-col justify-center gap-4 min-[400px]:flex-row lg:justify-start">
-            <Link
-              className={buttonVariants({
-                variant: "default",
-                size: "lg",
-              })}
-              to="/chat"
-            >
-              Start Chatting
-            </Link>
+          <div className="flex flex-col justify-center gap-4 lg:justify-start min-[400px]:flex-row">
+            {isLoggedIn ? (
+              <>
+                <Link
+                  className={buttonVariants({ variant: "default", size: "lg" })}
+                  search={{ tab: "stranger-chat" }}
+                  to="/chat"
+                >
+                  Stranger Chat
+                </Link>
+                <Link
+                  className={buttonVariants({
+                    variant: "secondary",
+                    size: "lg",
+                  })}
+                  search={{ tab: "chat-rooms" }}
+                  to="/chat"
+                >
+                  Chat Rooms
+                </Link>
+              </>
+            ) : (
+              <>
+                <Button
+                  disabled={isGuestSigningInStrangerChat}
+                  onClick={() => guestSignInStrangerChat()}
+                >
+                  {isGuestSigningInStrangerChat && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Stranger Chat
+                </Button>
+
+                <Button
+                  disabled={isGuestSigningInChatRoom}
+                  onClick={() => guestSignInChatRoom()}
+                  variant="secondary"
+                >
+                  {isGuestSigningInChatRoom && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
+                  Chat Room
+                </Button>
+              </>
+            )}
             <Link
               className={buttonVariants({ variant: "outline", size: "lg" })}
               to="/blogs"
@@ -54,7 +135,7 @@ export function Hero() {
             >
               <ArrowRightLeft className="text-primary" />
               <span className="text-muted-foreground text-xs">
-                Swipe to skip
+                Skip to next stranger
               </span>
             </Badge>
             <Badge
