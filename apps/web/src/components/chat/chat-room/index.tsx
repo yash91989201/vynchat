@@ -1,4 +1,5 @@
 import { useRouteContext } from "@tanstack/react-router";
+import { AccountLinkDialog } from "@/components/user/account-link-dialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRoomChat } from "@/hooks/use-room-chat";
 import { ChatRoomWindow } from "./chat-room-window";
@@ -10,6 +11,8 @@ const LG_BREAKPOINT = 1024;
 export const ChatRoom = () => {
   const isMobile = useIsMobile(LG_BREAKPOINT);
   const { session } = useRouteContext({ from: "/(authenticated)" });
+
+  const isAnonymous = !!session?.user?.isAnonymous;
   const user = {
     id: session.user.id,
     name: session.user.name,
@@ -31,6 +34,10 @@ export const ChatRoom = () => {
     members,
     handleLeaveRoom,
   } = useRoomChat(user);
+
+  if (isAnonymous) {
+    return <AccountLinkDialog initialOpen={true} />;
+  }
 
   if (isMobile) {
     return (

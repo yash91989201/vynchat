@@ -1,12 +1,21 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { useRouteContext } from "@tanstack/react-router";
+import { AccountLinkDialog } from "@/components/user/account-link-dialog";
 import { queryUtils } from "@/utils/orpc";
 
 export function FollowingList() {
+  const { session } = useRouteContext({ from: "/(authenticated)" });
+  const isAnonymous = !!session?.user?.isAnonymous;
+
   const { data } = useSuspenseQuery(
     queryUtils.user.userFollowing.queryOptions({})
   );
 
   const following = data?.followings ?? [];
+
+  if (isAnonymous) {
+    return <AccountLinkDialog initialOpen={true} />;
+  }
 
   if (following.length === 0) {
     return (
