@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import { and, eq, getTableColumns, inArray, not, sql } from "drizzle-orm";
 import { room, roomMember } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
@@ -9,8 +10,6 @@ import {
   DeleteRoomInput,
   DeleteRoomOutput,
 } from "@/lib/schemas";
-
-import { ORPCError } from "@orpc/server"; // Removed ORPC_ERROR_CODES as per user's instruction
 
 export const roomBaseRouter = {
   create: protectedProcedure

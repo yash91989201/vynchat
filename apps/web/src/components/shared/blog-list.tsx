@@ -1,5 +1,7 @@
 import { useSuspenseQuery } from "@tanstack/react-query";
+import { Newspaper } from "lucide-react";
 import { BlogCard, BlogCardSkeleton } from "@/components/shared/blog-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { queryUtils } from "@/utils/orpc";
 
 export function BlogList() {
@@ -15,9 +17,17 @@ export function BlogList() {
 
   if (data.blogs.length === 0) {
     return (
-      <div className="mt-8 text-center text-muted-foreground">
-        No blogs found. Create one to get started.
-      </div>
+      <Card className="mx-auto mt-8 max-w-xl text-center">
+        <CardHeader>
+          <Newspaper className="mx-auto h-12 w-12 text-gray-400" />
+        </CardHeader>
+        <CardContent>
+          <CardTitle>No blog posts yet</CardTitle>
+          <p className="mt-2 text-muted-foreground">
+            It looks like there are no blog posts here.
+          </p>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -39,3 +49,4 @@ export const BlogListSkeleton = () => {
     </div>
   );
 };
+

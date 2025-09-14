@@ -112,9 +112,11 @@ export const UserMenu = () => {
                 </Badge>
               )}
             </p>
-            <p className="truncate text-muted-foreground text-sm">
-              {session.user.email}
-            </p>
+            {!isAnonymous && (
+              <p className="truncate text-muted-foreground text-sm">
+                {session.user.email}
+              </p>
+            )}
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
