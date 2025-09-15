@@ -67,7 +67,7 @@ export function Hero() {
             VynChat lets you join live rooms, share photos, and connect with
             people across the globe — all in a fast, fun, and safe environment.
           </p>
-          <div className="flex flex-col justify-center gap-4 lg:justify-start min-[400px]:flex-row">
+          <div className="flex flex-col flex-wrap justify-center gap-4 lg:justify-start min-[400px]:flex-row">
             {isLoggedIn ? (
               <>
                 <Link
