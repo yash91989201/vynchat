@@ -49,6 +49,7 @@ export const UserMenu = () => {
         toast.success("Signed in as guest");
         navigate({
           to: "/chat",
+          search: { tab: "stranger-chat" },
         });
       },
       onError: () => {
