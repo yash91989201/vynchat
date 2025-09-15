@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { useRouteContext } from "@tanstack/react-router";
+import { Link, useRouteContext } from "@tanstack/react-router";
 import {
   LogOut,
   Send,
@@ -115,8 +115,14 @@ export const ChatRoom = ({
     if (!strangerUser?.id) return;
 
     if (isAnonymous) {
-      toast.error(
-        "Guest users cannot follow others. Please go to your profile to link your account."
+      toast(
+        <div className="text-sm">
+          Guest users cannot follow others. Please go to your{" "}
+          <Link className="text-blue-500 underline" to="/profile">
+            profile
+          </Link>{" "}
+          to link your account.
+        </div>
       );
       return;
     }

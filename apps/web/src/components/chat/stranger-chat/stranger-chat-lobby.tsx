@@ -41,7 +41,7 @@ export const StrangerChatLobby = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="w-full max-w-md text-center">
+      <div className="w-full max-w-lg text-center">
         <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 sm:h-28 sm:w-28">
           <HatGlasses className="h-12 w-12 text-primary sm:h-16 sm:w-16" />
         </div>
