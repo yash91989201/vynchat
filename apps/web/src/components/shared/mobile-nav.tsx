@@ -49,8 +49,8 @@ export function MobileNav({ links }: MobileNavProps) {
                 className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
                 key={to}
                 onClick={() => setOpen(false)}
-                to={to}
                 search={search}
+                to={to}
               >
                 {label}
               </Link>

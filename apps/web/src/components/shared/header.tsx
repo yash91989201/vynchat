@@ -3,17 +3,25 @@ import { Image } from "@unpic/react";
 import { MobileNav } from "@/components/shared/mobile-nav";
 import { UserMenu } from "@/components/shared/user-menu";
 
-export const Header = () => {
-  const links = [
-    { to: "/", label: "Home" },
-    { to: "/blogs", label: "Blogs" },
-    { to: "/chat", label: "Stranger Chat", search: { tab: "stranger-chat" } },
-    { to: "/chat", label: "Chat Rooms", search: { tab: "chat-rooms" } },
-    { to: "/chat", label: "Following", search: { tab: "following" } },
-    { to: "/feedback", label: "Feedback" },
-    { to: "/about", label: "About" },
-  ] as const;
+const desktopLinks = [
+  { to: "/", label: "Home" },
+  { to: "/blogs", label: "Blogs" },
+  { to: "/chat", label: "Chat" },
+  { to: "/feedback", label: "Feedback" },
+  { to: "/about", label: "About" },
+] as const;
 
+const mobileLinks = [
+  { to: "/", label: "Home" },
+  { to: "/blogs", label: "Blogs" },
+  { to: "/chat", label: "Stranger Chat", search: { tab: "stranger-chat" } },
+  { to: "/chat", label: "Chat Rooms", search: { tab: "chat-rooms" } },
+  { to: "/chat", label: "Following", search: { tab: "following" } },
+  { to: "/feedback", label: "Feedback" },
+  { to: "/about", label: "About" },
+] as const;
+
+export const Header = () => {
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container mx-auto flex h-16 items-center px-3 md:px-6">
@@ -33,7 +41,7 @@ export const Header = () => {
 
         <nav className="hidden flex-1 items-center justify-center lg:flex">
           <ul className="flex items-center gap-6 font-medium text-sm">
-            {links.map(({ to, label }) => (
+            {desktopLinks.map(({ to, label }) => (
               <li key={to}>
                 <Link
                   activeOptions={{ includeSearch: true }}
@@ -50,7 +58,7 @@ export const Header = () => {
 
         <div className="ml-4 flex flex-1 items-center justify-end gap-3 lg:flex-0">
           <UserMenu />
-          <MobileNav links={links} />
+          <MobileNav links={mobileLinks} />
         </div>
       </div>
     </header>
