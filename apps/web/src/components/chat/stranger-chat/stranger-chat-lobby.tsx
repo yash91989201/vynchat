@@ -53,23 +53,21 @@ export const StrangerChatLobby = ({
         </p>
 
         <div className="mt-10">
-          {status === "idle" && (
-            <Button
-              className="w-full max-w-xs rounded-full px-8 py-6 font-semibold text-lg"
-              disabled={isPending}
-              onClick={onTalkToStranger}
-              size="lg"
-            >
-              {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-                  Finding...
-                </>
-              ) : (
-                "Talk to Stranger"
-              )}
-            </Button>
-          )}
+          <Button
+            className="rounded-full"
+            disabled={isPending && status !== "idle"}
+            onClick={onTalkToStranger}
+            size="lg"
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-6 w-6 animate-spin" />
+                Finding...
+              </>
+            ) : (
+              "Talk to Stranger"
+            )}
+          </Button>
           {status === "waiting" && (
             <div className="flex flex-col items-center space-y-4">
               <Loader2 className="h-12 w-12 animate-spin text-primary" />
