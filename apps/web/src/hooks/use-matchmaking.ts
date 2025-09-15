@@ -187,6 +187,23 @@ export const useMatchmaking = (userId: string) => {
         description: "The stranger skipped you. Looking for a new match...",
       });
     }, [updatePresenceStatus, handleMatchTimeout]),
+
+    onNoMatches: useCallback(
+      ({ payload }: { payload: { reason: string } }) => {
+        if (matchTimeoutRef.current) {
+          clearTimeout(matchTimeoutRef.current);
+          matchTimeoutRef.current = null;
+        }
+
+        dispatch({ type: "RESET_TO_IDLE" });
+        updatePresenceStatus("idle");
+
+        toast.info("No new matches available", {
+          description: payload.reason,
+        });
+      },
+      [updatePresenceStatus]
+    ),
   };
 
   // This will be handled by a separate useUserChannel hook in the main component

@@ -10,6 +10,7 @@ interface UserChannelCallbacks {
   onWaiting: () => void;
   onMatched: (arg: { payload: { room: RoomType } }) => void;
   onSkipped: () => void;
+  onNoMatches: (arg: { payload: { reason: string } }) => void;
 }
 
 export const useUserChannel = ({
@@ -17,6 +18,7 @@ export const useUserChannel = ({
   onMatched,
   onSkipped,
   onWaiting,
+  onNoMatches,
 }: UserChannelCallbacks) => {
   const { session } = useRouteContext({
     from: "/(authenticated)",
@@ -47,10 +49,11 @@ export const useUserChannel = ({
       .on("broadcast", { event: "stranger_matched" }, onMatched)
       .on("broadcast", { event: "stranger_waiting" }, onWaiting)
       .on("broadcast", { event: "stranger_skipped" }, onSkipped)
+      .on("broadcast", { event: "stranger_no_matches" }, onNoMatches)
       .subscribe();
 
     channelRef.current = userChannel;
-  }, [userId, onIdle, onWaiting, onMatched, onSkipped, cleanup]);
+  }, [userId, onIdle, onWaiting, onMatched, onSkipped, onNoMatches, cleanup]);
 
   useEffect(() => {
     setupChannel();

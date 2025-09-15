@@ -1,12 +1,10 @@
 import { Link } from "@tanstack/react-router";
 import { Image } from "@unpic/react";
 import { Github, Instagram, Twitter } from "lucide-react";
-import { FooterAd } from "./google-ads";
 
 export function Footer() {
   return (
     <footer className="bg-primary/5">
-      <FooterAd />
       <div className="container mx-auto flex flex-col items-center justify-between gap-8 px-6 py-10 md:flex-row md:px-0">
         {/* Logo + Brand */}
         <Link className="mr-6 flex items-center space-x-3" to="/">

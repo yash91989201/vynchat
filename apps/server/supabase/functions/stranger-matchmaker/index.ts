@@ -9,6 +9,49 @@ const supabase = createClient(
 );
 
 /**
+ * Clean up old skipped pairs (older than 10 seconds)
+ */
+const cleanupOldSkippedPairs = async (): Promise<void> => {
+  const tenSecondsAgo = new Date(Date.now() - 10 * 1000).toISOString();
+
+  const { error } = await supabase
+    .from("skipped_pair")
+    .delete()
+    .lt("created_at", tenSecondsAgo);
+
+  if (error) {
+    console.error("Error cleaning up old skipped pairs:", error);
+  } else {
+    console.log("🧹 Cleaned up old skipped pairs");
+  }
+};
+
+/**
+ * Check if two users have recently skipped each other (within 10 seconds)
+ */
+const hasRecentlySkipped = async (
+  user1: string,
+  user2: string
+): Promise<boolean> => {
+  const tenSecondsAgo = new Date(Date.now() - 10 * 1000).toISOString();
+
+  const { data: skippedPairs, error } = await supabase
+    .from("skipped_pair")
+    .select("*")
+    .or(
+      `and(user_a_id.eq.${user1},user_b_id.eq.${user2}),and(user_a_id.eq.${user2},user_b_id.eq.${user1})`
+    )
+    .gte("created_at", tenSecondsAgo);
+
+  if (error) {
+    console.error("Error checking skipped pairs:", error);
+    return false; // Allow matching if there's an error
+  }
+
+  return (skippedPairs && skippedPairs.length > 0);
+};
+
+/**
  * Check if a user is currently in waiting status based on presence state
  */
 const isWaiting = (
@@ -17,48 +60,6 @@ const isWaiting = (
 ): boolean => {
   const pres = presenceState[userId] as any[] | undefined;
   return pres?.some((p) => p.status === "waiting") ?? false;
-};
-
-/**
- * Check if two users have recently skipped each other (within 30 seconds)
- * If found, clean up the skipped pairs to allow future matching
- */
-const hasRecentlySkipped = async (
-  user1: string,
-  user2: string
-): Promise<boolean> => {
-  const thirtySecondsAgo = new Date(Date.now() - 30 * 1000).toISOString();
-
-  const { data: skippedPairs, error } = await supabase
-    .from("skipped_pair")
-    .select("*")
-    .or(
-      `and(user_a_id.eq.${user1},user_b_id.eq.${user2}),and(user_a_id.eq.${user2},user_b_id.eq.${user1})`
-    )
-    .gte("created_at", thirtySecondsAgo);
-
-  if (error) {
-    console.error("Error checking skipped pairs:", error);
-    return false; // Allow matching if there's an error
-  }
-
-  if (skippedPairs && skippedPairs.length > 0) {
-    // Clean up skipped pairs to allow future matching
-    for (const pair of skippedPairs) {
-      const { error: deleteError } = await supabase
-        .from("skipped_pair")
-        .delete()
-        .eq("user_a_id", pair.user_a_id)
-        .eq("user_b_id", pair.user_b_id);
-
-      if (deleteError) {
-        console.error("Error deleting skipped pair:", deleteError);
-      }
-    }
-    return true;
-  }
-
-  return false;
 };
 
 /**
@@ -151,6 +152,9 @@ Deno.serve(async () => {
   try {
     console.log("🎯 Matchmaker function started");
 
+    // 0. Clean up old skipped pairs first
+    await cleanupOldSkippedPairs();
+
     // 1. Read pending queue messages (up to 10)
     const { data: msgs, error: readErr } = await supabase
       .schema("pgmq_public")
@@ -214,6 +218,7 @@ Deno.serve(async () => {
     // 3. Process users in pairs
     const pairedRooms: any[] = [];
     const processedMessageIds: bigint[] = [];
+    const unprocessedUsers: typeof users = [];
 
     for (let i = 0; i + 1 < users.length; i += 2) {
       const u1 = users[i];
@@ -236,7 +241,9 @@ Deno.serve(async () => {
       // Check if they recently skipped each other
       if (await hasRecentlySkipped(user1, user2)) {
         console.log("⏭ Skipping pair - recently skipped each other");
-        continue; // Don't remove messages, let them match with others
+        // Add both users back to unprocessed list for potential other matches
+        unprocessedUsers.push(u1, u2);
+        continue;
       }
 
       try {
@@ -258,11 +265,63 @@ Deno.serve(async () => {
         console.log(`🎉 Successfully matched pair ${pairedRooms.length}`);
       } catch (matchError) {
         console.error(`❌ Error matching ${user1} and ${user2}:`, matchError);
-        // Don't add to processedMessageIds so they can try again
+        // Add back to unprocessed for potential retry
+        unprocessedUsers.push(u1, u2);
       }
     }
 
-    // 4. Clean up processed queue messages
+    // 4. Handle leftover odd user from main processing
+    if (users.length % 2 === 1) {
+      unprocessedUsers.push(users.at(-1)!);
+    }
+
+    // 5. Try to find alternative matches for unprocessed users
+    const remainingUnprocessed: typeof users = [];
+
+    for (let i = 0; i + 1 < unprocessedUsers.length; i += 2) {
+      const u1 = unprocessedUsers[i];
+      const u2 = unprocessedUsers[i + 1];
+      const user1 = u1.message.userId as string;
+      const user2 = u2.message.userId as string;
+
+      console.log(`🔄 Retry evaluating pair: ${user1} <-> ${user2}`);
+
+      // Check if they recently skipped each other
+      if (await hasRecentlySkipped(user1, user2)) {
+        console.log("⏭ Still skipped - adding to remaining");
+        remainingUnprocessed.push(u1, u2);
+        continue;
+      }
+
+      try {
+        console.log(`✅ Retry matching users: ${user1} with ${user2}`);
+
+        // Create room and add members
+        const roomRes = await createMatchRoom(user1, user2);
+
+        // Mark messages for deletion
+        processedMessageIds.push(u1.msg_id, u2.msg_id);
+
+        // Notify both users
+        await Promise.all([
+          notifyUser(user1, "stranger_matched", { room: roomRes }),
+          notifyUser(user2, "stranger_matched", { room: roomRes }),
+        ]);
+
+        pairedRooms.push(roomRes);
+        console.log(`🎉 Successfully retry matched pair ${pairedRooms.length}`);
+      } catch (matchError) {
+        console.error(`❌ Error retry matching ${user1} and ${user2}:`, matchError);
+        remainingUnprocessed.push(u1, u2);
+      }
+    }
+
+    // 6. Handle final leftover odd user from retry
+    if (unprocessedUsers.length % 2 === 1) {
+      remainingUnprocessed.push(unprocessedUsers.at(-1)!);
+    }
+
+    // 7. Clean up processed queue messages
     if (processedMessageIds.length > 0) {
       console.log(
         `🧹 Deleting ${processedMessageIds.length} processed messages`
@@ -270,36 +329,36 @@ Deno.serve(async () => {
       await deleteQueueMessages(processedMessageIds);
     }
 
-    // 5. Handle leftover odd user
-    if (users.length % 2 === 1) {
-      const leftover = users.at(-1);
-      const userId = leftover.message.userId as string;
+    // 8. Handle remaining unprocessed users - notify them no matches available
+    for (const unprocessedUser of remainingUnprocessed) {
+      const userId = unprocessedUser.message.userId as string;
 
-      console.log(`👤 Handling leftover user: ${userId}`);
+      console.log(`👤 No match available for user: ${userId}`);
 
-      // Always remove leftover message
+      // Remove message from queue
       try {
         await supabase.schema("pgmq_public").rpc("delete", {
           queue_name: "stranger-queue",
-          message_id: leftover.msg_id,
+          message_id: unprocessedUser.msg_id,
         });
       } catch (deleteError) {
-        console.error("Error deleting leftover message:", deleteError);
+        console.error("Error deleting unprocessed message:", deleteError);
       }
 
-      // Notify user to return to idle
-      await notifyUser(userId, "stranger_idle", {
-        reason: "No match found this round, back to idle",
+      // Notify user no matches available
+      await notifyUser(userId, "stranger_no_matches", {
+        reason: "No available users to match with. Please try again in a few seconds.",
       });
     }
 
-    // 6. Clean up lobby channel
+    // 9. Clean up lobby channel
     await supabase.removeChannel(lobbyChannel);
 
     const stats = {
       totalUsers: users.length,
       pairedRooms: pairedRooms.length,
       processedMessages: processedMessageIds.length,
+      unprocessedUsers: remainingUnprocessed.length,
     };
 
     console.log("✨ Matchmaker completed:", stats);
