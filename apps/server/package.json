@@ -37,6 +37,7 @@
   "devDependencies": {
     "@types/bun": "^1.2.22",
     "drizzle-kit": "^0.31.4",
+    "supabase": "^2.40.7",
     "tsdown": "^0.15.1",
     "typescript": "^5.9.2"
   }

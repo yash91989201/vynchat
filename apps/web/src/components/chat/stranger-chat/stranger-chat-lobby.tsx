@@ -55,7 +55,7 @@ export const StrangerChatLobby = ({
         <div className="mt-10">
           {status === "idle" && (
             <Button
-              className="w-full max-w-xs transform rounded-full px-8 py-6 font-semibold text-lg transition-transform duration-200 hover:scale-105"
+              className="w-full max-w-xs rounded-full px-8 py-6 font-semibold text-lg"
               disabled={isPending}
               onClick={onTalkToStranger}
               size="lg"

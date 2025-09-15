@@ -71,7 +71,10 @@ export function WelcomeDialog() {
 
   return (
     <Dialog open={!hasAccepted}>
-      <DialogContent className="max-w-md sm:max-w-2xl" showCloseButton={false}>
+      <DialogContent
+        className="h-[85vh] max-w-md overflow-y-auto sm:max-w-2xl"
+        showCloseButton={false}
+      >
         <DialogHeader className="items-center space-y-3 text-center">
           <Image
             alt="VynChat Logo"
@@ -138,4 +141,3 @@ export function WelcomeDialog() {
     </Dialog>
   );
 }
-
