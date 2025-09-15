@@ -7,6 +7,8 @@ import {
   JoinRoomOutput,
   LeaveRoomInput,
   LeaveRoomOutput,
+  ListRoomMembersInput,
+  ListRoomMembersOutput,
   SkipStrangerInput,
   SkipStrangerOutput,
 } from "@/lib/schemas";
@@ -112,7 +114,10 @@ export const roomChatRouter = {
           });
 
           // Timeout after 3 seconds
-          setTimeout(() => reject(new Error("Channel subscription timeout")), 3000);
+          setTimeout(
+            () => reject(new Error("Channel subscription timeout")),
+            3000
+          );
         });
 
         await notifyChannel.send({
@@ -150,5 +155,40 @@ export const roomChatRouter = {
       }
 
       return { success: true, message: "Skipped stranger and rejoined queue" };
+    }),
+  listRoomMembers: protectedProcedure
+    .input(ListRoomMembersInput)
+    .output(ListRoomMembersOutput)
+    .handler(async ({ context, input }) => {
+      const roomWithMembers = await context.db.query.room.findFirst({
+        where: eq(room.id, input.roomId),
+        with: {
+          members: {
+            with: {
+              user: {
+                columns: {
+                  id: true,
+                  name: true,
+                  image: true,
+                },
+              },
+            },
+          },
+        },
+      });
+
+      if (roomWithMembers === undefined) {
+        return [];
+      }
+
+      const roomMembers = roomWithMembers.members;
+
+      if (input.includeSelf === false) {
+        return roomMembers.filter(
+          (member) => member.userId !== context.session.user.id
+        );
+      }
+
+      return roomMembers;
     }),
 };

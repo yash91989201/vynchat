@@ -1,5 +1,16 @@
-import { LogOut, Send, SkipForward, Wifi, WifiOff } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useRouteContext } from "@tanstack/react-router";
+import {
+  LogOut,
+  Send,
+  SkipForward,
+  UserMinus,
+  UserPlus,
+  Wifi,
+  WifiOff,
+} from "lucide-react";
 import { useRef } from "react";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,6 +32,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatRoom } from "@/hooks/use-stranger-chat-room";
 import { cn } from "@/lib/utils";
+import { orpcClient, queryClient, queryUtils } from "@/utils/orpc";
 
 interface ChatRoomProps {
   roomId: string;
@@ -36,6 +48,10 @@ export const ChatRoom = ({
   onSkip,
 }: ChatRoomProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const { session } = useRouteContext({ from: "/(authenticated)" });
+  const isAnonymous = !!session.user.isAnonymous;
 
   const {
     messages,
@@ -43,8 +59,74 @@ export const ChatRoom = ({
     isChannelReady,
     isStrangerTyping,
     strangerLeft,
+    strangerUser,
     actions,
   } = useChatRoom(roomId, userId);
+
+  // Query to check if following the stranger
+  const { data: isFollowing } = useQuery({
+    queryKey: ["isFollowing", strangerUser?.id],
+    queryFn: async () => {
+      if (!strangerUser?.id) return false;
+      try {
+        return await orpcClient.user.isFollowing({ userId: strangerUser.id });
+      } catch {
+        return false;
+      }
+    },
+    enabled: !!strangerUser?.id && !!session?.user,
+  });
+
+  // Follow mutation
+  const followMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await orpcClient.user.follow({ userId });
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["isFollowing", strangerUser?.id], true);
+      toast.success("User followed successfully");
+      queryClient.invalidateQueries({
+        queryKey: queryUtils.user.userFollowing.queryKey(),
+      });
+    },
+    onError: () => {
+      toast.error("Failed to follow user");
+    },
+  });
+
+  // Unfollow mutation
+  const unfollowMutation = useMutation({
+    mutationFn: async (userId: string) => {
+      await orpcClient.user.unfollow({ userId });
+    },
+    onSuccess: () => {
+      queryClient.setQueryData(["isFollowing", strangerUser?.id], false);
+      toast.success("User unfollowed successfully");
+      queryClient.invalidateQueries({
+        queryKey: queryUtils.user.userFollowing.queryKey(),
+      });
+    },
+    onError: () => {
+      toast.error("Failed to unfollow user");
+    },
+  });
+
+  const handleFollowToggle = () => {
+    if (!strangerUser?.id) return;
+
+    if (isAnonymous) {
+      toast.error(
+        "Guest users cannot follow others. Please go to your profile to link your account."
+      );
+      return;
+    }
+
+    if (isFollowing) {
+      unfollowMutation.mutate(strangerUser.id);
+    } else {
+      followMutation.mutate(strangerUser.id);
+    }
+  };
 
   const handleStrangerLeftClose = () => {
     actions.setStrangerLeft(false);
@@ -54,7 +136,11 @@ export const ChatRoom = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     actions.sendMessage();
+    inputRef.current?.focus();
   };
+
+  const isFollowLoading =
+    followMutation.isPending || unfollowMutation.isPending;
 
   return (
     <>
@@ -72,15 +158,21 @@ export const ChatRoom = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      <Card className="flex h-full flex-col overflow-hidden rounded-lg">
+      <Card className="flex h-full flex-col overflow-hidden rounded-lg py-0">
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/40 p-4">
           <div className="flex items-center space-x-4">
             <Avatar>
-              <AvatarImage src="/placeholder-user.jpg" />
-              <AvatarFallback>ST</AvatarFallback>
+              <AvatarImage
+                src={strangerUser?.image || "/placeholder-user.jpg"}
+              />
+              <AvatarFallback>
+                {strangerUser?.name?.substring(0, 2) || "ST"}
+              </AvatarFallback>
             </Avatar>
             <div>
-              <p className="font-medium text-sm leading-none">Stranger</p>
+              <p className="font-medium text-sm leading-none">
+                {strangerUser?.name || "Stranger"}
+              </p>
               <p className="text-muted-foreground text-sm">
                 {isChannelReady ? (
                   <span className="flex items-center text-green-500">
@@ -95,6 +187,24 @@ export const ChatRoom = ({
             </div>
           </div>
           <div className="flex items-center space-x-2">
+            {strangerUser?.id && session?.user && (
+              <Button
+                disabled={isFollowLoading}
+                onClick={handleFollowToggle}
+                size="icon"
+                title={isFollowing ? "Unfollow" : "Follow"}
+                variant="outline"
+              >
+                {isFollowing ? (
+                  <UserMinus className="h-4 w-4" />
+                ) : (
+                  <UserPlus className="h-4 w-4" />
+                )}
+                <span className="sr-only">
+                  {isFollowing ? "Unfollow" : "Follow"}
+                </span>
+              </Button>
+            )}
             <Button
               onClick={() => actions.skipStranger(onSkip)}
               size="icon"
@@ -129,8 +239,12 @@ export const ChatRoom = ({
                 >
                   {message.senderId !== userId && (
                     <Avatar className="h-8 w-8">
-                      <AvatarImage src="/placeholder-user.jpg" />
-                      <AvatarFallback>ST</AvatarFallback>
+                      <AvatarImage
+                        src={strangerUser?.image || "/placeholder-user.jpg"}
+                      />
+                      <AvatarFallback>
+                        {strangerUser?.name?.substring(0, 2) || "ST"}
+                      </AvatarFallback>
                     </Avatar>
                   )}
                   <div
@@ -149,8 +263,12 @@ export const ChatRoom = ({
               {isStrangerTyping && (
                 <div className="flex items-end justify-start gap-2">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder-user.jpg" />
-                    <AvatarFallback>ST</AvatarFallback>
+                    <AvatarImage
+                      src={strangerUser?.image || "/placeholder-user.jpg"}
+                    />
+                    <AvatarFallback>
+                      {strangerUser?.name?.substring(0, 2) || "ST"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="rounded-lg bg-muted p-3 text-sm shadow-md">
                     <div className="flex items-center gap-1">
@@ -167,7 +285,7 @@ export const ChatRoom = ({
 
         <CardFooter className="border-t bg-muted/40 p-4">
           <form
-            className="flex w-full items-center space-x-2"
+            className="flex w-full items-center gap-3"
             onSubmit={handleSubmit}
           >
             <Input
@@ -177,6 +295,7 @@ export const ChatRoom = ({
               placeholder={
                 isChannelReady ? "Type a message..." : "Connecting..."
               }
+              ref={inputRef}
               value={input}
             />
             <Button

@@ -27,6 +27,7 @@ export const CommentSchema = createSelectSchema(comment);
 export const MessageSchema = createSelectSchema(message);
 export const BlogSchema = createSelectSchema(blog);
 export const RoomSchema = createSelectSchema(room);
+export const RoomMemberSchema = createSelectSchema(roomMember);
 export const UserFollowersSchema = createSelectSchema(userFollowers);
 export const UserFollowingSchema = createSelectSchema(userFollowing);
 export const TagSchema = createSelectSchema(tag);
@@ -428,3 +429,18 @@ export const ListFeedbacksOutput = z.object({
 });
 
 export const GlobalLobbyPresenceSchema = z.enum(["idle", "waiting", "matched"]);
+
+export const ListRoomMembersInput = z.object({
+  roomId: z.cuid2(),
+  includeSelf: z.boolean().default(true).optional(),
+});
+
+export const ListRoomMembersOutput = z.array(
+  RoomMemberSchema.extend({
+    user: z.object({
+      id: z.string(),
+      name: z.string(),
+      image: z.string().nullable(),
+    }),
+  })
+);

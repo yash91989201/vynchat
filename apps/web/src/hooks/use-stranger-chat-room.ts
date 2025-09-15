@@ -1,6 +1,6 @@
 import type { MessageType } from "@server/lib/types";
 import type { RealtimeChannel } from "@supabase/supabase-js";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useReducer, useRef } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase";
@@ -9,12 +9,19 @@ import { queryUtils } from "@/utils/orpc";
 const TYPING_TIMEOUT = 3000;
 const TYPING_STOP_TIMEOUT = 2000;
 
+interface StrangerUser {
+  id: string;
+  name: string;
+  image: string | null;
+}
+
 interface ChatState {
   messages: MessageType[];
   input: string;
   isChannelReady: boolean;
   isStrangerTyping: boolean;
   strangerLeft: boolean;
+  strangerUser: StrangerUser | null;
 }
 
 type ChatAction =
@@ -24,6 +31,7 @@ type ChatAction =
   | { type: "SET_CHANNEL_READY"; ready: boolean }
   | { type: "SET_STRANGER_TYPING"; typing: boolean }
   | { type: "SET_STRANGER_LEFT"; left: boolean }
+  | { type: "SET_STRANGER_USER"; user: StrangerUser | null }
   | { type: "CLEAR_INPUT" };
 
 const initialChatState: ChatState = {
@@ -32,6 +40,7 @@ const initialChatState: ChatState = {
   isChannelReady: false,
   isStrangerTyping: false,
   strangerLeft: false,
+  strangerUser: null,
 };
 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
@@ -52,6 +61,8 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, isStrangerTyping: action.typing };
     case "SET_STRANGER_LEFT":
       return { ...state, strangerLeft: action.left };
+    case "SET_STRANGER_USER":
+      return { ...state, strangerUser: action.user };
     case "CLEAR_INPUT":
       return { ...state, input: "" };
     default:
@@ -66,6 +77,36 @@ export const useChatRoom = (roomId: string, userId: string) => {
   const strangerTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Query to fetch room members and identify stranger
+  const { data: roomMembers } = useSuspenseQuery(
+    queryUtils.room.listRoomMembers.queryOptions({
+      input: { roomId },
+    })
+  );
+
+  useEffect(() => {
+    if (roomMembers) {
+      const strangerMember = roomMembers.find(
+        (member) => member.userId !== userId
+      );
+
+      if (strangerMember === undefined) {
+        return;
+      }
+
+      if (strangerMember?.user) {
+        dispatch({
+          type: "SET_STRANGER_USER",
+          user: {
+            id: strangerMember.user.id,
+            name: strangerMember.user.name,
+            image: strangerMember.user.image,
+          },
+        });
+      }
+    }
+  }, [roomMembers, userId]);
 
   // Mutations
   const { mutateAsync: sendMessage } = useMutation(
