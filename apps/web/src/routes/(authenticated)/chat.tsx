@@ -7,7 +7,6 @@ import { StrangerChat } from "@/components/chat/stranger-chat";
 import {
   AbsoluteLeftAd,
   AbsoluteRightAd,
-  FooterAd,
 } from "@/components/shared/google-ads";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WelcomeDialog } from "@/components/user/welcome-dialog";
@@ -73,7 +72,6 @@ function RouteComponent() {
           </Tabs>
         </div>
       </main>
-      <FooterAd />
     </>
   );
 }
