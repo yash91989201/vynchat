@@ -1,10 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { MessageCircle } from "lucide-react";
 import { useEffect, useState } from "react";
-import { AccountLinkDialog } from "@/components/user/account-link-dialog";
-import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { Member } from "@/components/chat/chat-room/types";
+import { Button } from "@/components/ui/button";
+import { AccountLinkDialog } from "@/components/user/account-link-dialog";
 import { supabase } from "@/lib/supabase";
 import { queryUtils } from "@/utils/orpc";
 
@@ -16,8 +17,27 @@ export function FollowingList({ onUserSelect }: FollowingListProps) {
   const { session } = useRouteContext({ from: "/(authenticated)" });
   const isAnonymous = !!session?.user?.isAnonymous;
   const [onlineUserIds, setOnlineUserIds] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
 
   const { data } = useQuery(queryUtils.user.userFollowing.queryOptions({}));
+
+  const unfollowMutation = useMutation(
+    queryUtils.user.unfollow.mutationOptions({
+      onSuccess: () => {
+        toast.success("User unfollowed.");
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.user.userFollowing.queryKey(),
+        });
+      },
+      onError: (error) => {
+        toast.error(`Failed to unfollow: ${error.message}`);
+      },
+    })
+  );
+
+  const handleUnfollow = (userId: string) => {
+    unfollowMutation.mutate({ userId });
+  };
 
   const following = data?.followings ?? [];
 
@@ -76,7 +96,7 @@ export function FollowingList({ onUserSelect }: FollowingListProps) {
               <div className="relative mr-3">
                 <div className="h-8 w-8 rounded-full bg-gray-200" />
                 {onlineUserIds.has(u.id) && (
-                  <div className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full bg-green-500 border-2 border-white" />
+                  <div className="absolute right-0 bottom-0 h-2.5 w-2.5 rounded-full border-2 border-white bg-green-500" />
                 )}
               </div>
               <div>
@@ -88,10 +108,19 @@ export function FollowingList({ onUserSelect }: FollowingListProps) {
                 )}
               </div>
             </div>
-            <Button onClick={() => onUserSelect(u)} size="sm">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Chat
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                onClick={() => handleUnfollow(u.id)}
+                size="sm"
+                variant="destructive"
+              >
+                Block
+              </Button>
+              <Button onClick={() => onUserSelect(u)} size="sm">
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Chat
+              </Button>
+            </div>
           </li>
         ))}
       </ul>

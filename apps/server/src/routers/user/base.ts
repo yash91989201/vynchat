@@ -25,8 +25,8 @@ export const userBaseRouter = {
         .delete(userFollowing)
         .where(
           and(
-            eq(userFollowing.userId, input.userId),
-            eq(userFollowing.followingId, context.session.user.id)
+            eq(userFollowing.userId, context.session.user.id),
+            eq(userFollowing.followingId, input.userId)
           )
         );
       return { success: true };
