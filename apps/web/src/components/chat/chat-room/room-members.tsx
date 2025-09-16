@@ -4,6 +4,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { authClient } from "@/lib/auth-client";
+import { supabase } from "@/lib/supabase";
 import { orpcClient, queryUtils } from "@/utils/orpc";
 import type { Member, Room } from "./types";
 
@@ -95,8 +96,16 @@ export const RoomMembers = ({
 
   const banUserMutation = useMutation(
     queryUtils.room.ban.mutationOptions({
-      onSuccess: () => {
+      onSuccess: (_data, variables) => {
         toast.success("User banned successfully");
+
+        const channel = supabase.channel(`room:${variables.roomId}`);
+        channel.send({
+          type: "broadcast",
+          event: "user_banned",
+          payload: { userId: variables.userId, roomId: variables.roomId },
+        });
+
         queryClient.invalidateQueries({
           queryKey: queryUtils.room.listRoomMembers.queryKey({
             input: {
@@ -116,24 +125,6 @@ export const RoomMembers = ({
       },
     })
   );
-
-  // const banUserMutation = useMutation({
-  //   mutationFn: async (userId: string) => {
-  //     if (!room) return;
-  //     await queryUtils.room.ban.mutationOptions({ roomId: room.id, userId });
-  //   },
-  //   onSuccess: (_, userId) => {
-  //     toast.success("User banned successfully");
-  //     queryClient.invalidateQueries({
-  //       queryKey: queryUtils.room.listMembers.queryKey({
-  //         roomId: room?.id ?? "",
-  //       }),
-  //     });
-  //   },
-  //   onError: (error) => {
-  //     toast.error(error.message || "Failed to ban user");
-  //   },
-  // });
 
   const handleFollowToggle = (
     memberId: string,
@@ -216,4 +207,3 @@ export const RoomMembers = ({
     </div>
   );
 };
-

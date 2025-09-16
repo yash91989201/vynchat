@@ -2,7 +2,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
-import type { Member, Room } from "@/components/chat/chat-room/types";
+import type { Member } from "@/components/chat/chat-room/types";
 import { supabase } from "@/lib/supabase";
 import type { ChatMessage } from "@/lib/types";
 import { queryClient, queryUtils } from "@/utils/orpc";
@@ -228,6 +228,18 @@ export const useRoomChat = (user: Member) => {
             3000
           );
         })
+        .on("broadcast", { event: "user_banned" }, ({ payload }) => {
+          if (
+            payload.userId === currentUser.id &&
+            payload.roomId === selectedRoomId
+          ) {
+            handleLeaveRoom();
+            toast.error("You have been banned from this room.");
+            queryClient.invalidateQueries({
+              queryKey: queryUtils.room.listRooms.queryKey(),
+            });
+          }
+        })
         .subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
             isSubscribed = true;
@@ -254,41 +266,6 @@ export const useRoomChat = (user: Member) => {
       channelRef.current = null;
       clearTimeouts();
       setMembers([]);
-    };
-  }, [selectedRoomId]); // Only selectedRoomId as dependency
-
-  // Effect to handle being banned from a room
-  useEffect(() => {
-    const currentUser = userRef.current;
-    if (!(selectedRoomId && currentUser)) return;
-
-    const channel = supabase
-      .channel(`banned-users-listener:${currentUser.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "banned_user",
-          filter: `user_id=eq.${currentUser.id}`,
-        },
-        (payload) => {
-          if (payload.new.room_id === selectedRoomId) {
-            handleLeaveRoom();
-            toast.error("You have been banned from this room.");
-            // Also remove the room from the list of myRooms
-            queryClient.setQueryData(
-              queryUtils.room.getMyRooms.queryKey(),
-              (oldData: Room[] | undefined) =>
-                oldData?.filter((room) => room.id !== selectedRoomId) ?? []
-            );
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
     };
   }, [selectedRoomId, handleLeaveRoom]);
 
