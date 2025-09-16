@@ -175,14 +175,15 @@ export const ChatRoom = ({
                 {strangerUser?.name?.substring(0, 2) || "ST"}
               </AvatarFallback>
             </Avatar>
-            <div>
+            <div className="space-y-3">
               <p className="font-medium text-sm leading-none">
                 {strangerUser?.name || "Stranger"}
               </p>
               <Button
                 onClick={() => actions.skipStranger(onSkip)}
+                size="sm"
                 type="button"
-                variant="link"
+                variant="secondary"
               >
                 Skip
               </Button>
