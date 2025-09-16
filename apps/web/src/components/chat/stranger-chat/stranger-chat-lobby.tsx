@@ -1,4 +1,5 @@
 import { HatGlasses, Loader2, Users } from "lucide-react";
+import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -9,6 +10,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useRouteContext } from "@tanstack/react-router";
 
 interface StrangerChatLobbyProps {
   status: "idle" | "waiting" | "matched";
@@ -19,6 +29,16 @@ interface StrangerChatLobbyProps {
   onCloseDialog: () => void;
 }
 
+const continents = [
+  "Africa",
+  "Antarctica",
+  "Asia",
+  "Europe",
+  "North America",
+  "Oceania",
+  "South America",
+];
+
 export const StrangerChatLobby = ({
   status,
   lobbyCount,
@@ -27,6 +47,13 @@ export const StrangerChatLobby = ({
   onTalkToStranger,
   onCloseDialog,
 }: StrangerChatLobbyProps) => {
+  const { session } = useRouteContext({
+    from: "/(authenticated)",
+  });
+
+  const [name, setName] = useState(session.user.name);
+  const [continent, setContinent] = useState("");
+
   return (
     <div className="flex h-full items-center justify-center p-4">
       <AlertDialog onOpenChange={onCloseDialog} open={!!dialogMessage}>
@@ -52,10 +79,32 @@ export const StrangerChatLobby = ({
           Find a random person to chat with anonymously.
         </p>
 
-        <div className="mt-10">
+        <div className="mt-10 space-y-4">
+          <div className="flex flex-col items-center gap-3 sm:flex-row">
+            <Input
+              className="text-center"
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter your name"
+              value={name}
+            />
+            <Select onValueChange={setContinent} value={continent}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select a continent" />
+              </SelectTrigger>
+              <SelectContent>
+                {continents.map((c) => (
+                  <SelectItem key={c} value={c}>
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Button
             className="rounded-full"
-            disabled={isPending && status !== "idle"}
+            disabled={
+              (isPending && status !== "idle") || !name.trim() || !continent
+            }
             onClick={onTalkToStranger}
             size="lg"
           >
