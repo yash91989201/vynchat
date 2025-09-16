@@ -22,7 +22,6 @@ export const useRoomChat = (user: Member) => {
     `${Date.now()}_${Math.random().toString(36).substring(2)}`
   );
 
-  // Store user in ref to avoid recreating stable references
   const userRef = useRef(user);
   userRef.current = user;
 
@@ -66,6 +65,9 @@ export const useRoomChat = (user: Member) => {
         setSelectedRoomId(variables.roomId);
         toast.success(data.message);
       },
+      onError: (error) => {
+        toast.error(error.message);
+      },
     })
   );
 
@@ -80,9 +82,25 @@ export const useRoomChat = (user: Member) => {
     })
   );
 
+  const { mutate: toggleLock } = useMutation(
+    queryUtils.room.toggleLock.mutationOptions({
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.room.getMyRooms.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.room.listRooms.queryKey(),
+        });
+        toast.success("Room lock status updated");
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    })
+  );
+
   const handleSelectRoom = useCallback(
     (roomId: string) => {
-      // If we're switching from one room to another, leave the current room first
       if (selectedRoomId && selectedRoomId !== roomId) {
         leaveRoom({ roomId: selectedRoomId });
       }
@@ -104,51 +122,41 @@ export const useRoomChat = (user: Member) => {
     }
   }, [selectedRoomId, leaveRoom]);
 
-  // Effect to load messages when room changes
   useEffect(() => {
     if (!selectedRoomId) {
       setMessages([]);
       return;
     }
 
-    // Use initialMessages from React Query instead of direct Supabase query
     if (initialMessages) {
       setMessages(initialMessages);
     }
   }, [selectedRoomId, initialMessages]);
 
-  // Effect to handle room subscription and member tracking
   useEffect(() => {
-    // Clear members when no room is selected
     if (!selectedRoomId) {
       setMembers([]);
       return;
     }
 
-    // Get current user from ref
     const currentUser = userRef.current;
 
-    // Generate a unique session-based presence key
     const presenceKey = `${currentUser.id}_${sessionIdRef.current}`;
     let isSubscribed = false;
     let channel: RealtimeChannel | null = null;
 
-    // Helper function to clear timeouts
     const clearTimeouts = () => {
       if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
       if (strangerTypingTimeoutRef.current)
         clearTimeout(strangerTypingTimeoutRef.current);
     };
 
-    // Function to process presence state - defined inside useEffect
     const processPresenceState = (presenceState: Record<string, Member[]>) => {
       const memberMap = new Map<string, Member>();
 
-      // Iterate through all presence entries
       for (const presenceList of Object.values(presenceState)) {
         for (const member of presenceList) {
           if (member?.id) {
-            // Keep the most recent entry for each user ID
             memberMap.set(member.id, member);
           }
         }
@@ -157,26 +165,21 @@ export const useRoomChat = (user: Member) => {
       return Array.from(memberMap.values());
     };
 
-    // Function to update members with comparison - defined inside useEffect
     const updateMembersState = (newMembers: Member[]) => {
       setMembers((prevMembers) => {
-        // Quick length check first
         if (prevMembers.length !== newMembers.length) {
           return newMembers;
         }
 
-        // Deep comparison of member IDs
         const prevIds = new Set(prevMembers.map((m) => m.id));
         const newIds = new Set(newMembers.map((m) => m.id));
 
-        // Check if any new member is not in previous list
         for (const id of newIds) {
           if (!prevIds.has(id)) {
             return newMembers;
           }
         }
 
-        // No changes detected
         return prevMembers;
       });
     };
@@ -189,7 +192,6 @@ export const useRoomChat = (user: Member) => {
         },
       });
 
-      // Helper function to update members list
       const updateMembersList = () => {
         if (!isSubscribed) return;
         if (!channel) return;
@@ -207,14 +209,11 @@ export const useRoomChat = (user: Member) => {
           if (!payload) return;
           if (!selectedRoomId) return;
 
-          // Update local state directly instead of query cache
           setMessages((prev) => {
-            // Check if message already exists to prevent duplicates
             const messageExists = prev.some((msg) => msg.id === payload.id);
             if (messageExists) {
               return prev;
             }
-            // Add new message to the end
             return [...prev, payload];
           });
         })
@@ -248,7 +247,6 @@ export const useRoomChat = (user: Member) => {
               name: currentUser.name,
               image: currentUser.image,
             });
-            // Initial sync after tracking
             updateMembersList();
           }
         });
@@ -275,7 +273,6 @@ export const useRoomChat = (user: Member) => {
     try {
       const msg = await sendMessage({ roomId: selectedRoomId, content: input });
 
-      // Update local state immediately
       setMessages((prev) => [...prev, msg]);
 
       if (channelRef.current) {
@@ -333,5 +330,6 @@ export const useRoomChat = (user: Member) => {
     createRoom,
     members,
     handleLeaveRoom,
+    toggleLock,
   };
 };

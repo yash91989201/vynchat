@@ -1,3 +1,4 @@
+import { Lock } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,14 +18,18 @@ export const RoomListItem = ({
   onSelect,
   isMyRoom,
 }: RoomListItemProps) => {
+  const isDisabled = room.isLocked && !isMyRoom;
+
   return (
     <Button
       className={cn(
         "h-auto w-full justify-start gap-3 whitespace-normal rounded-lg p-3 text-left",
-        isSelected && "bg-muted"
+        isSelected && "bg-muted",
+        isDisabled && "cursor-not-allowed opacity-50"
       )}
-      onClick={() => onSelect(room.id)}
+      onClick={() => !isDisabled && onSelect(room.id)}
       variant="ghost"
+      aria-disabled={isDisabled}
     >
       <Avatar className="h-10 w-10">
         {isMyRoom ? (
@@ -37,7 +42,10 @@ export const RoomListItem = ({
         )}
       </Avatar>
       <div className="flex-1 overflow-hidden">
-        <p className="truncate font-semibold">{room.name}</p>
+        <div className="flex items-center gap-2">
+          <p className="truncate font-semibold">{room.name}</p>
+          {room.isLocked && <Lock className="h-4 w-4 text-muted-foreground" />}
+        </div>
       </div>
       {isMyRoom && (
         <div className="flex flex-col items-end text-xs">

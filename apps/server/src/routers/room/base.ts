@@ -3,8 +3,6 @@ import { and, eq, getTableColumns, inArray, not, sql } from "drizzle-orm";
 import { bannedUser, room, roomMember } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
 import {
-  BanUserInput,
-  BanUserOutput,
   CreateDMRoomInput,
   CreateDMRoomOutput,
   CreateRoomInput,
@@ -67,7 +65,6 @@ export const roomBaseRouter = {
   getMyRooms: protectedProcedure.handler(async ({ context }) => {
     const userId = context.session.user.id;
 
-    // 1. Get all non-DM rooms where user is a member
     const userRooms = await context.db
       .select(getTableColumns(room))
       .from(room)
@@ -77,7 +74,6 @@ export const roomBaseRouter = {
       return [];
     }
 
-    // 2. Get member counts for all these rooms
     const roomIds = userRooms.map((room) => room.id);
 
     const memberCounts = await context.db
@@ -89,7 +85,6 @@ export const roomBaseRouter = {
       .where(inArray(roomMember.roomId, roomIds))
       .groupBy(roomMember.roomId);
 
-    // 3. Combine the data using JavaScript
     const memberCountMap = new Map(
       memberCounts.map((mc) => [mc.roomId, mc.memberCount])
     );
@@ -143,6 +138,7 @@ export const roomBaseRouter = {
         ownerId: room.ownerId,
         createdAt: room.createdAt,
         isDM: room.isDM,
+        isLocked: room.isLocked,
         memberCount: sql<number>`count(${roomMember.userId})`,
       })
       .from(room)
@@ -158,51 +154,4 @@ export const roomBaseRouter = {
 
     return roomsWithMemberCount;
   }),
-
-  ban: protectedProcedure
-    .input(BanUserInput)
-    .output(BanUserOutput)
-    .handler(async ({ context, input }) => {
-      const { roomId, userId: userToBanId } = input;
-      const currentUserId = context.session.user.id;
-
-      const [roomToUpdate] = await context.db
-        .select()
-        .from(room)
-        .where(eq(room.id, roomId));
-
-      if (!roomToUpdate) {
-        throw new ORPCError("NOT_FOUND", {
-          message: "Room not found.",
-        });
-      }
-
-      if (roomToUpdate.ownerId !== currentUserId) {
-        throw new ORPCError("FORBIDDEN", {
-          message: "You are not the owner of this room.",
-        });
-      }
-
-      if (roomToUpdate.ownerId === userToBanId) {
-        throw new ORPCError("BAD_REQUEST", {
-          message: "You cannot ban yourself.",
-        });
-      }
-
-      // Add to banned_user table
-      await context.db.insert(bannedUser).values({
-        roomId,
-        userId: userToBanId,
-        bannedBy: currentUserId,
-      });
-
-      // Remove from room_member table
-      await context.db
-        .delete(roomMember)
-        .where(
-          and(eq(roomMember.roomId, roomId), eq(roomMember.userId, userToBanId))
-        );
-
-      return {};
-    }),
 };

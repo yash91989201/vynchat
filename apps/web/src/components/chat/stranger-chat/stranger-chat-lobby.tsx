@@ -1,3 +1,4 @@
+import { useRouteContext } from "@tanstack/react-router";
 import { HatGlasses, Loader2, Users } from "lucide-react";
 import { useState } from "react";
 import {
@@ -18,7 +19,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useRouteContext } from "@tanstack/react-router";
 
 interface StrangerChatLobbyProps {
   status: "idle" | "waiting" | "matched";

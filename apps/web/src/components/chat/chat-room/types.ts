@@ -5,6 +5,7 @@ export type Room = ChatRoom & {
   time?: string;
   unread?: number;
   avatar?: string;
+  isLocked?: boolean;
 };
 
 export interface RoomListProps {

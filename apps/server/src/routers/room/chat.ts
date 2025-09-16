@@ -1,3 +1,4 @@
+import { ORPCError } from "@orpc/server";
 import { and, eq } from "drizzle-orm";
 import { room, roomMember, skippedPair } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
@@ -22,6 +23,16 @@ export const roomChatRouter = {
       const { roomId } = input;
       const userId = context.session.user.id;
 
+      const roomToJoin = await context.db.query.room.findFirst({
+        where: eq(room.id, roomId),
+      });
+
+      if (!roomToJoin) {
+        throw new ORPCError("NOT_FOUND", {
+          message: "Room not found.",
+        });
+      }
+
       const isAlreadyMember = await context.db.query.roomMember.findFirst({
         where: and(
           eq(roomMember.roomId, roomId),
@@ -31,6 +42,12 @@ export const roomChatRouter = {
 
       if (isAlreadyMember) {
         return { success: true, message: "Already a member" };
+      }
+
+      if (roomToJoin.isLocked) {
+        throw new ORPCError("FORBIDDEN", {
+          message: "This room is locked. You cannot join at this time.",
+        });
       }
 
       await context.db.insert(roomMember).values({ roomId, userId });

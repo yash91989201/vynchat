@@ -284,6 +284,12 @@ export const DeleteRoomInput = z.object({
 
 export const DeleteRoomOutput = z.object({});
 
+export const ToggleLockInput = z.object({
+  roomId: z.cuid2(),
+});
+
+export const ToggleLockOutput = RoomSchema.optional();
+
 export const BanUserInput = z.object({
   roomId: z.cuid2(),
   userId: z.string(),

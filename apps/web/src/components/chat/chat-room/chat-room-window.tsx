@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import {
+  Lock,
   LogOut,
   MessageSquarePlus,
   MoreHorizontal,
@@ -9,6 +10,7 @@ import {
   Send,
   Smile,
   Trash2,
+  Unlock,
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -66,6 +68,7 @@ interface ChatRoomWindowProps {
   members: Member[];
   handleLeaveRoom?: () => void;
   isRoomOwner: boolean;
+  toggleLock: (values: { roomId: string }) => void;
 }
 
 export const ChatRoomWindow = ({
@@ -85,15 +88,14 @@ export const ChatRoomWindow = ({
   members,
   handleLeaveRoom,
   isRoomOwner,
+  toggleLock,
 }: ChatRoomWindowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
-  // Delete room mutation
   const { mutate: deleteRoom, isPending: isDeleting } = useMutation(
     queryUtils.room.delete.mutationOptions({
       onSuccess: () => {
-        // Navigate to another room after deletion
         if (onRoomSelect && myRooms.length > 1) {
           const nextRoom = myRooms.find((r) => r.id !== room?.id);
           if (nextRoom) {
@@ -138,6 +140,11 @@ export const ChatRoomWindow = ({
     }
 
     deleteRoom({ id: room.id });
+  };
+
+  const onToggleLockClick = () => {
+    if (!room) return;
+    toggleLock({ roomId: room.id });
   };
 
   useEffect(() => {
@@ -203,11 +210,13 @@ export const ChatRoomWindow = ({
 
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
-      {/* Header */}
       <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-3">
           <div>
-            <h3 className="font-semibold text-lg">{room.name}</h3>
+            <h3 className="flex items-center gap-2 font-semibold text-lg">
+              {room.name}
+              {room.isLocked && <Lock className="h-4 w-4" />}
+            </h3>
             <p className="flex items-center text-muted-foreground text-sm">
               <Users className="mr-1.5 h-4 w-4" />
               {members.length} members
@@ -254,7 +263,6 @@ export const ChatRoomWindow = ({
             </>
           )}
 
-          {/* Room Actions Dropdown */}
           {(handleLeaveRoom || isRoomOwner) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -269,16 +277,31 @@ export const ChatRoomWindow = ({
                     Leave Room
                   </DropdownMenuItem>
                 )}
-                {handleLeaveRoom && isRoomOwner && <DropdownMenuSeparator />}
                 {isRoomOwner && (
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    disabled={isDeleting}
-                    onClick={onDeleteClick}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    {isDeleting ? "Deleting..." : "Delete Room"}
-                  </DropdownMenuItem>
+                  <>
+                    <DropdownMenuItem onClick={onToggleLockClick}>
+                      {room.isLocked ? (
+                        <>
+                          <Unlock className="mr-2 h-4 w-4" />
+                          Unlock Room
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="mr-2 h-4 w-4" />
+                          Lock Room
+                        </>
+                      )}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      className="text-destructive focus:text-destructive"
+                      disabled={isDeleting}
+                      onClick={onDeleteClick}
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      {isDeleting ? "Deleting..." : "Delete Room"}
+                    </DropdownMenuItem>
+                  </>
                 )}
               </DropdownMenuContent>
             </DropdownMenu>
@@ -286,7 +309,6 @@ export const ChatRoomWindow = ({
         </div>
       </div>
 
-      {/* Messages */}
       <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
         <div className="space-y-6 p-4">
           {messages.map((msg) => (
@@ -342,7 +364,6 @@ export const ChatRoomWindow = ({
         </div>
       </div>
 
-      {/* Input */}
       <div className="border-t p-4">
         <form
           className="flex items-center gap-3"

@@ -98,6 +98,7 @@ export const room = pgTable(
     id: cuid2("id").defaultRandom().primaryKey(),
     name: text("name").notNull(),
     isDM: boolean("isDM").notNull().default(false),
+    isLocked: boolean("is_locked").default(false).notNull(),
     ownerId: text("owner_id")
       .notNull()
       .references(() => user.id),

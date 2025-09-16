@@ -33,6 +33,7 @@ export const ChatRoom = () => {
     createRoom,
     members,
     handleLeaveRoom,
+    toggleLock,
   } = useRoomChat(user);
 
   if (isAnonymous) {
@@ -58,6 +59,7 @@ export const ChatRoom = () => {
           room={selectedRoom}
           selectedRoomId={selectedRoomId}
           strangerTyping={strangerTyping}
+          toggleLock={toggleLock}
           userId={user.id}
         />
       </div>
@@ -86,6 +88,7 @@ export const ChatRoom = () => {
         myRooms={myRooms}
         room={selectedRoom}
         strangerTyping={strangerTyping}
+        toggleLock={toggleLock}
         userId={user.id}
       />
             <RoomMembers
