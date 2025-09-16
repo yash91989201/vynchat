@@ -170,6 +170,7 @@ export const roomChatRouter = {
                   id: true,
                   name: true,
                   image: true,
+                  isAnonymous: true,
                 },
               },
             },

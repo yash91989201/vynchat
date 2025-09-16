@@ -13,6 +13,7 @@ interface StrangerUser {
   id: string;
   name: string;
   image: string | null;
+  isAnonymous: boolean | null;
 }
 
 interface ChatState {
@@ -70,7 +71,11 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
   }
 }
 
-export const useChatRoom = (roomId: string, userId: string) => {
+export const useChatRoom = (
+  roomId: string,
+  userId: string,
+  session: { user: { name: string | null } }
+) => {
   const [state, dispatch] = useReducer(chatReducer, initialChatState);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
@@ -102,6 +107,7 @@ export const useChatRoom = (roomId: string, userId: string) => {
             id: strangerMember.user.id,
             name: strangerMember.user.name,
             image: strangerMember.user.image,
+            isAnonymous: strangerMember.user.isAnonymous,
           },
         });
       }
@@ -184,6 +190,13 @@ export const useChatRoom = (roomId: string, userId: string) => {
           dispatch({ type: "SET_STRANGER_TYPING", typing: false });
         }, TYPING_TIMEOUT);
       })
+      .on("broadcast", { event: "follow_attempt" }, ({ payload }) => {
+        if (session.user.name === payload.senderName) return;
+
+        toast.info(
+          `${payload.senderName} wants to follow you. Please link your account to connect.`
+        );
+      })
       .subscribe((status) => {
         dispatch({ type: "SET_CHANNEL_READY", ready: status === "SUBSCRIBED" });
       });
@@ -196,7 +209,7 @@ export const useChatRoom = (roomId: string, userId: string) => {
       dispatch({ type: "SET_CHANNEL_READY", ready: false });
       clearTimeouts();
     };
-  }, [roomId, userId, clearTimeouts]);
+  }, [roomId, userId, clearTimeouts, session.user.name]);
 
   useEffect(() => {
     if (state.isChannelReady && state.strangerUser) {
@@ -298,6 +311,16 @@ export const useChatRoom = (roomId: string, userId: string) => {
     setStrangerLeft: useCallback((left: boolean) => {
       dispatch({ type: "SET_STRANGER_LEFT", left });
     }, []),
+
+    notifyFollowAttempt: useCallback(async () => {
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "follow_attempt",
+          payload: { senderName: session.user.name || "Stranger user" },
+        });
+      }
+    }, [session.user.name]),
   };
 
   return {

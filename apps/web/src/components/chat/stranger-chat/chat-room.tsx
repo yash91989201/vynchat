@@ -53,7 +53,7 @@ export const ChatRoom = ({
     strangerLeft,
     strangerUser,
     actions,
-  } = useChatRoom(roomId, userId);
+  } = useChatRoom(roomId, userId, session);
 
   // Query to check if following the stranger
   const { data: isFollowing } = useQuery({
@@ -115,6 +115,14 @@ export const ChatRoom = ({
           </Link>{" "}
           to link your account.
         </div>
+      );
+      return;
+    }
+
+    if (strangerUser.isAnonymous) {
+      actions.notifyFollowAttempt();
+      toast.info(
+        "This user is a guest and cannot accept follow requests yet. They have been notified of your interest."
       );
       return;
     }
@@ -298,3 +306,4 @@ export const ChatRoom = ({
     </>
   );
 };
+

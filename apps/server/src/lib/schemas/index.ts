@@ -441,6 +441,7 @@ export const ListRoomMembersOutput = z.array(
       id: z.string(),
       name: z.string(),
       image: z.string().nullable(),
+      isAnonymous: z.boolean().nullable(),
     }),
   })
 );
