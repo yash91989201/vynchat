@@ -51,7 +51,13 @@ export const useFollowerChat = (currentUser: Member, otherUser: Member) => {
   }, [initialMessages]);
 
   const { mutateAsync: sendMessage } = useMutation(
-    queryUtils.message.send.mutationOptions({})
+    queryUtils.message.send.mutationOptions({
+      onError: () => {
+        toast.error(
+          "You can only send 3 messages before the other person replies."
+        );
+      },
+    })
   );
 
   useEffect(() => {
@@ -98,7 +104,6 @@ export const useFollowerChat = (currentUser: Member, otherUser: Member) => {
         payload: msg,
       });
     }
-    setInput("");
   }, [input, room, sendMessage]);
 
   const handleInputChange = useCallback(

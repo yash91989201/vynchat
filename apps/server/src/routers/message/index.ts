@@ -1,6 +1,6 @@
 import { and, asc, eq } from "drizzle-orm";
 import z from "zod";
-import { message, roomMember } from "@/db/schema";
+import { message, room, roomMember } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
 import { MessageOutput } from "@/lib/schemas";
 
@@ -48,6 +48,35 @@ export const messageRouter = {
 
       if (!membership) {
         throw new Error("Not a member of this room");
+      }
+
+      // Check for DM message limit
+      const roomData = await context.db.query.room.findFirst({
+        where: eq(room.id, roomId),
+      });
+
+      if (roomData?.name.startsWith("dm:")) {
+        const messages = await context.db.query.message.findMany({
+          where: eq(message.roomId, roomId),
+        });
+
+        const userIds = roomData.name.replace("dm:", "").split(":");
+        const otherUserId = userIds.find((id) => id !== userId);
+
+        const otherUserHasReplied = messages.some(
+          (m) => m.senderId === otherUserId
+        );
+
+        if (!otherUserHasReplied) {
+          const currentUserMessagesCount = messages.filter(
+            (m) => m.senderId === userId
+          ).length;
+          if (currentUserMessagesCount >= 3) {
+            throw new Error(
+              "You can only send 3 messages until the user replies."
+            );
+          }
+        }
       }
 
       // Insert message into database
