@@ -1,14 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useRouteContext } from "@tanstack/react-router";
-import {
-  LogOut,
-  Send,
-  SkipForward,
-  UserMinus,
-  UserPlus,
-  Wifi,
-  WifiOff,
-} from "lucide-react";
+import { LogOut, Send, UserMinus, UserPlus } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import {
@@ -179,17 +171,13 @@ export const ChatRoom = ({
               <p className="font-medium text-sm leading-none">
                 {strangerUser?.name || "Stranger"}
               </p>
-              <p className="text-muted-foreground text-sm">
-                {isChannelReady ? (
-                  <span className="flex items-center text-green-500">
-                    <Wifi className="mr-1 h-3 w-3" /> Connected
-                  </span>
-                ) : (
-                  <span className="flex items-center">
-                    <WifiOff className="mr-1 h-3 w-3" /> Connecting...
-                  </span>
-                )}
-              </p>
+              <Button
+                onClick={() => actions.skipStranger(onSkip)}
+                type="button"
+                variant="link"
+              >
+                Skip
+              </Button>
             </div>
           </div>
           <div className="flex items-center space-x-2">
@@ -211,14 +199,6 @@ export const ChatRoom = ({
                 </span>
               </Button>
             )}
-            <Button
-              onClick={() => actions.skipStranger(onSkip)}
-              size="icon"
-              variant="outline"
-            >
-              <SkipForward className="h-4 w-4" />
-              <span className="sr-only">Skip</span>
-            </Button>
             <Button
               onClick={() => actions.leaveRoom(onLeave)}
               size="icon"

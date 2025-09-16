@@ -59,7 +59,7 @@ export const StrangerChatLobby = ({
             onClick={onTalkToStranger}
             size="lg"
           >
-            {isPending ? (
+            {isPending || status === "waiting" ? (
               <>
                 <Loader2 className="mr-2 h-6 w-6 animate-spin" />
                 Finding...
@@ -68,14 +68,6 @@ export const StrangerChatLobby = ({
               "Talk to Stranger"
             )}
           </Button>
-          {status === "waiting" && (
-            <div className="flex flex-col items-center space-y-4">
-              <Loader2 className="h-12 w-12 animate-spin text-primary" />
-              <p className="text-lg text-muted-foreground">
-                Looking for a stranger…
-              </p>
-            </div>
-          )}
         </div>
 
         <div className="mt-10 text-muted-foreground">
