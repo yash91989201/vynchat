@@ -1,13 +1,13 @@
 import type { RouterClient } from "@orpc/server";
 import { adminRouter } from "@/routers/admin";
 import { blogRouter } from "./blog";
+import { dmRouter } from "./dm";
 import { feedbackRouter } from "./feedback";
 import { healthCheckRouter } from "./health-check";
 import { messageRouter } from "./message";
 import { roomRouter } from "./room";
 import { tagRouter } from "./tag";
 import { userRouter } from "./user";
-import { dmRouter } from "./dm";
 
 export type AppRouter = {
   healthCheck: typeof healthCheckRouter;

@@ -7,7 +7,7 @@ import { supabase } from "@/lib/supabase";
 import type { ChatMessage } from "@/lib/types";
 import { queryClient, queryUtils } from "@/utils/orpc";
 
-export const useRoomChat = (user: Member) => {
+export const useRoomChat = (user: Member, roomIdFromUrl?: string) => {
   const [selectedRoomId, setSelectedRoomId] = useState<string | undefined>();
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -25,10 +25,10 @@ export const useRoomChat = (user: Member) => {
   const userRef = useRef(user);
   userRef.current = user;
 
-  const { data: globalRooms = [] } = useQuery(
+  const { data: globalRooms = [], isSuccess: globalRoomsSuccess } = useQuery(
     queryUtils.room.listRooms.queryOptions()
   );
-  const { data: myRooms = [] } = useQuery(
+  const { data: myRooms = [], isSuccess: myRoomsSuccess } = useQuery(
     queryUtils.room.getMyRooms.queryOptions()
   );
 
@@ -114,6 +114,14 @@ export const useRoomChat = (user: Member) => {
     },
     [selectedRoomId, myRooms, joinRoom, leaveRoom]
   );
+
+  useEffect(() => {
+    if (roomIdFromUrl && myRoomsSuccess && globalRoomsSuccess) {
+      if (roomIdFromUrl !== selectedRoomId) {
+        handleSelectRoom(roomIdFromUrl);
+      }
+    }
+  }, [roomIdFromUrl, myRoomsSuccess, globalRoomsSuccess, handleSelectRoom, selectedRoomId]);
 
   const handleLeaveRoom = useCallback(() => {
     if (selectedRoomId) {

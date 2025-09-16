@@ -25,6 +25,7 @@ import { Route as authAdminLogInRouteImport } from './routes/(auth)/admin/log-in
 import { Route as authenticatedAdminDashboardRouteRouteImport } from './routes/(authenticated)/admin/dashboard/route'
 import { Route as publicBlogsSlugIndexRouteImport } from './routes/(public)/blogs/$slug/index'
 import { Route as authenticatedAdminDashboardIndexRouteImport } from './routes/(authenticated)/admin/dashboard/index'
+import { Route as authenticatedChatRoomRoomIdRouteImport } from './routes/(authenticated)/chat/room/$roomId'
 import { Route as authenticatedAdminDashboardTagsRouteImport } from './routes/(authenticated)/admin/dashboard/tags'
 import { Route as authenticatedAdminDashboardFeedbacksRouteImport } from './routes/(authenticated)/admin/dashboard/feedbacks'
 import { Route as authenticatedAdminDashboardCommentsRouteImport } from './routes/(authenticated)/admin/dashboard/comments'
@@ -114,6 +115,12 @@ const authenticatedAdminDashboardIndexRoute =
     path: '/',
     getParentRoute: () => authenticatedAdminDashboardRouteRoute,
   } as any)
+const authenticatedChatRoomRoomIdRoute =
+  authenticatedChatRoomRoomIdRouteImport.update({
+    id: '/room/$roomId',
+    path: '/room/$roomId',
+    getParentRoute: () => authenticatedChatRoute,
+  } as any)
 const authenticatedAdminDashboardTagsRoute =
   authenticatedAdminDashboardTagsRouteImport.update({
     id: '/tags',
@@ -156,7 +163,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof authenticatedAdminRouteRouteWithChildren
   '/log-in': typeof authLogInRoute
   '/sign-up': typeof authSignUpRoute
-  '/chat': typeof authenticatedChatRoute
+  '/chat': typeof authenticatedChatRouteWithChildren
   '/feedback': typeof authenticatedFeedbackRoute
   '/profile': typeof authenticatedProfileRoute
   '/about': typeof publicAboutRoute
@@ -169,6 +176,7 @@ export interface FileRoutesByFullPath {
   '/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
   '/admin/dashboard/feedbacks': typeof authenticatedAdminDashboardFeedbacksRoute
   '/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
+  '/chat/room/$roomId': typeof authenticatedChatRoomRoomIdRoute
   '/admin/dashboard/': typeof authenticatedAdminDashboardIndexRoute
   '/blogs/$slug': typeof publicBlogsSlugIndexRoute
   '/admin/dashboard/blogs/new': typeof authenticatedAdminDashboardBlogsNewRoute
@@ -179,7 +187,7 @@ export interface FileRoutesByTo {
   '/admin': typeof authenticatedAdminRouteRouteWithChildren
   '/log-in': typeof authLogInRoute
   '/sign-up': typeof authSignUpRoute
-  '/chat': typeof authenticatedChatRoute
+  '/chat': typeof authenticatedChatRouteWithChildren
   '/feedback': typeof authenticatedFeedbackRoute
   '/profile': typeof authenticatedProfileRoute
   '/about': typeof publicAboutRoute
@@ -191,6 +199,7 @@ export interface FileRoutesByTo {
   '/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
   '/admin/dashboard/feedbacks': typeof authenticatedAdminDashboardFeedbacksRoute
   '/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
+  '/chat/room/$roomId': typeof authenticatedChatRoomRoomIdRoute
   '/admin/dashboard': typeof authenticatedAdminDashboardIndexRoute
   '/blogs/$slug': typeof publicBlogsSlugIndexRoute
   '/admin/dashboard/blogs/new': typeof authenticatedAdminDashboardBlogsNewRoute
@@ -202,7 +211,7 @@ export interface FileRoutesById {
   '/(authenticated)/admin': typeof authenticatedAdminRouteRouteWithChildren
   '/(auth)/log-in': typeof authLogInRoute
   '/(auth)/sign-up': typeof authSignUpRoute
-  '/(authenticated)/chat': typeof authenticatedChatRoute
+  '/(authenticated)/chat': typeof authenticatedChatRouteWithChildren
   '/(authenticated)/feedback': typeof authenticatedFeedbackRoute
   '/(authenticated)/profile': typeof authenticatedProfileRoute
   '/(public)/about': typeof publicAboutRoute
@@ -216,6 +225,7 @@ export interface FileRoutesById {
   '/(authenticated)/admin/dashboard/comments': typeof authenticatedAdminDashboardCommentsRoute
   '/(authenticated)/admin/dashboard/feedbacks': typeof authenticatedAdminDashboardFeedbacksRoute
   '/(authenticated)/admin/dashboard/tags': typeof authenticatedAdminDashboardTagsRoute
+  '/(authenticated)/chat/room/$roomId': typeof authenticatedChatRoomRoomIdRoute
   '/(authenticated)/admin/dashboard/': typeof authenticatedAdminDashboardIndexRoute
   '/(public)/blogs/$slug/': typeof publicBlogsSlugIndexRoute
   '/(authenticated)/admin/dashboard/blogs/new': typeof authenticatedAdminDashboardBlogsNewRoute
@@ -241,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard/comments'
     | '/admin/dashboard/feedbacks'
     | '/admin/dashboard/tags'
+    | '/chat/room/$roomId'
     | '/admin/dashboard/'
     | '/blogs/$slug'
     | '/admin/dashboard/blogs/new'
@@ -263,6 +274,7 @@ export interface FileRouteTypes {
     | '/admin/dashboard/comments'
     | '/admin/dashboard/feedbacks'
     | '/admin/dashboard/tags'
+    | '/chat/room/$roomId'
     | '/admin/dashboard'
     | '/blogs/$slug'
     | '/admin/dashboard/blogs/new'
@@ -287,6 +299,7 @@ export interface FileRouteTypes {
     | '/(authenticated)/admin/dashboard/comments'
     | '/(authenticated)/admin/dashboard/feedbacks'
     | '/(authenticated)/admin/dashboard/tags'
+    | '/(authenticated)/chat/room/$roomId'
     | '/(authenticated)/admin/dashboard/'
     | '/(public)/blogs/$slug/'
     | '/(authenticated)/admin/dashboard/blogs/new'
@@ -419,6 +432,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authenticatedAdminDashboardIndexRouteImport
       parentRoute: typeof authenticatedAdminDashboardRouteRoute
     }
+    '/(authenticated)/chat/room/$roomId': {
+      id: '/(authenticated)/chat/room/$roomId'
+      path: '/room/$roomId'
+      fullPath: '/chat/room/$roomId'
+      preLoaderRoute: typeof authenticatedChatRoomRoomIdRouteImport
+      parentRoute: typeof authenticatedChatRoute
+    }
     '/(authenticated)/admin/dashboard/tags': {
       id: '/(authenticated)/admin/dashboard/tags'
       path: '/tags'
@@ -513,16 +533,27 @@ const authenticatedAdminRouteRouteWithChildren =
     authenticatedAdminRouteRouteChildren,
   )
 
+interface authenticatedChatRouteChildren {
+  authenticatedChatRoomRoomIdRoute: typeof authenticatedChatRoomRoomIdRoute
+}
+
+const authenticatedChatRouteChildren: authenticatedChatRouteChildren = {
+  authenticatedChatRoomRoomIdRoute: authenticatedChatRoomRoomIdRoute,
+}
+
+const authenticatedChatRouteWithChildren =
+  authenticatedChatRoute._addFileChildren(authenticatedChatRouteChildren)
+
 interface authenticatedRouteRouteChildren {
   authenticatedAdminRouteRoute: typeof authenticatedAdminRouteRouteWithChildren
-  authenticatedChatRoute: typeof authenticatedChatRoute
+  authenticatedChatRoute: typeof authenticatedChatRouteWithChildren
   authenticatedFeedbackRoute: typeof authenticatedFeedbackRoute
   authenticatedProfileRoute: typeof authenticatedProfileRoute
 }
 
 const authenticatedRouteRouteChildren: authenticatedRouteRouteChildren = {
   authenticatedAdminRouteRoute: authenticatedAdminRouteRouteWithChildren,
-  authenticatedChatRoute: authenticatedChatRoute,
+  authenticatedChatRoute: authenticatedChatRouteWithChildren,
   authenticatedFeedbackRoute: authenticatedFeedbackRoute,
   authenticatedProfileRoute: authenticatedProfileRoute,
 }

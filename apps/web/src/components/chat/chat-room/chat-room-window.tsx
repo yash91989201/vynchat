@@ -1,6 +1,7 @@
 import { useMutation } from "@tanstack/react-query";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import {
+  Link,
   Lock,
   LogOut,
   MessageSquarePlus,
@@ -14,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -145,6 +147,13 @@ export const ChatRoomWindow = ({
   const onToggleLockClick = () => {
     if (!room) return;
     toggleLock({ roomId: room.id });
+  };
+
+  const handleShareClick = () => {
+    if (!room) return;
+    const roomUrl = `${window.location.origin}/chat?roomId=${room.id}&tab=chat-rooms`;
+    navigator.clipboard.writeText(roomUrl);
+    toast.success("Room link copied to clipboard!");
   };
 
   useEffect(() => {
@@ -279,6 +288,10 @@ export const ChatRoomWindow = ({
                 )}
                 {isRoomOwner && (
                   <>
+                    <DropdownMenuItem onClick={handleShareClick}>
+                      <Link className="mr-2 h-4 w-4" />
+                      <span>Share Room</span>
+                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={onToggleLockClick}>
                       {room.isLocked ? (
                         <>

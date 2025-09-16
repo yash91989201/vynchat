@@ -3,6 +3,7 @@ import { HatGlasses, MessagesSquare } from "lucide-react";
 import { useState } from "react";
 import z from "zod";
 import { ChatRoom } from "@/components/chat/chat-room";
+import type { Member } from "@/components/chat/chat-room/types";
 import { FollowingChat } from "@/components/chat/following-chat";
 import { FollowingList } from "@/components/chat/following-list";
 import { StrangerChat } from "@/components/chat/stranger-chat";
@@ -11,7 +12,6 @@ import {
   AbsoluteRightAd,
 } from "@/components/shared/google-ads";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import type { Member } from "@/components/chat/chat-room/types";
 import { WelcomeDialog } from "@/components/user/welcome-dialog";
 
 const RouteSearchSchema = z.object({
@@ -20,6 +20,7 @@ const RouteSearchSchema = z.object({
     .default("stranger-chat")
     .catch("stranger-chat")
     .optional(),
+  roomId: z.string().optional(),
 });
 
 export const Route = createFileRoute("/(authenticated)/chat")({
@@ -59,8 +60,8 @@ function RouteComponent() {
         <div className="flex-col gap-6">
           <Tabs
             className="h-full"
-            value={selectedFollower ? "following" : defaultTab}
             onValueChange={handleTabChange}
+            value={selectedFollower ? "following" : defaultTab}
           >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger
@@ -94,8 +95,8 @@ function RouteComponent() {
             <TabsContent value="following">
               {selectedFollower ? (
                 <FollowingChat
-                  otherUser={selectedFollower}
                   onClose={handleChatClose}
+                  otherUser={selectedFollower}
                 />
               ) : (
                 <FollowingList onUserSelect={handleFollowerSelect} />
