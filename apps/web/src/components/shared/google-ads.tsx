@@ -3,7 +3,7 @@ import { env } from "@/env";
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export const AbsoluteLeftAd = () => {
-  const isMobile = useIsMobile(768);
+  const isMobile = useIsMobile(1024);
   if (isMobile) return null;
 
   return (
@@ -16,7 +16,7 @@ export const AbsoluteLeftAd = () => {
 };
 
 export const AbsoluteRightAd = () => {
-  const isMobile = useIsMobile(768);
+  const isMobile = useIsMobile(1024);
   if (isMobile) return null;
 
   return (

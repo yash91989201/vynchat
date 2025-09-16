@@ -198,6 +198,12 @@ export const useChatRoom = (roomId: string, userId: string) => {
     };
   }, [roomId, userId, clearTimeouts]);
 
+  useEffect(() => {
+    if (state.isChannelReady && state.strangerUser) {
+      toast.success(`You are connected with ${state.strangerUser.name}`);
+    }
+  }, [state.isChannelReady, state.strangerUser]);
+
   // Actions
   const actions = {
     sendMessage: useCallback(async () => {
