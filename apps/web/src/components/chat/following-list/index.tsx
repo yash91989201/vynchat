@@ -1,15 +1,20 @@
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
+import { MessageCircle } from "lucide-react";
 import { AccountLinkDialog } from "@/components/user/account-link-dialog";
+import { Button } from "@/components/ui/button";
+import type { Member } from "@/components/chat/chat-room/types";
 import { queryUtils } from "@/utils/orpc";
 
-export function FollowingList() {
+interface FollowingListProps {
+  onUserSelect: (user: Member) => void;
+}
+
+export function FollowingList({ onUserSelect }: FollowingListProps) {
   const { session } = useRouteContext({ from: "/(authenticated)" });
   const isAnonymous = !!session?.user?.isAnonymous;
 
-  const { data } = useSuspenseQuery(
-    queryUtils.user.userFollowing.queryOptions({})
-  );
+  const { data } = useQuery(queryUtils.user.userFollowing.queryOptions({}));
 
   const following = data?.followings ?? [];
 
@@ -34,7 +39,7 @@ export function FollowingList() {
       <ul className="space-y-2">
         {following.map((u) => (
           <li
-            className="flex items-center justify-between rounded-md p-2 hover:bg-muted"
+            className="flex items-center justify-between rounded-md p-2"
             key={u.id}
           >
             <div className="flex items-center">
@@ -48,6 +53,10 @@ export function FollowingList() {
                 )}
               </div>
             </div>
+            <Button onClick={() => onUserSelect(u)} size="sm">
+              <MessageCircle className="mr-2 h-4 w-4" />
+              Chat
+            </Button>
           </li>
         ))}
       </ul>

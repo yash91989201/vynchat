@@ -14,6 +14,7 @@ export const userBaseRouter = {
         userId: context.session.user.id,
         followingId: input.userId,
       });
+
       return { success: true };
     }),
 

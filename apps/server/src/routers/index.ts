@@ -7,6 +7,7 @@ import { messageRouter } from "./message";
 import { roomRouter } from "./room";
 import { tagRouter } from "./tag";
 import { userRouter } from "./user";
+import { dmRouter } from "./dm";
 
 export type AppRouter = {
   healthCheck: typeof healthCheckRouter;
@@ -17,6 +18,7 @@ export type AppRouter = {
   room: typeof roomRouter;
   message: typeof messageRouter;
   feedback: typeof feedbackRouter;
+  dm: typeof dmRouter;
 };
 
 export const appRouter: AppRouter = {
@@ -28,6 +30,7 @@ export const appRouter: AppRouter = {
   room: roomRouter,
   message: messageRouter,
   feedback: feedbackRouter,
+  dm: dmRouter,
 };
 
 export type AppRouterClient = RouterClient<typeof appRouter>;

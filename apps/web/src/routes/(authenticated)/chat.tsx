@@ -1,7 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { HatGlasses, MessagesSquare } from "lucide-react";
+import { useState } from "react";
 import z from "zod";
 import { ChatRoom } from "@/components/chat/chat-room";
+import { FollowingChat } from "@/components/chat/following-chat";
 import { FollowingList } from "@/components/chat/following-list";
 import { StrangerChat } from "@/components/chat/stranger-chat";
 import {
@@ -9,6 +11,7 @@ import {
   AbsoluteRightAd,
 } from "@/components/shared/google-ads";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { Member } from "@/components/chat/chat-room/types";
 import { WelcomeDialog } from "@/components/user/welcome-dialog";
 
 const RouteSearchSchema = z.object({
@@ -26,8 +29,26 @@ export const Route = createFileRoute("/(authenticated)/chat")({
 
 function RouteComponent() {
   const { tab } = Route.useSearch();
+  const router = useRouter();
+  const [selectedFollower, setSelectedFollower] = useState<Member | null>(null);
 
   const defaultTab = tab ?? "stranger-chat";
+
+  const handleTabChange = (newTab: string) => {
+    setSelectedFollower(null);
+    router.navigate({
+      to: "/chat",
+      search: { tab: newTab as "chat-rooms" | "stranger-chat" | "following" },
+    });
+  };
+
+  const handleFollowerSelect = (user: Member) => {
+    setSelectedFollower(user);
+  };
+
+  const handleChatClose = () => {
+    setSelectedFollower(null);
+  };
 
   return (
     <>
@@ -36,7 +57,11 @@ function RouteComponent() {
       <WelcomeDialog />
       <main className="container mx-auto my-6 flex-1 px-3 md:px-6">
         <div className="flex-col gap-6">
-          <Tabs className="h-full" defaultValue={defaultTab}>
+          <Tabs
+            className="h-full"
+            value={selectedFollower ? "following" : defaultTab}
+            onValueChange={handleTabChange}
+          >
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger
                 className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
@@ -67,7 +92,14 @@ function RouteComponent() {
               <StrangerChat />
             </TabsContent>
             <TabsContent value="following">
-              <FollowingList />
+              {selectedFollower ? (
+                <FollowingChat
+                  otherUser={selectedFollower}
+                  onClose={handleChatClose}
+                />
+              ) : (
+                <FollowingList onUserSelect={handleFollowerSelect} />
+              )}
             </TabsContent>
           </Tabs>
         </div>

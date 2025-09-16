@@ -105,7 +105,7 @@ export const ChatRoomWindow = ({
           }
         }
       },
-      onError: (error) => {
+      onError: (error: Error) => {
         console.error("Error deleting room:", error);
         alert(
           `Failed to delete room: ${error instanceof Error ? error.message : "Unknown error"}`

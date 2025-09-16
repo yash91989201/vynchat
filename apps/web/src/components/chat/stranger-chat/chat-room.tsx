@@ -69,39 +69,36 @@ export const ChatRoom = ({
     enabled: !!strangerUser?.id && !!session?.user,
   });
 
-  // Follow mutation
-  const followMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      await orpcClient.user.follow({ userId });
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["isFollowing", strangerUser?.id], true);
-      toast.success("User followed successfully");
-      queryClient.invalidateQueries({
-        queryKey: queryUtils.user.userFollowing.queryKey(),
-      });
-    },
-    onError: () => {
-      toast.error("Failed to follow user");
-    },
-  });
+  const followMutation = useMutation(
+    queryUtils.user.follow.mutationOptions({
+      onSuccess: () => {
+        queryClient.setQueryData(["isFollowing", strangerUser?.id], true);
+        toast.success("User followed successfully");
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.user.userFollowing.queryKey(),
+        });
+      },
+      onError: () => {
+        toast.error("Failed to follow user");
+      },
+    })
+  );
 
   // Unfollow mutation
-  const unfollowMutation = useMutation({
-    mutationFn: async (userId: string) => {
-      await orpcClient.user.unfollow({ userId });
-    },
-    onSuccess: () => {
-      queryClient.setQueryData(["isFollowing", strangerUser?.id], false);
-      toast.success("User unfollowed successfully");
-      queryClient.invalidateQueries({
-        queryKey: queryUtils.user.userFollowing.queryKey(),
-      });
-    },
-    onError: () => {
-      toast.error("Failed to unfollow user");
-    },
-  });
+  const unfollowMutation = useMutation(
+    queryUtils.user.unfollow.mutationOptions({
+      onSuccess: () => {
+        queryClient.setQueryData(["isFollowing", strangerUser?.id], false);
+        toast.success("User unfollowed successfully");
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.user.userFollowing.queryKey(),
+        });
+      },
+      onError: () => {
+        toast.error("Failed to unfollow user");
+      },
+    })
+  );
 
   const handleFollowToggle = () => {
     if (!strangerUser?.id) return;
@@ -128,9 +125,9 @@ export const ChatRoom = ({
     }
 
     if (isFollowing) {
-      unfollowMutation.mutate(strangerUser.id);
+      unfollowMutation.mutate({ userId: strangerUser.id });
     } else {
-      followMutation.mutate(strangerUser.id);
+      followMutation.mutate({ userId: strangerUser.id });
     }
   };
 
@@ -307,4 +304,3 @@ export const ChatRoom = ({
     </>
   );
 };
-
