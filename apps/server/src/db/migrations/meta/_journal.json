@@ -22,6 +22,13 @@
       "when": 1757686455650,
       "tag": "0002_heavy_runaways",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1758003042408,
+      "tag": "0003_friendly_machine_man",
+      "breakpoints": true
     }
   ]
 }

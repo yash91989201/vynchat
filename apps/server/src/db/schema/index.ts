@@ -214,6 +214,28 @@ export const feedback = pgTable("feedback", {
     .defaultNow(),
 });
 
+export const bannedUser = pgTable(
+  "banned_user",
+  {
+    roomId: cuid2("room_id")
+      .notNull()
+      .references(() => room.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id),
+    bannedAt: timestamp("banned_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    bannedBy: text("banned_by")
+      .notNull()
+      .references(() => user.id),
+  },
+  (table) => [
+    primaryKey({ columns: [table.roomId, table.userId] }),
+    index("banned_user_room_idx").on(table.roomId),
+  ]
+);
+
 export const blogRelations = relations(blog, ({ one, many }) => ({
   author: one(user, {
     fields: [blog.authorId],
@@ -293,4 +315,14 @@ export const reactionRelations = relations(reaction, ({ one }) => ({
 
 export const feedbackRelations = relations(feedback, ({ one }) => ({
   user: one(user, { fields: [feedback.userId], references: [user.id] }),
+}));
+
+export const bannedUserRelations = relations(bannedUser, ({ one }) => ({
+  room: one(room, { fields: [bannedUser.roomId], references: [room.id] }),
+  user: one(user, { fields: [bannedUser.userId], references: [user.id] }),
+  bannedBy: one(user, {
+    fields: [bannedUser.bannedBy],
+    references: [user.id],
+    relationName: "banned_by_user",
+  }),
 }));

@@ -5,9 +5,17 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { authClient } from "@/lib/auth-client";
 import { orpcClient, queryUtils } from "@/utils/orpc";
-import type { Member } from "./types";
+import type { Member, Room } from "./types";
 
-export const RoomMembers = ({ members }: { members: Member[] }) => {
+export const RoomMembers = ({
+  members,
+  isRoomOwner,
+  room,
+}: {
+  members: Member[];
+  isRoomOwner: boolean;
+  room: Room | null | undefined;
+}) => {
   const { data: session } = authClient.useSession();
   const queryClient = useQueryClient();
 
@@ -85,6 +93,48 @@ export const RoomMembers = ({ members }: { members: Member[] }) => {
     },
   });
 
+  const banUserMutation = useMutation(
+    queryUtils.room.ban.mutationOptions({
+      onSuccess: () => {
+        toast.success("User banned successfully");
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.room.listRoomMembers.queryKey({
+            input: {
+              roomId: room?.id ?? "",
+            },
+          }),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.room.listRooms.queryKey(),
+        });
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.room.getMyRooms.queryKey(),
+        });
+      },
+      onError: (error) => {
+        toast.error(error.message || "Failed to ban user");
+      },
+    })
+  );
+
+  // const banUserMutation = useMutation({
+  //   mutationFn: async (userId: string) => {
+  //     if (!room) return;
+  //     await queryUtils.room.ban.mutationOptions({ roomId: room.id, userId });
+  //   },
+  //   onSuccess: (_, userId) => {
+  //     toast.success("User banned successfully");
+  //     queryClient.invalidateQueries({
+  //       queryKey: queryUtils.room.listMembers.queryKey({
+  //         roomId: room?.id ?? "",
+  //       }),
+  //     });
+  //   },
+  //   onError: (error) => {
+  //     toast.error(error.message || "Failed to ban user");
+  //   },
+  // });
+
   const handleFollowToggle = (
     memberId: string,
     isCurrentlyFollowing: boolean
@@ -139,6 +189,24 @@ export const RoomMembers = ({ members }: { members: Member[] }) => {
                       {isFollowing ? "Unfollow" : "Follow"}
                     </Button>
                   )}
+                  {isRoomOwner && !isCurrentUser && (
+                    <Button
+                      className="ml-2"
+                      disabled={banUserMutation.isPending}
+                      onClick={() => {
+                        if (room === null || room === undefined) return;
+
+                        banUserMutation.mutate({
+                          roomId: room.id,
+                          userId: member.id,
+                        });
+                      }}
+                      size="sm"
+                      variant="destructive"
+                    >
+                      {banUserMutation.isPending ? "Banning..." : "Ban"}
+                    </Button>
+                  )}
                 </div>
               </div>
             );
@@ -148,3 +216,4 @@ export const RoomMembers = ({ members }: { members: Member[] }) => {
     </div>
   );
 };
+

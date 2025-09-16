@@ -88,7 +88,11 @@ export const ChatRoom = () => {
         strangerTyping={strangerTyping}
         userId={user.id}
       />
-      <RoomMembers members={members} />
+            <RoomMembers
+        isRoomOwner={user.id === selectedRoom?.ownerId}
+        members={members}
+        room={selectedRoom}
+      />
     </div>
   );
 };

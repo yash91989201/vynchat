@@ -284,6 +284,13 @@ export const DeleteRoomInput = z.object({
 
 export const DeleteRoomOutput = z.object({});
 
+export const BanUserInput = z.object({
+  roomId: z.cuid2(),
+  userId: z.string(),
+});
+
+export const BanUserOutput = z.object({});
+
 export const AdminSignUpInput = z.object({
   email: z.email(),
   password: z.string(),

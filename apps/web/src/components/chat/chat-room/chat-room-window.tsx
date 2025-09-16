@@ -236,7 +236,7 @@ export const ChatRoomWindow = ({
               </Dialog>
               <Sheet>
                 <SheetTrigger asChild>
-                  <Button className="sr-only" size="icon" variant="outline">
+                  <Button size="icon" variant="outline">
                     <PanelRightOpen className="h-5 w-5" />
                   </Button>
                 </SheetTrigger>
@@ -244,7 +244,11 @@ export const ChatRoomWindow = ({
                   <SheetHeader className="sr-only">
                     <SheetTitle>Room Members</SheetTitle>
                   </SheetHeader>
-                  <RoomMembers members={members} />
+                  <RoomMembers
+                    isRoomOwner={isRoomOwner}
+                    members={members}
+                    room={room}
+                  />
                 </SheetContent>
               </Sheet>
             </>
