@@ -24,6 +24,7 @@ interface ChatState {
   strangerLeft: boolean;
   strangerUser: StrangerUser | null;
   isUploading: boolean;
+  strangerIsFollowingYou: boolean;
 }
 
 type ChatAction =
@@ -35,7 +36,8 @@ type ChatAction =
   | { type: "SET_STRANGER_LEFT"; left: boolean }
   | { type: "SET_STRANGER_USER"; user: StrangerUser | null }
   | { type: "CLEAR_INPUT" }
-  | { type: "SET_UPLOADING"; uploading: boolean };
+  | { type: "SET_UPLOADING"; uploading: boolean }
+  | { type: "SET_STRANGER_IS_FOLLOWING_YOU"; value: boolean };
 
 const initialChatState: ChatState = {
   messages: [],
@@ -45,6 +47,7 @@ const initialChatState: ChatState = {
   strangerLeft: false,
   strangerUser: null,
   isUploading: false,
+  strangerIsFollowingYou: false,
 };
 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
@@ -71,6 +74,8 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, input: "" };
     case "SET_UPLOADING":
       return { ...state, isUploading: action.uploading };
+    case "SET_STRANGER_IS_FOLLOWING_YOU":
+      return { ...state, strangerIsFollowingYou: action.value };
     default:
       return state;
   }
@@ -205,6 +210,29 @@ export const useChatRoom = (
           `${payload.senderName} wants to follow you. Please link your account to connect.`
         );
       })
+      .on("broadcast", { event: "follow_notification" }, ({ payload }) => {
+        if (payload.followerId === userId) {
+          return;
+        }
+        dispatch({ type: "SET_STRANGER_IS_FOLLOWING_YOU", value: true });
+        toast.info(
+          `${payload.followerName} wants to chat with you. Follow them back to start a 1-on-1 conversation.`
+        );
+      })
+      .on(
+        "broadcast",
+        { event: "mutual_follow_notification" },
+        ({ payload }) => {
+          if (payload.followerId === userId) {
+            return;
+          }
+          toast.success(
+            `You and ${
+              payload.followerName
+            } are now following each other! You can now start a 1-on-1 chat.`
+          );
+        }
+      )
       .subscribe((status) => {
         dispatch({ type: "SET_CHANNEL_READY", ready: status === "SUBSCRIBED" });
       });
@@ -380,6 +408,32 @@ export const useChatRoom = (
         });
       }
     }, [session.user.name]),
+
+    notifyFollow: useCallback(async () => {
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "follow_notification",
+          payload: {
+            followerId: userId,
+            followerName: session.user.name || "Stranger",
+          },
+        });
+      }
+    }, [userId, session.user.name]),
+
+    notifyMutualFollow: useCallback(async () => {
+      if (channelRef.current) {
+        await channelRef.current.send({
+          type: "broadcast",
+          event: "mutual_follow_notification",
+          payload: {
+            followerId: userId,
+            followerName: session.user.name || "Stranger",
+          },
+        });
+      }
+    }, [userId, session.user.name]),
   };
 
   return {

@@ -96,7 +96,11 @@ export const ChatRoom = ({
     strangerUser,
     isUploading,
     actions,
+    strangerIsFollowingYou,
   } = useChatRoom(roomId, userId, session);
+
+  const strangerIsFollowingYouRef = useRef(strangerIsFollowingYou);
+  strangerIsFollowingYouRef.current = strangerIsFollowingYou;
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -127,7 +131,23 @@ export const ChatRoom = ({
     queryUtils.user.follow.mutationOptions({
       onSuccess: () => {
         queryClient.setQueryData(["isFollowing", strangerUser?.id], true);
-        toast.success("User followed successfully");
+
+        if (strangerIsFollowingYouRef.current) {
+          toast.success(
+            `You and ${
+              strangerUser?.name || "the stranger"
+            } are now following each other! You can now start a 1-on-1 chat.`
+          );
+          actions.notifyMutualFollow();
+        } else {
+          toast.info(
+            `Once ${
+              strangerUser?.name || "the stranger"
+            } follows you back, you can start messaging.`
+          );
+          actions.notifyFollow();
+        }
+
         queryClient.invalidateQueries({
           queryKey: queryUtils.user.userFollowing.queryKey(),
         });

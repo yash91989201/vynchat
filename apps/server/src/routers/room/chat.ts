@@ -169,6 +169,9 @@ export const roomChatRouter = {
           queue_name: "stranger-queue",
           message: { userId: otherUser.userId, continent: "World" },
         });
+      } catch (queueError) {
+        console.error("Failed to add other user to queue:", queueError);
+      }
 
       return { success: true, message: "Skipped stranger and rejoined queue" };
     }),
