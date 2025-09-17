@@ -47,7 +47,9 @@ const renderMessageContent = (message: ChatMessage) => {
       );
     }
     if (isVideo) {
-      return <video src={url} controls className="max-w-full h-auto rounded-lg" />;
+      return (
+        <video src={url} controls className="max-w-full h-auto rounded-lg" />
+      );
     }
     if (isAudio) {
       return <audio src={url} controls className="w-full" />;
@@ -98,12 +100,7 @@ export const DirectMessageWindow = ({
     <div className="flex h-[75vh] flex-col gap-0 overflow-hidden bg-card md:h-full">
       <div className="flex flex-shrink-0 items-center justify-between border-b p-4">
         <div className="flex items-center gap-3">
-          <Button
-            className="md:hidden"
-            onClick={onClose}
-            size="icon"
-            variant="ghost"
-          >
+          <Button onClick={onClose} size="icon" variant="ghost">
             <ArrowLeft />
           </Button>
           <Avatar>
@@ -240,3 +237,4 @@ export const DirectMessageWindow = ({
     </div>
   );
 };
+
