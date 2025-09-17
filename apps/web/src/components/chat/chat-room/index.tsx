@@ -40,6 +40,8 @@ export const ChatRoom = () => {
     members,
     handleLeaveRoom,
     toggleLock,
+    isUploading,
+    uploadFile,
   } = useRoomChat(user, roomId);
 
   if (isAnonymous) {
@@ -67,6 +69,8 @@ export const ChatRoom = () => {
           strangerTyping={strangerTyping}
           toggleLock={toggleLock}
           userId={user.id}
+          isUploading={isUploading}
+          uploadFile={uploadFile}
         />
       </div>
     );

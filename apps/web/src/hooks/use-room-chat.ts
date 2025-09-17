@@ -14,6 +14,7 @@ export const useRoomChat = (user: Member, roomIdFromUrl?: string) => {
   const [strangerTyping, setStrangerTyping] = useState(false);
   const [members, setMembers] = useState<Member[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   const channelRef = useRef<RealtimeChannel | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -328,6 +329,55 @@ export const useRoomChat = (user: Member, roomIdFromUrl?: string) => {
     [isTyping]
   );
 
+  const uploadFile = useCallback(
+    async (file: File) => {
+      if (!selectedRoomId || isUploading) return;
+
+      setIsUploading(true);
+      try {
+        const filePath = `${selectedRoomId}/${
+          userRef.current.id
+        }-${Date.now()}-${file.name}`;
+        const { error: uploadError } = await supabase.storage
+          .from("chat-message-file")
+          .upload(filePath, file);
+
+        if (uploadError) {
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from("chat-message-file")
+          .getPublicUrl(filePath);
+
+        if (!publicUrlData.publicUrl) {
+          throw new Error("Could not get public URL");
+        }
+
+        const msg = await sendMessage({
+          roomId: selectedRoomId,
+          content: publicUrlData.publicUrl,
+        });
+
+        setMessages((prev) => [...prev, msg]);
+
+        if (channelRef.current) {
+          await channelRef.current.send({
+            type: "broadcast",
+            event: "message",
+            payload: msg,
+          });
+        }
+      } catch (error) {
+        console.error("Error uploading file:", error);
+        toast.error("Failed to send file.");
+      } finally {
+        setIsUploading(false);
+      }
+    },
+    [selectedRoomId, isUploading, sendMessage]
+  );
+
   const selectedRoom = useMemo(() => {
     return [...myRooms, ...globalRooms].find((r) => r.id === selectedRoomId);
   }, [myRooms, globalRooms, selectedRoomId]);
@@ -348,5 +398,7 @@ export const useRoomChat = (user: Member, roomIdFromUrl?: string) => {
     members,
     handleLeaveRoom,
     toggleLock,
+    isUploading,
+    uploadFile,
   };
 };

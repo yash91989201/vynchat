@@ -21,6 +21,8 @@ export const FollowingChat = ({ otherUser, onClose }: FollowingChatProps) => {
     handleSend,
     handleInputChange,
     isLoading,
+    isUploading,
+    uploadFile,
   } = useFollowerChat(currentUser, otherUser);
 
   if (isLoading || !room) {
@@ -38,6 +40,8 @@ export const FollowingChat = ({ otherUser, onClose }: FollowingChatProps) => {
         currentUser={currentUser}
         otherUser={otherUser}
         onClose={onClose}
+        isUploading={isUploading}
+        uploadFile={uploadFile}
       />
     </div>
   );
