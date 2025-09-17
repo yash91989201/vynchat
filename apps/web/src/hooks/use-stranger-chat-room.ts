@@ -322,9 +322,9 @@ export const useChatRoom = (
     ),
 
     skipStranger: useCallback(
-      async (onSkip: () => void) => {
+      async (onSkip: () => void, continent: string) => {
         try {
-          await skipStranger({ roomId });
+          await skipStranger({ roomId, continent });
           toast.success("Finding new match", {
             description: "Looking for a new stranger to chat with...",
           });

@@ -210,7 +210,7 @@ export const useMatchmaking = (userId: string) => {
 
   // Actions object for cleaner API
   const actions = {
-    startMatching: useCallback(async () => {
+    startMatching: useCallback(async (continent: string) => {
       dispatch({ type: "SET_PENDING", isPending: true });
 
       try {
@@ -222,7 +222,7 @@ export const useMatchmaking = (userId: string) => {
           MATCH_TIMEOUT_MS
         );
 
-        const result = await findStranger({});
+        const result = await findStranger({ continent });
         if (result.status === "waiting") {
           console.log("Enqueued, waiting for matchmaker to run...");
         }
@@ -240,7 +240,7 @@ export const useMatchmaking = (userId: string) => {
       await updatePresenceStatus("idle");
     }, [updatePresenceStatus]),
 
-    skipStranger: useCallback(async () => {
+    skipStranger: useCallback(async (continent: string) => {
       dispatch({ type: "SET_STATUS", status: "waiting" });
       dispatch({ type: "SET_ROOM", room: null });
       await updatePresenceStatus("waiting");

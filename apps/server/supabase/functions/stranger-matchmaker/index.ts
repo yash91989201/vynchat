@@ -155,12 +155,12 @@ Deno.serve(async () => {
     // 0. Clean up old skipped pairs first
     await cleanupOldSkippedPairs();
 
-    // 1. Read pending queue messages (up to 10)
+    // 1. Read pending queue messages (up to 100 for better matching)
     const { data: msgs, error: readErr } = await supabase
       .schema("pgmq_public")
       .rpc("read", {
         queue_name: "stranger-queue",
-        n: 10,
+        n: 100,
         sleep_seconds: 0,
       });
 
@@ -185,7 +185,7 @@ Deno.serve(async () => {
       );
     }
 
-    // 2. Subscribe to lobby presence to get current user statuses
+    // 2. Subscribe to lobby presence
     let presenceState: Record<string, any> = {};
     const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
       config: { presence: { enabled: true } },
@@ -196,15 +196,11 @@ Deno.serve(async () => {
         lobbyChannel.subscribe((status) => {
           if (status === "SUBSCRIBED") {
             presenceState = lobbyChannel.presenceState();
-            console.log(
-              `👥 Got presence for ${Object.keys(presenceState).length} users`
-            );
             resolve();
           } else if (status === "CHANNEL_ERROR") {
             reject(new Error("Failed to subscribe to presence"));
           }
         });
-
         setTimeout(() => reject(new Error("Presence subscribe timeout")), 3000);
       });
     } catch (presenceError) {
@@ -212,153 +208,78 @@ Deno.serve(async () => {
         "! Failed to get presence state, proceeding anyway:",
         presenceError
       );
-      // Continue without presence validation
     }
 
-    // 3. Process users in pairs
+    // 3. Group users by continent
+    const usersByContinent: Record<string, typeof users> = {};
+    for (const user of users) {
+      const continent = user.message.continent || "World";
+      if (!usersByContinent[continent]) {
+        usersByContinent[continent] = [];
+      }
+      usersByContinent[continent].push(user);
+    }
+
     const pairedRooms: any[] = [];
     const processedMessageIds: bigint[] = [];
-    const unprocessedUsers: typeof users = [];
+    let unprocessedUsers: typeof users = [];
 
-    for (let i = 0; i + 1 < users.length; i += 2) {
-      const u1 = users[i];
-      const u2 = users[i + 1];
-      const user1 = u1.message.userId as string;
-      const user2 = u2.message.userId as string;
+    // 4. Process each continent group (excluding 'World')
+    for (const continent in usersByContinent) {
+      if (continent === "World") continue;
 
-      console.log(`🔍 Evaluating pair: ${user1} <-> ${user2}`);
-
-      // Check if both users are still waiting
-      if (
-        Object.keys(presenceState).length > 0 &&
-        !(isWaiting(presenceState, user1) && isWaiting(presenceState, user2))
-      ) {
-        console.log("⏭ Skipping pair - not both waiting");
-        processedMessageIds.push(u1.msg_id, u2.msg_id);
-        continue;
-      }
-
-      // Check if they recently skipped each other
-      if (await hasRecentlySkipped(user1, user2)) {
-        console.log("⏭ Skipping pair - recently skipped each other");
-        // Add both users back to unprocessed list for potential other matches
-        unprocessedUsers.push(u1, u2);
-        continue;
-      }
-
-      try {
-        console.log(`✅ Matching users: ${user1} with ${user2}`);
-
-        // Create room and add members
-        const roomRes = await createMatchRoom(user1, user2);
-
-        // Mark messages for deletion
-        processedMessageIds.push(u1.msg_id, u2.msg_id);
-
-        // Notify both users
-        await Promise.all([
-          notifyUser(user1, "stranger_matched", { room: roomRes }),
-          notifyUser(user2, "stranger_matched", { room: roomRes }),
-        ]);
-
-        pairedRooms.push(roomRes);
-        console.log(`🎉 Successfully matched pair ${pairedRooms.length}`);
-      } catch (matchError) {
-        console.error(`❌ Error matching ${user1} and ${user2}:`, matchError);
-        // Add back to unprocessed for potential retry
-        unprocessedUsers.push(u1, u2);
-      }
-    }
-
-    // 4. Handle leftover odd user from main processing
-    if (users.length % 2 === 1) {
-      unprocessedUsers.push(users.at(-1)!);
-    }
-
-    // 5. Try to find alternative matches for unprocessed users
-    const remainingUnprocessed: typeof users = [];
-
-    for (let i = 0; i + 1 < unprocessedUsers.length; i += 2) {
-      const u1 = unprocessedUsers[i];
-      const u2 = unprocessedUsers[i + 1];
-      const user1 = u1.message.userId as string;
-      const user2 = u2.message.userId as string;
-
-      console.log(`🔄 Retry evaluating pair: ${user1} <-> ${user2}`);
-
-      // Check if they recently skipped each other
-      if (await hasRecentlySkipped(user1, user2)) {
-        console.log("⏭ Still skipped - adding to remaining");
-        remainingUnprocessed.push(u1, u2);
-        continue;
-      }
-
-      try {
-        console.log(`✅ Retry matching users: ${user1} with ${user2}`);
-
-        // Create room and add members
-        const roomRes = await createMatchRoom(user1, user2);
-
-        // Mark messages for deletion
-        processedMessageIds.push(u1.msg_id, u2.msg_id);
-
-        // Notify both users
-        await Promise.all([
-          notifyUser(user1, "stranger_matched", { room: roomRes }),
-          notifyUser(user2, "stranger_matched", { room: roomRes }),
-        ]);
-
-        pairedRooms.push(roomRes);
-        console.log(`🎉 Successfully retry matched pair ${pairedRooms.length}`);
-      } catch (matchError) {
-        console.error(`❌ Error retry matching ${user1} and ${user2}:`, matchError);
-        remainingUnprocessed.push(u1, u2);
-      }
-    }
-
-    // 6. Handle final leftover odd user from retry
-    if (unprocessedUsers.length % 2 === 1) {
-      remainingUnprocessed.push(unprocessedUsers.at(-1)!);
-    }
-
-    // 7. Clean up processed queue messages
-    if (processedMessageIds.length > 0) {
-      console.log(
-        `🧹 Deleting ${processedMessageIds.length} processed messages`
+      console.log(`
+--- Processing continent: ${continent} ---`);
+      const continentUsers = usersByContinent[continent];
+      const { paired, unprocessed, processedIds } = await processUserGroup(
+        continentUsers,
+        presenceState
       );
+      pairedRooms.push(...paired);
+      unprocessedUsers.push(...unprocessed);
+      processedMessageIds.push(...processedIds);
+    }
+
+    // 5. Pool 'World' users and unprocessed users from other continents
+    const worldUsers = usersByContinent["World"] || [];
+    const finalGroup = [...worldUsers, ...unprocessedUsers];
+    console.log(`
+--- Processing World group (${finalGroup.length} users) ---`);
+
+    const { paired, unprocessed, processedIds } = await processUserGroup(
+      finalGroup,
+      presenceState
+    );
+    pairedRooms.push(...paired);
+    processedMessageIds.push(...processedIds);
+
+    // 6. Clean up processed queue messages
+    if (processedMessageIds.length > 0) {
       await deleteQueueMessages(processedMessageIds);
     }
 
-    // 8. Handle remaining unprocessed users - notify them no matches available
-    for (const unprocessedUser of remainingUnprocessed) {
+    // 7. Handle remaining unprocessed users
+    for (const unprocessedUser of unprocessed) {
       const userId = unprocessedUser.message.userId as string;
-
       console.log(`👤 No match available for user: ${userId}`);
-
-      // Remove message from queue
-      try {
-        await supabase.schema("pgmq_public").rpc("delete", {
-          queue_name: "stranger-queue",
-          message_id: unprocessedUser.msg_id,
-        });
-      } catch (deleteError) {
-        console.error("Error deleting unprocessed message:", deleteError);
-      }
-
-      // Notify user no matches available
+      await supabase.schema("pgmq_public").rpc("delete", {
+        queue_name: "stranger-queue",
+        message_id: unprocessedUser.msg_id,
+      });
       await notifyUser(userId, "stranger_no_matches", {
-        reason: "No available users to match with. Please try again in a few seconds.",
+        reason:
+          "No available users to match with. Please try again in a few seconds.",
       });
     }
 
-    // 9. Clean up lobby channel
+    // 8. Clean up lobby channel
     await supabase.removeChannel(lobbyChannel);
 
     const stats = {
       totalUsers: users.length,
       pairedRooms: pairedRooms.length,
       processedMessages: processedMessageIds.length,
-      unprocessedUsers: remainingUnprocessed.length,
+      unprocessedUsers: unprocessed.length,
     };
 
     console.log("✨ Matchmaker completed:", stats);
@@ -370,14 +291,10 @@ Deno.serve(async () => {
         stats,
         rooms: pairedRooms,
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (error) {
     console.error("💥 Matchmaker error:", error);
-
     return new Response(
       JSON.stringify({
         success: false,
@@ -385,10 +302,80 @@ Deno.serve(async () => {
         message:
           error instanceof Error ? error.message : "Unknown error occurred",
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 });
+
+/**
+ * Helper to process a group of users for matching
+ */
+async function processUserGroup(
+  users: any[],
+  presenceState: Record<string, any>
+) {
+  const paired: any[] = [];
+  const processedIds: bigint[] = [];
+  let unprocessed = [...users];
+
+  // Create a copy to iterate over, while modifying the original unprocessed array
+  const usersToProcess = [...unprocessed];
+  unprocessed = [];
+
+  while (usersToProcess.length >= 2) {
+    const u1 = usersToProcess.shift()!;
+    let matchFound = false;
+
+    for (let i = 0; i < usersToProcess.length; i++) {
+      const u2 = usersToProcess[i];
+      const user1 = u1.message.userId as string;
+      const user2 = u2.message.userId as string;
+
+      // Skip if same user
+      if (user1 === user2) continue;
+
+      // Check presence
+      if (
+        Object.keys(presenceState).length > 0 &&
+        !(isWaiting(presenceState, user1) && isWaiting(presenceState, user2))
+      ) {
+        continue;
+      }
+
+      // Check for recent skips
+      if (await hasRecentlySkipped(user1, user2)) {
+        continue;
+      }
+
+      // Match found!
+      try {
+        console.log(`✅ Matching users: ${user1} with ${user2}`);
+        const roomRes = await createMatchRoom(user1, user2);
+
+        processedIds.push(u1.msg_id, u2.msg_id);
+        await Promise.all([
+          notifyUser(user1, "stranger_matched", { room: roomRes }),
+          notifyUser(user2, "stranger_matched", { room: roomRes }),
+        ]);
+
+        paired.push(roomRes);
+        usersToProcess.splice(i, 1); // Remove matched user
+        matchFound = true;
+        break; // Exit inner loop and process next user
+      } catch (matchError) {
+        console.error(`❌ Error matching ${user1} and ${user2}:`, matchError);
+      }
+    }
+
+    if (!matchFound) {
+      unprocessed.push(u1);
+    }
+  }
+
+  // Add any remaining user from the loop to unprocessed
+  if (usersToProcess.length > 0) {
+    unprocessed.push(...usersToProcess);
+  }
+
+  return { paired, unprocessed, processedIds };
+}

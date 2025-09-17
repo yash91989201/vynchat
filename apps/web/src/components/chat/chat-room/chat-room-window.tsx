@@ -86,22 +86,22 @@ const renderMessageContent = (message: ChatMessage) => {
 
     if (isImage) {
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer">
+        <a href={url} rel="noopener noreferrer" target="_blank">
           <img
-            src={url}
             alt="sent content"
-            className="max-w-full h-auto rounded-lg cursor-pointer"
+            className="h-auto max-w-full cursor-pointer rounded-lg"
+            src={url}
           />
         </a>
       );
     }
     if (isVideo) {
       return (
-        <video src={url} controls className="max-w-full h-auto rounded-lg" />
+        <video className="h-auto max-w-full rounded-lg" controls src={url} />
       );
     }
     if (isAudio) {
-      return <audio src={url} controls className="w-full" />;
+      return <audio className="w-full" controls src={url} />;
     }
   }
 
@@ -448,18 +448,18 @@ export const ChatRoomWindow = ({
               </PopoverContent>
             </Popover>
             <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileSelect}
-              className="hidden"
               accept="image/*,video/*,audio/*"
+              className="hidden"
+              onChange={handleFileSelect}
+              ref={fileInputRef}
+              type="file"
             />
             <Button
+              disabled={isUploading}
+              onClick={() => fileInputRef.current?.click()}
               size="icon"
               type="button"
               variant="ghost"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isUploading}
             >
               {isUploading ? (
                 <Loader2 className="h-5 w-5 animate-spin" />

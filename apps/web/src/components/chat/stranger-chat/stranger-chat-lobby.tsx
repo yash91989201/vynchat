@@ -1,6 +1,6 @@
 import { useRouteContext } from "@tanstack/react-router";
 import { HatGlasses, Loader2, Users } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,7 +25,7 @@ interface StrangerChatLobbyProps {
   lobbyCount: number;
   isPending: boolean;
   dialogMessage: string | null;
-  onTalkToStranger: () => void;
+  onTalkToStranger: (continent: string) => void;
   onCloseDialog: () => void;
 }
 
@@ -52,7 +52,13 @@ export const StrangerChatLobby = ({
   });
 
   const [name, setName] = useState(session.user.name);
-  const [continent, setContinent] = useState("");
+  const [continent, setContinent] = useState(
+    () => localStorage.getItem("stranger-continent") || "World"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("stranger-continent", continent);
+  }, [continent]);
 
   return (
     <div className="flex h-full items-center justify-center p-4">
@@ -92,6 +98,7 @@ export const StrangerChatLobby = ({
                 <SelectValue placeholder="Select a continent" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="World">World</SelectItem>
                 {continents.map((c) => (
                   <SelectItem key={c} value={c}>
                     {c}
@@ -105,7 +112,7 @@ export const StrangerChatLobby = ({
             disabled={
               (isPending && status !== "idle") || !name.trim() || !continent
             }
-            onClick={onTalkToStranger}
+            onClick={() => onTalkToStranger(continent)}
             size="lg"
           >
             {isPending || status === "waiting" ? (

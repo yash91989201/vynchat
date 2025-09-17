@@ -1,4 +1,5 @@
 import { useRouteContext } from "@tanstack/react-router";
+import { useRef } from "react";
 import { useMatchmaking } from "@/hooks/use-matchmaking";
 import { useUserChannel } from "@/hooks/use-user-channel";
 import { ChatRoom } from "./chat-room";
@@ -6,6 +7,7 @@ import { StrangerChatLobby } from "./stranger-chat-lobby";
 
 export const StrangerChat = () => {
   const { session } = useRouteContext({ from: "/(authenticated)" });
+  const continentRef = useRef("World");
   const {
     state,
     actions: { startMatching, leaveRoom, skipStranger, dismissDialog },
@@ -15,14 +17,24 @@ export const StrangerChat = () => {
 
   useUserChannel(userChannelCallbacks);
 
+  const handleStartMatching = (continent: string) => {
+    continentRef.current = continent;
+    startMatching(continent);
+  };
+
+  const handleSkipStranger = (continent: string) => {
+    skipStranger(continent);
+  };
+
   if (state.status === "matched" && state.currentRoom) {
     return (
       <div className="h-[85vh] rounded-lg border md:h-[75vh]">
         <ChatRoom
           onLeave={leaveRoom}
-          onSkip={skipStranger}
+          onSkip={handleSkipStranger}
           roomId={state.currentRoom.id}
           userId={session.user.id}
+          continent={continentRef.current}
         />
       </div>
     );
@@ -35,7 +47,7 @@ export const StrangerChat = () => {
         isPending={state.isPending}
         lobbyCount={lobbyCount}
         onCloseDialog={dismissDialog}
-        onTalkToStranger={startMatching}
+        onTalkToStranger={handleStartMatching}
         status={state.status}
       />
     </div>

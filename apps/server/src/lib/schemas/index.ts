@@ -390,12 +390,17 @@ export const OnRoomLeaveOutput = z.object({
   memberCount: z.number().int().nonnegative(),
 });
 
+export const FindStrangerInput = z.object({
+  continent: z.string(),
+});
+
 export const FindStrangerOutput = z.object({
   status: z.enum(["waiting", "matched", "idle"]),
 });
 
 export const SkipStrangerInput = z.object({
   roomId: z.string(),
+  continent: z.string(),
 });
 
 export const SkipStrangerOutput = z.object({

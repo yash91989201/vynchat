@@ -36,7 +36,8 @@ interface ChatRoomProps {
   roomId: string;
   userId: string;
   onLeave: () => void;
-  onSkip: () => void;
+  onSkip: (continent: string) => void;
+  continent: string;
 }
 
 const renderMessageContent = (message: MessageType) => {
@@ -49,22 +50,22 @@ const renderMessageContent = (message: MessageType) => {
 
     if (isImage) {
       return (
-        <a href={url} target="_blank" rel="noopener noreferrer">
+        <a href={url} rel="noopener noreferrer" target="_blank">
           <img
-            src={url}
             alt="sent content"
-            className="max-w-full h-auto rounded-lg cursor-pointer"
+            className="h-auto max-w-full cursor-pointer rounded-lg"
+            src={url}
           />
         </a>
       );
     }
     if (isVideo) {
       return (
-        <video src={url} controls className="max-w-full h-auto rounded-lg" />
+        <video className="h-auto max-w-full rounded-lg" controls src={url} />
       );
     }
     if (isAudio) {
-      return <audio src={url} controls className="w-full" />;
+      return <audio className="w-full" controls src={url} />;
     }
   }
 
@@ -76,6 +77,7 @@ export const ChatRoom = ({
   userId,
   onLeave,
   onSkip,
+  continent,
 }: ChatRoomProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -103,9 +105,9 @@ export const ChatRoom = ({
   useEffect(() => {
     if (strangerLeft) {
       toast.info("The stranger has left. Finding a new match...");
-      onSkip();
+      onSkip(continent);
     }
-  }, [strangerLeft, onSkip]);
+  }, [strangerLeft, onSkip, continent]);
 
   // Query to check if following the stranger
   const { data: isFollowing } = useQuery({
@@ -211,7 +213,7 @@ export const ChatRoom = ({
 
   return (
     <>
-      <Card className="flex h-dvh flex-col overflow-hidden rounded-lg md:h-full py-0 gap-0">
+      <Card className="flex h-[85vh] flex-col gap-0 overflow-hidden rounded-lg py-0 md:h-full">
         <CardHeader className="flex-shrink-0 grid-cols-[1fr_80px] border-b bg-muted/40 py-6">
           <div className="flex items-center space-x-4">
             <Avatar>
@@ -227,7 +229,7 @@ export const ChatRoom = ({
                 {strangerUser?.name || "Stranger"}
               </p>
               <Button
-                onClick={() => actions.skipStranger(onSkip)}
+                onClick={() => actions.skipStranger(onSkip, continent)}
                 size="sm"
                 type="button"
                 variant="secondary"
@@ -266,9 +268,9 @@ export const ChatRoom = ({
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 min-h-0 p-0">
+        <CardContent className="min-h-0 flex-1 p-0">
           <div
-            className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+            className="scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent h-full overflow-y-auto"
             ref={scrollAreaRef}
           >
             <div className="space-y-4 p-4 pb-2">
@@ -294,7 +296,7 @@ export const ChatRoom = ({
                   )}
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-lg p-3 text-sm shadow-md sm:max-w-[70%] break-words",
+                      "max-w-[80%] break-words rounded-lg p-3 text-sm shadow-md sm:max-w-[70%]",
                       message.senderId === userId
                         ? "rounded-br-none bg-primary text-primary-foreground"
                         : "rounded-bl-none bg-muted"
@@ -338,6 +340,7 @@ export const ChatRoom = ({
           >
             <Input
               autoComplete="off"
+              className="flex-1"
               disabled={!isChannelReady}
               onChange={actions.handleInputChange}
               placeholder={
@@ -345,9 +348,8 @@ export const ChatRoom = ({
               }
               ref={inputRef}
               value={input}
-              className="flex-1"
             />
-            <div className="flex items-center flex-shrink-0">
+            <div className="flex flex-shrink-0 items-center">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button size="icon" type="button" variant="ghost">
@@ -359,18 +361,18 @@ export const ChatRoom = ({
                 </PopoverContent>
               </Popover>
               <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileSelect}
-                className="hidden"
                 accept="image/*,video/*,audio/*"
+                className="hidden"
+                onChange={handleFileSelect}
+                ref={fileInputRef}
+                type="file"
               />
               <Button
+                disabled={isUploading || !isChannelReady}
+                onClick={() => fileInputRef.current?.click()}
                 size="icon"
                 type="button"
                 variant="ghost"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isUploading || !isChannelReady}
               >
                 {isUploading ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
