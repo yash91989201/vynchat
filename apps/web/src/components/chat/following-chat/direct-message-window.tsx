@@ -1,5 +1,5 @@
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
-import { ArrowLeft, Paperclip, Send, Smile } from "lucide-react";
+import { ArrowLeft, Loader2, Paperclip, Send, Smile } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -23,7 +23,39 @@ interface DirectMessageWindowProps {
   currentUser: Member;
   otherUser: Member;
   onClose: () => void;
+  isUploading: boolean;
+  uploadFile: (file: File) => void;
 }
+
+const renderMessageContent = (message: ChatMessage) => {
+  const urlRegex = /^(https?:\/\/[^\s]+)$/;
+  if (urlRegex.test(message.content)) {
+    const url = message.content;
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+    const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
+    const isAudio = /\.(mp3|wav|ogg)$/i.test(url);
+
+    if (isImage) {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          <img
+            src={url}
+            alt="sent content"
+            className="max-w-full h-auto rounded-lg cursor-pointer"
+          />
+        </a>
+      );
+    }
+    if (isVideo) {
+      return <video src={url} controls className="max-w-full h-auto rounded-lg" />;
+    }
+    if (isAudio) {
+      return <audio src={url} controls className="w-full" />;
+    }
+  }
+
+  return <p className="mt-1">{checkProfanity(message.content).autoReplaced}</p>;
+};
 
 export const DirectMessageWindow = ({
   messages,
@@ -34,15 +66,28 @@ export const DirectMessageWindow = ({
   currentUser,
   otherUser,
   onClose,
+  isUploading,
+  uploadFile,
 }: DirectMessageWindowProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     handleInputChange({
       target: { value: input + emojiData.emoji },
     } as React.ChangeEvent<HTMLInputElement>);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      uploadFile(file);
+    }
+    if (e.target) {
+      e.target.value = "";
+    }
   };
 
   useEffect(() => {
@@ -101,9 +146,7 @@ export const DirectMessageWindow = ({
                       {msg.sender.name}
                     </p>
                   )}
-                  <p className="mt-1">
-                    {checkProfanity(msg.content).autoReplaced}
-                  </p>
+                  {renderMessageContent(msg)}
                   <p className="mt-2 text-right text-xs opacity-70">
                     {new Date(msg.createdAt).toLocaleTimeString()}
                   </p>
@@ -163,8 +206,25 @@ export const DirectMessageWindow = ({
                 <EmojiPicker onEmojiClick={handleEmojiClick} />
               </PopoverContent>
             </Popover>
-            <Button size="icon" type="button" variant="ghost">
-              <Paperclip className="h-5 w-5 text-muted-foreground" />
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+              accept="image/*,video/*,audio/*"
+            />
+            <Button
+              size="icon"
+              type="button"
+              variant="ghost"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Paperclip className="h-5 w-5 text-muted-foreground" />
+              )}
             </Button>
             <Button
               className="ml-2"
