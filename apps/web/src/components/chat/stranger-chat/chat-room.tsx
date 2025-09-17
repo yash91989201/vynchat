@@ -1,7 +1,9 @@
+import type { MessageType } from "@server/lib/types";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useRouteContext } from "@tanstack/react-router";
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import {
+  Loader2,
   LogOut,
   Paperclip,
   Send,
@@ -37,6 +39,38 @@ interface ChatRoomProps {
   onSkip: () => void;
 }
 
+const renderMessageContent = (message: MessageType) => {
+  const urlRegex = /^(https?:\/\/[^\s]+)$/;
+  if (urlRegex.test(message.content)) {
+    const url = message.content;
+    const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+    const isVideo = /\.(mp4|webm|ogg)$/i.test(url);
+    const isAudio = /\.(mp3|wav|ogg)$/i.test(url);
+
+    if (isImage) {
+      return (
+        <a href={url} target="_blank" rel="noopener noreferrer">
+          <img
+            src={url}
+            alt="sent content"
+            className="max-w-full h-auto rounded-lg cursor-pointer"
+          />
+        </a>
+      );
+    }
+    if (isVideo) {
+      return (
+        <video src={url} controls className="max-w-full h-auto rounded-lg" />
+      );
+    }
+    if (isAudio) {
+      return <audio src={url} controls className="w-full" />;
+    }
+  }
+
+  return <p className="break-words">{message.content}</p>;
+};
+
 export const ChatRoom = ({
   roomId,
   userId,
@@ -46,6 +80,7 @@ export const ChatRoom = ({
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { session } = useRouteContext({ from: "/(authenticated)" });
   const isAnonymous = !!session.user.isAnonymous;
@@ -57,6 +92,7 @@ export const ChatRoom = ({
     isStrangerTyping,
     strangerLeft,
     strangerUser,
+    isUploading,
     actions,
   } = useChatRoom(roomId, userId, session);
 
@@ -159,13 +195,24 @@ export const ChatRoom = ({
     } as React.ChangeEvent<HTMLInputElement>);
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      actions.uploadFile(file);
+    }
+    // Reset file input value to allow selecting the same file again
+    if (e.target) {
+      e.target.value = "";
+    }
+  };
+
   const isFollowLoading =
     followMutation.isPending || unfollowMutation.isPending;
 
   return (
     <>
       <Card className="flex h-dvh flex-col overflow-hidden rounded-lg md:h-full py-0 gap-0">
-        <CardHeader className="flex-shrink-0 grid-cols-[1fr_80px] border-b bg-muted/40">
+        <CardHeader className="flex-shrink-0 grid-cols-[1fr_80px] border-b bg-muted/40 py-6">
           <div className="flex items-center space-x-4">
             <Avatar>
               <AvatarImage
@@ -253,7 +300,7 @@ export const ChatRoom = ({
                         : "rounded-bl-none bg-muted"
                     )}
                   >
-                    <p className="break-words">{message.content}</p>
+                    {renderMessageContent(message)}
                   </div>
                 </div>
               ))}
@@ -311,8 +358,25 @@ export const ChatRoom = ({
                   <EmojiPicker onEmojiClick={handleEmojiClick} />
                 </PopoverContent>
               </Popover>
-              <Button size="icon" type="button" variant="ghost">
-                <Paperclip className="h-5 w-5 text-muted-foreground" />
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileSelect}
+                className="hidden"
+                accept="image/*,video/*,audio/*"
+              />
+              <Button
+                size="icon"
+                type="button"
+                variant="ghost"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading || !isChannelReady}
+              >
+                {isUploading ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  <Paperclip className="h-5 w-5 text-muted-foreground" />
+                )}
               </Button>
               <Button
                 disabled={!(isChannelReady && input.trim())}

@@ -214,7 +214,7 @@ export const ChatRoomWindow = ({
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-card md:h-full gap-0">
+    <div className="flex h-dvh flex-col gap-0 overflow-hidden bg-card md:h-full">
       <div className="flex flex-shrink-0 items-center justify-between border-b p-4">
         <div className="flex items-center gap-3">
           <div>
@@ -318,7 +318,7 @@ export const ChatRoomWindow = ({
         </div>
       </div>
 
-      <div className="flex-1 min-h-0">
+      <div className="min-h-0 flex-1">
         <div className="h-full overflow-y-auto" ref={scrollAreaRef}>
           <div className="space-y-6 p-4">
             {messages.map((msg) => (

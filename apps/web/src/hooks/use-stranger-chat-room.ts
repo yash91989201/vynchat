@@ -23,6 +23,7 @@ interface ChatState {
   isStrangerTyping: boolean;
   strangerLeft: boolean;
   strangerUser: StrangerUser | null;
+  isUploading: boolean;
 }
 
 type ChatAction =
@@ -33,7 +34,8 @@ type ChatAction =
   | { type: "SET_STRANGER_TYPING"; typing: boolean }
   | { type: "SET_STRANGER_LEFT"; left: boolean }
   | { type: "SET_STRANGER_USER"; user: StrangerUser | null }
-  | { type: "CLEAR_INPUT" };
+  | { type: "CLEAR_INPUT" }
+  | { type: "SET_UPLOADING"; uploading: boolean };
 
 const initialChatState: ChatState = {
   messages: [],
@@ -42,6 +44,7 @@ const initialChatState: ChatState = {
   isStrangerTyping: false,
   strangerLeft: false,
   strangerUser: null,
+  isUploading: false,
 };
 
 function chatReducer(state: ChatState, action: ChatAction): ChatState {
@@ -66,6 +69,8 @@ function chatReducer(state: ChatState, action: ChatAction): ChatState {
       return { ...state, strangerUser: action.user };
     case "CLEAR_INPUT":
       return { ...state, input: "" };
+    case "SET_UPLOADING":
+      return { ...state, isUploading: action.uploading };
     default:
       return state;
   }
@@ -242,6 +247,57 @@ export const useChatRoom = (
         toast.error("Failed to send message");
       }
     }, [state.input, state.isChannelReady, sendMessage, roomId]),
+
+    uploadFile: useCallback(
+      async (file: File) => {
+        if (!state.isChannelReady || state.isUploading) return;
+
+        dispatch({ type: "SET_UPLOADING", uploading: true });
+        try {
+          const filePath = `${roomId}/${userId}-${Date.now()}-${file.name}`;
+          const { error: uploadError } = await supabase.storage
+            .from("chat-message-file")
+            .upload(filePath, file);
+
+          if (uploadError) {
+            throw uploadError;
+          }
+
+          const { data: publicUrlData } = supabase.storage
+            .from("chat-message-file")
+            .getPublicUrl(filePath);
+
+          if (!publicUrlData.publicUrl) {
+            throw new Error("Could not get public URL");
+          }
+
+          const message = await sendMessage({
+            roomId,
+            content: publicUrlData.publicUrl,
+          });
+
+          if (channelRef.current) {
+            await channelRef.current.send({
+              type: "broadcast",
+              event: "message",
+              payload: message,
+            });
+          }
+        } catch (error) {
+          console.error("Error uploading file:", error);
+          toast.error("Failed to send file.");
+        } finally {
+          dispatch({ type: "SET_UPLOADING", uploading: false });
+        }
+      },
+      [
+        state.isChannelReady,
+        state.isUploading,
+        sendMessage,
+        roomId,
+        userId,
+      ]
+    ),
 
     leaveRoom: useCallback(
       async (onLeave: () => void) => {
