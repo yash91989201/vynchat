@@ -25,7 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { useChatRoom } from "@/hooks/use-stranger-chat-room";
 import { cn } from "@/lib/utils";
 import { orpcClient, queryClient, queryUtils } from "@/utils/orpc";
@@ -45,6 +45,7 @@ export const ChatRoom = ({
 }: ChatRoomProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { session } = useRouteContext({ from: "/(authenticated)" });
   const isAnonymous = !!session.user.isAnonymous;
@@ -58,6 +59,10 @@ export const ChatRoom = ({
     strangerUser,
     actions,
   } = useChatRoom(roomId, userId, session);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isStrangerTyping]);
 
   useEffect(() => {
     if (strangerLeft) {
@@ -159,8 +164,8 @@ export const ChatRoom = ({
 
   return (
     <>
-      <Card className="flex h-full flex-col overflow-hidden rounded-lg py-0">
-        <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/40 p-4">
+      <Card className="flex h-dvh flex-col overflow-hidden rounded-lg md:h-full py-0 gap-0">
+        <CardHeader className="flex-shrink-0 grid-cols-[1fr_80px] border-b bg-muted/40">
           <div className="flex items-center space-x-4">
             <Avatar>
               <AvatarImage
@@ -214,9 +219,12 @@ export const ChatRoom = ({
           </div>
         </CardHeader>
 
-        <CardContent className="flex-1 p-0">
-          <ScrollArea className="h-full" ref={scrollAreaRef}>
-            <div className="space-y-4 p-4">
+        <CardContent className="flex-1 min-h-0 p-0">
+          <div
+            className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent"
+            ref={scrollAreaRef}
+          >
+            <div className="space-y-4 p-4 pb-2">
               {messages.map((message) => (
                 <div
                   className={cn(
@@ -228,7 +236,7 @@ export const ChatRoom = ({
                   key={message.id}
                 >
                   {message.senderId !== userId && (
-                    <Avatar className="h-8 w-8">
+                    <Avatar className="h-8 w-8 flex-shrink-0">
                       <AvatarImage
                         src={strangerUser?.image || "/placeholder-user.jpg"}
                       />
@@ -239,20 +247,20 @@ export const ChatRoom = ({
                   )}
                   <div
                     className={cn(
-                      "max-w-[80%] rounded-lg p-3 text-sm shadow-md sm:max-w-[70%]",
+                      "max-w-[80%] rounded-lg p-3 text-sm shadow-md sm:max-w-[70%] break-words",
                       message.senderId === userId
                         ? "rounded-br-none bg-primary text-primary-foreground"
                         : "rounded-bl-none bg-muted"
                     )}
                   >
-                    <p>{message.content}</p>
+                    <p className="break-words">{message.content}</p>
                   </div>
                 </div>
               ))}
 
               {isStrangerTyping && (
                 <div className="flex items-end justify-start gap-2">
-                  <Avatar className="h-8 w-8">
+                  <Avatar className="h-8 w-8 flex-shrink-0">
                     <AvatarImage
                       src={strangerUser?.image || "/placeholder-user.jpg"}
                     />
@@ -269,11 +277,14 @@ export const ChatRoom = ({
                   </div>
                 </div>
               )}
+
+              {/* Invisible element to scroll to */}
+              <div ref={messagesEndRef} />
             </div>
-          </ScrollArea>
+          </div>
         </CardContent>
 
-        <CardFooter className="border-t bg-muted/40 p-4">
+        <CardFooter className="flex-shrink-0 border-t bg-muted/40 p-4">
           <form
             className="flex w-full items-center gap-3"
             onSubmit={handleSubmit}
@@ -287,8 +298,9 @@ export const ChatRoom = ({
               }
               ref={inputRef}
               value={input}
+              className="flex-1"
             />
-            <div className="flex items-center">
+            <div className="flex items-center flex-shrink-0">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button size="icon" type="button" variant="ghost">
