@@ -116,12 +116,21 @@ export const useRoomChat = (user: Member, roomIdFromUrl?: string) => {
   );
 
   useEffect(() => {
-    if (roomIdFromUrl && myRoomsSuccess && globalRoomsSuccess) {
-      if (roomIdFromUrl !== selectedRoomId) {
-        handleSelectRoom(roomIdFromUrl);
-      }
+    if (
+      roomIdFromUrl &&
+      myRoomsSuccess &&
+      globalRoomsSuccess &&
+      roomIdFromUrl !== selectedRoomId
+    ) {
+      handleSelectRoom(roomIdFromUrl);
     }
-  }, [roomIdFromUrl, myRoomsSuccess, globalRoomsSuccess, handleSelectRoom, selectedRoomId]);
+  }, [
+    roomIdFromUrl,
+    myRoomsSuccess,
+    globalRoomsSuccess,
+    handleSelectRoom,
+    selectedRoomId,
+  ]);
 
   const handleLeaveRoom = useCallback(() => {
     if (selectedRoomId) {

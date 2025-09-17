@@ -22,7 +22,7 @@ export function Features() {
     },
     {
       icon: <ChevronsLeftRight className="size-8 text-primary" />,
-      title: "Swipe to Skip",
+      title: "Skip to next stranger",
       description: "Find your vibe faster with our skip feature.",
     },
     {
@@ -58,7 +58,7 @@ export function Features() {
         </div>
         <div className="mx-auto grid max-w-6xl items-start gap-8 py-12 sm:grid-cols-2 md:gap-12 lg:grid-cols-3">
           {features.map((feature, i) => (
-            <Card key={i.toString()} className="h-full">
+            <Card className="h-full" key={i.toString()}>
               <CardHeader>
                 <div className="mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10">
                   {feature.icon}

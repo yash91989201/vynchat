@@ -1,17 +1,16 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Link, useRouteContext } from "@tanstack/react-router";
-import { LogOut, Send, UserMinus, UserPlus } from "lucide-react";
-import { useRef } from "react";
-import { toast } from "sonner";
+import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  LogOut,
+  Paperclip,
+  Send,
+  Smile,
+  UserMinus,
+  UserPlus,
+} from "lucide-react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +20,11 @@ import {
   CardHeader,
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useChatRoom } from "@/hooks/use-stranger-chat-room";
 import { cn } from "@/lib/utils";
@@ -54,6 +58,13 @@ export const ChatRoom = ({
     strangerUser,
     actions,
   } = useChatRoom(roomId, userId, session);
+
+  useEffect(() => {
+    if (strangerLeft) {
+      toast.info("The stranger has left. Finding a new match...");
+      onSkip();
+    }
+  }, [strangerLeft, onSkip]);
 
   // Query to check if following the stranger
   const { data: isFollowing } = useQuery({
@@ -131,15 +142,16 @@ export const ChatRoom = ({
     }
   };
 
-  const handleStrangerLeftClose = () => {
-    actions.setStrangerLeft(false);
-    onLeave();
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     actions.sendMessage();
     inputRef.current?.focus();
+  };
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    actions.handleInputChange({
+      target: { value: input + emojiData.emoji },
+    } as React.ChangeEvent<HTMLInputElement>);
   };
 
   const isFollowLoading =
@@ -147,20 +159,6 @@ export const ChatRoom = ({
 
   return (
     <>
-      <AlertDialog onOpenChange={handleStrangerLeftClose} open={strangerLeft}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Chat Ended</AlertDialogTitle>
-            <AlertDialogDescription>
-              The stranger has left the chat.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogAction>Find New Stranger</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
       <Card className="flex h-full flex-col overflow-hidden rounded-lg py-0">
         <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/40 p-4">
           <div className="flex items-center space-x-4">
@@ -290,14 +288,29 @@ export const ChatRoom = ({
               ref={inputRef}
               value={input}
             />
-            <Button
-              disabled={!(isChannelReady && input.trim())}
-              size="icon"
-              type="submit"
-            >
-              <Send className="h-4 w-4" />
-              <span className="sr-only">Send</span>
-            </Button>
+            <div className="flex items-center">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="icon" type="button" variant="ghost">
+                    <Smile className="h-5 w-5 text-muted-foreground" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto border-none p-0">
+                  <EmojiPicker onEmojiClick={handleEmojiClick} />
+                </PopoverContent>
+              </Popover>
+              <Button size="icon" type="button" variant="ghost">
+                <Paperclip className="h-5 w-5 text-muted-foreground" />
+              </Button>
+              <Button
+                disabled={!(isChannelReady && input.trim())}
+                size="icon"
+                type="submit"
+              >
+                <Send className="h-4 w-4" />
+                <span className="sr-only">Send</span>
+              </Button>
+            </div>
           </form>
         </CardFooter>
       </Card>

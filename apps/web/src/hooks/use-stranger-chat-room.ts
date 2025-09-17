@@ -172,7 +172,10 @@ export const useChatRoom = (
       .on("broadcast", { event: "message" }, ({ payload }) => {
         dispatch({ type: "ADD_MESSAGE", message: payload });
       })
-      .on("broadcast", { event: "room_closed" }, () => {
+      .on("broadcast", { event: "room_closed" }, ({ payload }) => {
+        if (payload.leaverId === userId) {
+          return;
+        }
         dispatch({ type: "SET_STRANGER_LEFT", left: true });
       })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
@@ -248,7 +251,7 @@ export const useChatRoom = (
             await channelRef.current.send({
               type: "broadcast",
               event: "room_closed",
-              payload: {},
+              payload: { leaverId: userId },
             });
           }
 
