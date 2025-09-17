@@ -53,8 +53,6 @@ function RouteComponent() {
 
   return (
     <>
-      <AbsoluteLeftAd />
-      <AbsoluteRightAd />
       <WelcomeDialog />
       <main className="container mx-auto my-6 flex-1 px-3 md:px-6">
         <div className="flex-col gap-6">

@@ -94,6 +94,7 @@ export const ChatRoomWindow = ({
 }: ChatRoomWindowProps) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { mutate: deleteRoom, isPending: isDeleting } = useMutation(
     queryUtils.room.delete.mutationOptions({
@@ -157,13 +158,8 @@ export const ChatRoomWindow = ({
   };
 
   useEffect(() => {
-    if (scrollAreaRef.current && messages.length > 0) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, strangerTyping]);
 
   if (isMobile && !room) {
     return (
@@ -218,8 +214,8 @@ export const ChatRoomWindow = ({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
-      <div className="flex items-center justify-between border-b p-4">
+    <div className="flex h-dvh flex-col overflow-hidden bg-card md:h-full gap-0">
+      <div className="flex flex-shrink-0 items-center justify-between border-b p-4">
         <div className="flex items-center gap-3">
           <div>
             <h3 className="flex items-center gap-2 font-semibold text-lg">
@@ -322,62 +318,65 @@ export const ChatRoomWindow = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
-        <div className="space-y-6 p-4">
-          {messages.map((msg) => (
-            <div
-              className={cn(
-                "flex items-start gap-3",
-                msg.sender.id === userId && "flex-row-reverse"
-              )}
-              key={msg.id}
-            >
-              <Avatar>
-                <AvatarImage src={msg.sender.image ?? undefined} />
-                <AvatarFallback>
-                  {msg.sender.name?.substring(0, 2)}
-                </AvatarFallback>
-              </Avatar>
+      <div className="flex-1 min-h-0">
+        <div className="h-full overflow-y-auto" ref={scrollAreaRef}>
+          <div className="space-y-6 p-4">
+            {messages.map((msg) => (
               <div
                 className={cn(
-                  "max-w-md rounded-lg p-3 text-sm shadow-sm",
-                  msg.sender.id === userId
-                    ? "rounded-br-none bg-primary text-primary-foreground"
-                    : "rounded-bl-none bg-muted"
+                  "flex items-start gap-3",
+                  msg.sender.id === userId && "flex-row-reverse"
                 )}
+                key={msg.id}
               >
-                {msg.sender.id !== userId && (
-                  <p className="font-semibold text-primary">
-                    {msg.sender.name}
+                <Avatar>
+                  <AvatarImage src={msg.sender.image ?? undefined} />
+                  <AvatarFallback>
+                    {msg.sender.name?.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div
+                  className={cn(
+                    "max-w-md rounded-lg p-3 text-sm shadow-sm",
+                    msg.sender.id === userId
+                      ? "rounded-br-none bg-primary text-primary-foreground"
+                      : "rounded-bl-none bg-muted"
+                  )}
+                >
+                  {msg.sender.id !== userId && (
+                    <p className="font-semibold text-primary">
+                      {msg.sender.name}
+                    </p>
+                  )}
+                  <p className="mt-1">
+                    {checkProfanity(msg.content).autoReplaced}
                   </p>
-                )}
-                <p className="mt-1">
-                  {checkProfanity(msg.content).autoReplaced}
-                </p>
-                <p className="mt-2 text-right text-xs opacity-70">
-                  {new Date(msg.createdAt).toLocaleTimeString()}
-                </p>
-              </div>
-            </div>
-          ))}
-          {strangerTyping && (
-            <div className="flex items-end justify-start gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>...</AvatarFallback>
-              </Avatar>
-              <div className="rounded-lg bg-muted p-3 text-sm shadow-md">
-                <div className="flex items-center gap-1">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+                  <p className="mt-2 text-right text-xs opacity-70">
+                    {new Date(msg.createdAt).toLocaleTimeString()}
+                  </p>
                 </div>
               </div>
-            </div>
-          )}
+            ))}
+            {strangerTyping && (
+              <div className="flex items-end justify-start gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback>...</AvatarFallback>
+                </Avatar>
+                <div className="rounded-lg bg-muted p-3 text-sm shadow-md">
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
-      <div className="border-t p-4">
+      <div className="flex-shrink-0 border-t p-4">
         <form
           className="flex items-center gap-3"
           onSubmit={(e) => {

@@ -1,5 +1,5 @@
 import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
-import { Paperclip, Send, Smile, ArrowLeft } from "lucide-react";
+import { ArrowLeft, Paperclip, Send, Smile } from "lucide-react";
 import { useEffect, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,8 @@ export const DirectMessageWindow = ({
   onClose,
 }: DirectMessageWindowProps) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const handleEmojiClick = (emojiData: EmojiClickData) => {
     handleInputChange({
@@ -44,26 +46,24 @@ export const DirectMessageWindow = ({
   };
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
-        behavior: "smooth",
-      });
-    }
-  }, [messages]);
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, otherUserTyping]);
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden bg-card">
-      <div className="flex items-center justify-between border-b p-4">
+    <div className="flex h-[75vh] flex-col gap-0 overflow-hidden bg-card md:h-full">
+      <div className="flex flex-shrink-0 items-center justify-between border-b p-4">
         <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button
+            className="md:hidden"
+            onClick={onClose}
+            size="icon"
+            variant="ghost"
+          >
             <ArrowLeft />
           </Button>
           <Avatar>
             <AvatarImage src={otherUser.image ?? undefined} />
-            <AvatarFallback>
-              {otherUser.name?.substring(0, 2)}
-            </AvatarFallback>
+            <AvatarFallback>{otherUser.name?.substring(0, 2)}</AvatarFallback>
           </Avatar>
           <div>
             <h3 className="font-semibold text-lg">{otherUser.name}</h3>
@@ -71,73 +71,82 @@ export const DirectMessageWindow = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto" ref={scrollAreaRef}>
-        <div className="space-y-6 p-4">
-          {messages.map((msg) => (
-            <div
-              className={cn(
-                "flex items-start gap-3",
-                msg.sender.id === currentUser.id && "flex-row-reverse",
-              )}
-              key={msg.id}
-            >
-              <Avatar>
-                <AvatarImage src={msg.sender.image ?? undefined} />
-                <AvatarFallback>
-                  {msg.sender.name?.substring(0, 2)}
-                </AvatarFallback>
-              </Avatar>
+      <div className="min-h-0 flex-1">
+        <div className="h-full overflow-y-auto" ref={scrollAreaRef}>
+          <div className="space-y-6 p-4">
+            {messages.map((msg) => (
               <div
                 className={cn(
-                  "max-w-md rounded-lg p-3 text-sm shadow-sm",
-                  msg.sender.id === currentUser.id
-                    ? "rounded-br-none bg-primary text-primary-foreground"
-                    : "rounded-bl-none bg-muted",
+                  "flex items-start gap-3",
+                  msg.sender.id === currentUser.id && "flex-row-reverse"
                 )}
+                key={msg.id}
               >
-                {msg.sender.id !== currentUser.id && (
-                  <p className="font-semibold text-primary">
-                    {msg.sender.name}
+                <Avatar>
+                  <AvatarImage src={msg.sender.image ?? undefined} />
+                  <AvatarFallback>
+                    {msg.sender.name?.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div
+                  className={cn(
+                    "max-w-md rounded-lg p-3 text-sm shadow-sm",
+                    msg.sender.id === currentUser.id
+                      ? "rounded-br-none bg-primary text-primary-foreground"
+                      : "rounded-bl-none bg-muted"
+                  )}
+                >
+                  {msg.sender.id !== currentUser.id && (
+                    <p className="font-semibold text-primary">
+                      {msg.sender.name}
+                    </p>
+                  )}
+                  <p className="mt-1">
+                    {checkProfanity(msg.content).autoReplaced}
                   </p>
-                )}
-                <p className="mt-1">
-                  {checkProfanity(msg.content).autoReplaced}
-                </p>
-                <p className="mt-2 text-right text-xs opacity-70">
-                  {new Date(msg.createdAt).toLocaleTimeString()}
-                </p>
-              </div>
-            </div>
-          ))}
-          {otherUserTyping && (
-            <div className="flex items-end justify-start gap-2">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src={otherUser.image ?? undefined} />
-                <AvatarFallback>
-                  {otherUser.name?.substring(0, 2)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="rounded-lg bg-muted p-3 text-sm shadow-md">
-                <div className="flex items-center gap-1">
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
-                  <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+                  <p className="mt-2 text-right text-xs opacity-70">
+                    {new Date(msg.createdAt).toLocaleTimeString()}
+                  </p>
                 </div>
               </div>
-            </div>
-          )}
+            ))}
+            {otherUserTyping && (
+              <div className="flex items-end justify-start gap-2">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={otherUser.image ?? undefined} />
+                  <AvatarFallback>
+                    {otherUser.name?.substring(0, 2)}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="rounded-lg bg-muted p-3 text-sm shadow-md">
+                  <div className="flex items-center gap-1">
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.3s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400 [animation-delay:-0.15s]" />
+                    <span className="h-2 w-2 animate-bounce rounded-full bg-slate-400" />
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
         </div>
       </div>
 
-      <div className="border-t p-4">
+      <div className="flex-shrink-0 border-t p-4">
         <form
           className="flex items-center gap-3"
           onSubmit={(e) => {
             e.preventDefault();
+            if (!input.trim()) return;
             handleSend();
+            handleInputChange({
+              target: { value: "" },
+            } as React.ChangeEvent<HTMLInputElement>);
+            inputRef.current?.focus();
           }}
         >
           <Input
+            ref={inputRef}
             autoComplete="off"
             onChange={handleInputChange}
             placeholder="Type a message..."
