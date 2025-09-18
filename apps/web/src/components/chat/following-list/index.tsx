@@ -92,7 +92,7 @@ function UserRow({
           )}
           {latestMessage && (
             <div className="text-muted-foreground text-sm">
-              Message: {latestMessage.content}
+              New: {latestMessage.content.split(" ").slice(0, 4).join(" ")}...
             </div>
           )}
         </div>
