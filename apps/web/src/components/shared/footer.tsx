@@ -88,14 +88,6 @@ export function Footer() {
           </a>
         </div>
       </div>
-
-      {/* Bottom bar */}
-      <div className="container mx-auto border-t">
-        <p className="py-6 text-center text-muted-foreground">
-          © {new Date().getFullYear()} VynChat. All rights reserved. Built with
-          ❤
-        </p>
-      </div>
     </footer>
   );
 }
