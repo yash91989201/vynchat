@@ -1,10 +1,36 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
-import { room, roomMember } from "@/db/schema";
+import { message, room, roomMember } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
 
 export const dmRouter = {
+  getLatestMessage: protectedProcedure
+    .input(z.object({ otherUserId: z.string() }))
+    .handler(async ({ context, input }) => {
+      const { user } = context.session;
+      const { otherUserId } = input;
+
+      const roomName = `dm:${[user.id, otherUserId].sort().join(":")}`;
+
+      const existingRoom = await db.query.room.findFirst({
+        where: eq(room.name, roomName),
+      });
+
+      if (!existingRoom) {
+        return null;
+      }
+
+      const latestMessage = await db.query.message.findFirst({
+        where: and(
+          eq(message.roomId, existingRoom.id),
+          eq(message.senderId, otherUserId)
+        ),
+        orderBy: [desc(message.createdAt)],
+      });
+
+      return latestMessage ?? null;
+    }),
   getOrCreateChat: protectedProcedure
     .input(z.object({ otherUserId: z.string() }))
     .handler(async ({ context, input }) => {
