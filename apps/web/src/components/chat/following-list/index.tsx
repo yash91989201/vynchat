@@ -31,7 +31,6 @@ function UserRowSkeleton() {
       </div>
       <div className="flex items-center gap-2">
         <Skeleton className="h-8 w-[80px]" />
-        <Skeleton className="h-8 w-[80px]" />
       </div>
     </div>
   );
@@ -116,7 +115,7 @@ function UserRow({
           )}
           {latestMessage && (
             <div className="text-muted-foreground text-sm">
-              {latestMessage.content}
+              New: {latestMessage.content.split(" ").slice(0, 3).join(" ")}...
             </div>
           )}
         </div>
