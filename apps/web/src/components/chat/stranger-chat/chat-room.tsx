@@ -85,7 +85,6 @@ export const ChatRoom = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { session } = useRouteContext({ from: "/(authenticated)" });
-  const isAnonymous = !!session.user.isAnonymous;
 
   const {
     messages,
@@ -176,27 +175,6 @@ export const ChatRoom = ({
 
   const handleFollowToggle = () => {
     if (!strangerUser?.id) return;
-
-    if (isAnonymous) {
-      toast(
-        <div className="text-sm">
-          Guest users cannot follow others. Please go to your{" "}
-          <Link className="text-blue-500 underline" to="/profile">
-            profile
-          </Link>{" "}
-          to link your account.
-        </div>
-      );
-      return;
-    }
-
-    if (strangerUser.isAnonymous) {
-      actions.notifyFollowAttempt();
-      toast.info(
-        "This user is a guest and cannot accept follow requests yet. They have been notified of your interest."
-      );
-      return;
-    }
 
     if (isFollowing) {
       unfollowMutation.mutate({ userId: strangerUser.id });
