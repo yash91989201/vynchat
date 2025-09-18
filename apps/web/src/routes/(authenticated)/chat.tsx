@@ -7,10 +7,10 @@ import type { Member } from "@/components/chat/chat-room/types";
 import { FollowingChat } from "@/components/chat/following-chat";
 import { FollowingList } from "@/components/chat/following-list";
 import { StrangerChat } from "@/components/chat/stranger-chat";
-import {
-  AbsoluteLeftAd,
-  AbsoluteRightAd,
-} from "@/components/shared/google-ads";
+// import {
+//   AbsoluteLeftAd,
+//   AbsoluteRightAd,
+// } from "@/components/shared/google-ads";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WelcomeDialog } from "@/components/user/welcome-dialog";
 

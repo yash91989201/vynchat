@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Badge } from "../ui/badge";
 
 const WELCOME_DIALOG_KEY = "vynchat_welcome_dialog_accepted";
 const WELCOME_DIALOG_QUERY_KEY = ["welcomeDialogAccepted"];
@@ -72,7 +73,7 @@ export function WelcomeDialog() {
   return (
     <Dialog open={!hasAccepted}>
       <DialogContent
-        className="h-[85vh] max-w-md overflow-y-auto sm:max-w-2xl"
+        className="max-w-md overflow-y-auto sm:max-w-2xl"
         showCloseButton={false}
       >
         <DialogHeader className="items-center space-y-3 text-center">
@@ -96,18 +97,16 @@ export function WelcomeDialog() {
             <h3 className="mb-4 text-center font-semibold text-lg">
               Discover what VynChat offers
             </h3>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div className="flex flex-wrap gap-2">
               {features.map((feature) => (
-                <div
-                  className="rounded-lg border bg-card p-3 text-card-foreground"
+                <Badge
+                  className="flex items-center gap-2"
                   key={feature.title}
+                  variant="outline"
                 >
-                  <feature.icon className="mb-1.5 size-5 text-primary" />
+                  <feature.icon className="size-5 shrink-0 scale-110 text-primary" />
                   <h4 className="font-semibold text-sm">{feature.title}</h4>
-                  <p className="text-muted-foreground text-xs">
-                    {feature.description}
-                  </p>
-                </div>
+                </Badge>
               ))}
             </div>
           </div>
