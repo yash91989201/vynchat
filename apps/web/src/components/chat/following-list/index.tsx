@@ -1,16 +1,40 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  useSuspenseQuery,
+} from "@tanstack/react-query";
 import { useRouteContext } from "@tanstack/react-router";
 import { MessageCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { toast } from "sonner";
 import type { Member } from "@/components/chat/chat-room/types";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { AccountLinkDialog } from "@/components/user/account-link-dialog";
 import { supabase } from "@/lib/supabase";
 import { queryUtils } from "@/utils/orpc";
 
 interface FollowingListProps {
   onUserSelect: (user: Member) => void;
+}
+
+function UserRowSkeleton() {
+  return (
+    <div className="flex items-center justify-between p-2">
+      <div className="flex items-center">
+        <Skeleton className="mr-3 h-8 w-8 rounded-full" />
+        <div className="space-y-2">
+          <Skeleton className="h-4 w-[150px]" />
+          <Skeleton className="h-4 w-[200px]" />
+        </div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-8 w-[80px]" />
+        <Skeleton className="h-8 w-[80px]" />
+      </div>
+    </div>
+  );
 }
 
 function UserRow({
@@ -32,7 +56,7 @@ function UserRow({
   onUserSelect: (user: Member) => void;
 }) {
   const queryClient = useQueryClient();
-  const { data: latestMessage } = useQuery(
+  const { data: latestMessage } = useSuspenseQuery(
     queryUtils.dm.getLatestMessage.queryOptions({
       input: { otherUserId: u.id },
     })
@@ -92,7 +116,7 @@ function UserRow({
           )}
           {latestMessage && (
             <div className="text-muted-foreground text-sm">
-              New: {latestMessage.content.split(" ").slice(0, 4).join(" ")}...
+              {latestMessage.content}
             </div>
           )}
         </div>
@@ -185,12 +209,13 @@ export function FollowingList({ onUserSelect }: FollowingListProps) {
           <h2 className="mb-2 font-semibold text-lg">Mutual</h2>
           <ul className="space-y-2">
             {mutual.map((u) => (
-              <UserRow
-                key={u.id}
-                onlineUserIds={onlineUserIds}
-                onUserSelect={onUserSelect}
-                u={{ ...u, isFollowing: true }}
-              />
+              <Suspense fallback={<UserRowSkeleton />} key={u.id}>
+                <UserRow
+                  onlineUserIds={onlineUserIds}
+                  onUserSelect={onUserSelect}
+                  u={{ ...u, isFollowing: true }}
+                />
+              </Suspense>
             ))}
           </ul>
         </div>
@@ -200,12 +225,13 @@ export function FollowingList({ onUserSelect }: FollowingListProps) {
           <h2 className="mb-2 font-semibold text-lg">Following</h2>
           <ul className="space-y-2">
             {following.map((u) => (
-              <UserRow
-                key={u.id}
-                onlineUserIds={onlineUserIds}
-                onUserSelect={onUserSelect}
-                u={u}
-              />
+              <Suspense fallback={<UserRowSkeleton />} key={u.id}>
+                <UserRow
+                  onlineUserIds={onlineUserIds}
+                  onUserSelect={onUserSelect}
+                  u={u}
+                />
+              </Suspense>
             ))}
           </ul>
         </div>
@@ -215,12 +241,13 @@ export function FollowingList({ onUserSelect }: FollowingListProps) {
           <h2 className="mb-2 font-semibold text-lg">Followers</h2>
           <ul className="space-y-2">
             {followers.map((u) => (
-              <UserRow
-                key={u.id}
-                onlineUserIds={onlineUserIds}
-                onUserSelect={onUserSelect}
-                u={u}
-              />
+              <Suspense fallback={<UserRowSkeleton />} key={u.id}>
+                <UserRow
+                  onlineUserIds={onlineUserIds}
+                  onUserSelect={onUserSelect}
+                  u={u}
+                />
+              </Suspense>
             ))}
           </ul>
         </div>
