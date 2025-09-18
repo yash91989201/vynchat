@@ -30,11 +30,11 @@ export const StrangerChat = () => {
     return (
       <div className="h-[85vh] rounded-lg border md:h-[75vh]">
         <ChatRoom
+          continent={continentRef.current}
           onLeave={leaveRoom}
           onSkip={handleSkipStranger}
           roomId={state.currentRoom.id}
           userId={session.user.id}
-          continent={continentRef.current}
         />
       </div>
     );

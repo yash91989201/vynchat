@@ -318,13 +318,7 @@ export const useChatRoom = (
           dispatch({ type: "SET_UPLOADING", uploading: false });
         }
       },
-      [
-        state.isChannelReady,
-        state.isUploading,
-        sendMessage,
-        roomId,
-        userId,
-      ]
+      [state.isChannelReady, state.isUploading, sendMessage, roomId, userId]
     ),
 
     leaveRoom: useCallback(
@@ -346,17 +340,17 @@ export const useChatRoom = (
           onLeave(); // Still call onLeave to clean up UI state
         }
       },
-      [leaveRoom, roomId]
+      [leaveRoom, roomId, userId]
     ),
 
     skipStranger: useCallback(
-      async (onSkip: () => void, continent: string) => {
+      async (onSkip: (continent: string) => void, continent: string) => {
         try {
           await skipStranger({ roomId, continent });
           toast.success("Finding new match", {
             description: "Looking for a new stranger to chat with...",
           });
-          onSkip();
+          onSkip(continent);
         } catch (error) {
           console.error("Error skipping stranger:", error);
           toast.error("Failed to skip stranger. Please try again.");
