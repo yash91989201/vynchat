@@ -33,7 +33,7 @@ export const Header = () => {
               layout="fullWidth"
               src="/logo.webp"
             />
-            <span className="hidden font-extrabold text-lg tracking-tight sm:inline-block">
+            <span className="font-extrabold tracking-tight md:text-lg">
               VynChat
             </span>
           </Link>
