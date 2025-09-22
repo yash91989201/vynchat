@@ -38,6 +38,10 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         content:
           "VynChat is a modern chat application that lets you connect with people from around the world in real-time.",
       },
+      {
+        name: "google-adsence-account",
+        content: "ca-pub-3840637479155499",
+      },
     ],
     links: [
       {
