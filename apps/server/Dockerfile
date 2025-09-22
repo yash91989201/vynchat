@@ -1,5 +1,5 @@
 # Build stage
-FROM oven/bun:1.2.21 AS builder
+FROM oven/bun:1.2.22 AS builder
 WORKDIR /app
 
 # Copy package files for dependency resolution
@@ -18,7 +18,7 @@ ENV PORT=$PORT
 RUN bun run build
 
 # Production stage
-FROM oven/bun:1.2.21-slim AS production
+FROM oven/bun:1.2.22-slim AS production
 
 WORKDIR /app
 

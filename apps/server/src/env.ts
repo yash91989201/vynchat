@@ -3,7 +3,7 @@ import z from "zod";
 
 export const env = createEnv({
   server: {
-    PORT: z.number(),
+    PORT: z.string().transform((val) => Number.parseInt(val, 10)),
     DATABASE_URL: z.url(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.url(),
