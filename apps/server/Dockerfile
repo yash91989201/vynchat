@@ -1,21 +1,24 @@
 # Build stage
-FROM oven/bun:1.2.22 AS builder
+FROM oven/bun:1.2.21 AS builder
 WORKDIR /app
 
 # Copy package files for dependency resolution
 COPY package.json ./
 
 # Install dependencies
-RUN bun install  --production
+RUN bun install
 
 # Copy all source code
 COPY . .
+
+ARG PORT
+ENV PORT=$PORT
 
 # Build the application
 RUN bun run build
 
 # Production stage
-FROM oven/bun:1.2.22-slim AS production
+FROM oven/bun:1.2.21-slim AS production
 
 WORKDIR /app
 
@@ -26,7 +29,8 @@ COPY --from=builder /app/package.json ./package.json
 # Install only production dependencies
 RUN bun install --frozen-lockfile --production
 
-EXPOSE 30019
+# Expose port using environment variable with default fallback
+EXPOSE ${PORT}
 
 # Start the application
 ENTRYPOINT ["bun", "run", "start"]
