@@ -31,6 +31,14 @@ export default defineConfig({
   },
   preview: {
     // allowedHosts: env.VITE_ALLOWED_HOSTS,
-    allowedHosts: ["vynchat.com", "googlesyndication.com"],
+    allowedHosts: [
+      "vynchat.com",
+      "pagead2.googlesyndication.com",
+      "googletagservices.com",
+    ],
+    cors: true,
+  },
+  server: {
+    cors: true,
   },
 });
