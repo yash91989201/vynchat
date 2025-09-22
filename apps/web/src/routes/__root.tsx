@@ -48,7 +48,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
     scripts: [
       {
         async: true,
-        src: "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js",
+        src: "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3840637479155499",
+        crossOrigin: "anonymous",
       },
     ],
   }),
