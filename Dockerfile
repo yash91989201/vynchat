@@ -55,4 +55,4 @@ RUN bun add vite@latest
 EXPOSE 5173
 
 # Start the application
-ENTRYPOINT ["bunx", "vite", "preview", "--host", "0.0.0.0", "--port", "5173"]
+ENTRYPOINT ["bunx", "vite", "preview", "--host", "0.0.0.0", "--port", "34356"]
