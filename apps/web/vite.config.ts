@@ -4,6 +4,7 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
+import { env } from "@/env";
 
 export default defineConfig({
   plugins: [
@@ -29,8 +30,6 @@ export default defineConfig({
     },
   },
   preview: {
-    allowedHosts: process.env.VITE_ALLOWED_HOSTS
-      ? process.env.VITE_ALLOWED_HOSTS.split(",")
-      : [],
+    allowedHosts: env.VITE_ALLOWED_HOSTS,
   },
 });
