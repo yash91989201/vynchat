@@ -36,9 +36,8 @@ export default defineConfig({
       "pagead2.googlesyndication.com",
       "googletagservices.com",
     ],
-    cors: true,
-  },
-  server: {
-    cors: true,
+    cors: {
+      origin: "pagead2.googlesyndication.com",
+    },
   },
 });
