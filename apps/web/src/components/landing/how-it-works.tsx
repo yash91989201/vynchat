@@ -1,24 +1,30 @@
-import { CheckCircle2, ChevronLast, MessageCircle, Users } from "lucide-react";
+import {
+  CheckCircle2,
+  MessageCircle,
+  PanelLeftClose,
+  Users,
+} from "lucide-react";
 
 export function HowItWorks() {
   const steps = [
     {
       step: 1,
-      title: "Pick a Room",
-      description: "Choose a topic or join what’s trending in the moment.",
+      title: "Choose Your Mode",
+      description: "Talk to strangers, join chat rooms, or message followers.",
       icon: Users,
     },
     {
       step: 2,
-      title: "Say Hi",
-      description: "Start chatting, share photos, and connect instantly.",
+      title: "Connect Instantly",
+      description:
+        "Chat, share media, and use emoji in real-time conversations.",
       icon: MessageCircle,
     },
     {
       step: 3,
-      title: "Skip if Needed",
-      description: "Not your vibe? Skip and discover new rooms effortlessly.",
-      icon: ChevronLast,
+      title: "Build Your Network",
+      description: "Follow users you like to chat with them again anytime.",
+      icon: PanelLeftClose,
     },
   ];
 
@@ -61,7 +67,7 @@ export function HowItWorks() {
         {/* Completion indicator (optional, adds polish) */}
         <div className="mt-16 flex items-center gap-3 text-muted-foreground">
           <CheckCircle2 className="h-5 w-5 text-primary" />
-          <span className="text-sm">You’re ready to start chatting!</span>
+          <span className="text-sm">You're ready to start chatting!</span>
         </div>
       </div>
     </section>

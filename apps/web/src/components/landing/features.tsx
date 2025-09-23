@@ -1,44 +1,44 @@
 import {
   ChevronsLeftRight,
-  Gauge,
   Image,
   Laptop,
-  Radio,
+  MessageSquare,
   Shield,
+  Users,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function Features() {
   const features = [
     {
-      icon: <Radio className="size-8 text-primary" />,
-      title: "Live Rooms",
-      description: "Join trending topics or start your own in seconds.",
+      icon: <Users className="size-8 text-primary" />,
+      title: "Multiple Chat Modes",
+      description: "Talk to strangers, join chat rooms, or message followers.",
     },
     {
       icon: <Image className="size-8 text-primary" />,
-      title: "Photo Sharing",
-      description: "Send images instantly with smart moderation.",
+      title: "Rich Media Sharing",
+      description: "Share photos, videos, and audio in any conversation.",
     },
     {
       icon: <ChevronsLeftRight className="size-8 text-primary" />,
-      title: "Skip to next stranger",
-      description: "Find your vibe faster with our skip feature.",
+      title: "Region Matching",
+      description: "Connect with people from specific continents or worldwide.",
     },
     {
-      icon: <Gauge className="size-8 text-primary" />,
-      title: "Light & Fast",
-      description: "Works smoothly even on low networks.",
+      icon: <MessageSquare className="size-8 text-primary" />,
+      title: "Follow System",
+      description: "Follow users you like to start direct messaging anytime.",
     },
     {
       icon: <Shield className="size-8 text-primary" />,
-      title: "Privacy First",
-      description: "Minimal data, optional profiles, and clear controls.",
+      title: "Room Management",
+      description: "Create, lock, and moderate your own chat rooms.",
     },
     {
       icon: <Laptop className="size-8 text-primary" />,
-      title: "Cross-Platform",
-      description: "Seamless on mobile, tablet, and desktop.",
+      title: "Real-Time Experience",
+      description: "Typing indicators, instant media preview, and emoji picker.",
     },
   ];
 

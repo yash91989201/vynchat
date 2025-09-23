@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Image } from "@unpic/react";
-import { Github, Instagram, Twitter } from "lucide-react";
+import { Facebook, Instagram } from "lucide-react";
+import XIcon from "@/components/shared/x-logo";
 
 export function Footer() {
   return (
@@ -60,53 +61,34 @@ export function Footer() {
         {/* Socials */}
         <div className="flex items-center gap-5">
           <a
-            aria-label="Twitter"
+            aria-label="Facebook"
             className="text-muted-foreground transition-all hover:scale-110 hover:text-foreground"
-            href="https://twitter.com"
+            href="https://www.facebook.com/people/Vynchat-official/61581422724009/"
             rel="noreferrer"
             target="_blank"
           >
-            <Twitter className="h-5 w-5" />
+            <Facebook className="h-5 w-5" />
           </a>
           <a
             aria-label="Instagram"
             className="text-muted-foreground transition-all hover:scale-110 hover:text-foreground"
-            href="https://instagram.com"
+            href="https://www.instagram.com/vynchat"
             rel="noreferrer"
             target="_blank"
           >
             <Instagram className="h-5 w-5" />
           </a>
           <a
-            aria-label="GitHub"
+            aria-label="Twitter"
             className="text-muted-foreground transition-all hover:scale-110 hover:text-foreground"
-            href="https://github.com"
+            href="https://twitter.com"
             rel="noreferrer"
             target="_blank"
           >
-            <Github className="h-5 w-5" />
+            <XIcon className="h-5 w-5" />
           </a>
         </div>
       </div>
-
-      {/* Built by WinApps */}
-      <a
-        className="flex cursor-pointer items-center justify-center gap-2 border-border/20 border-t bg-primary/10 px-6 py-3 transition-colors hover:bg-primary/20"
-        href="https://winapps.co.in"
-        rel="noreferrer"
-        target="_blank"
-      >
-        <span className="text-muted-foreground text-sm">Built by</span>
-        <div className="flex items-center gap-2">
-          <Image
-            alt="WinApps Logo"
-            className="size-6 rounded"
-            layout="fullWidth"
-            src="/winapps-logo.webp"
-          />
-          <span className="font-semibold text-foreground text-sm">WinApps</span>
-        </div>
-      </a>
     </footer>
   );
 }
