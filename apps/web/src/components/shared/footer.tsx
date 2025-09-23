@@ -91,7 +91,7 @@ export function Footer() {
 
       {/* Built by WinApps */}
       <a
-        className="flex cursor-pointer flex-col items-center justify-center gap-2 border-border/20 border-t bg-primary/10 px-6 py-4 transition-colors hover:bg-primary/20"
+        className="flex cursor-pointer items-center justify-center gap-2 border-border/20 border-t bg-primary/10 px-6 py-3 transition-colors hover:bg-primary/20"
         href="https://winapps.co.in"
         rel="noreferrer"
         target="_blank"
