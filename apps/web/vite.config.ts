@@ -4,7 +4,6 @@ import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-// import { env } from "./src/env";
 
 export default defineConfig({
   plugins: [
@@ -27,17 +26,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-    },
-  },
-  preview: {
-    // allowedHosts: env.VITE_ALLOWED_HOSTS,
-    allowedHosts: [
-      "vynchat.com",
-      "pagead2.googlesyndication.com",
-      "googletagservices.com",
-    ],
-    cors: {
-      origin: "pagead2.googlesyndication.com",
     },
   },
 });
