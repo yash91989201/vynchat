@@ -32,6 +32,11 @@ export const auth = betterAuth({
       scopes: ["email"],
     },
   },
+  account: {
+    accountLinking: {
+      enabled: true,
+    },
+  },
   advanced: {
     defaultCookieAttributes: {
       sameSite: "none",
