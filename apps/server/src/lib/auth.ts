@@ -1,13 +1,11 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { admin, anonymous } from "better-auth/plugins";
-import { Resend } from "resend";
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/schema/auth";
 import { env } from "@/env";
 import { generateName } from "@/lib/generate-name";
-
-const resend = new Resend(env.RESEND_API_KEY);
+import { resend } from "@/lib/resend";
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {

@@ -21,6 +21,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { env } from "@/env";
 import { authClient } from "@/lib/auth-client";
 import { orpcClient } from "@/utils/orpc";
 
@@ -54,11 +55,10 @@ export const ForgotPasswordForm = () => {
         return;
       }
 
-      // If email exists, proceed with password reset
       await authClient.forgetPassword(
         {
           email: values.email,
-          redirectTo: `${window.location.origin}/reset-password`,
+          redirectTo: `${env.VITE_WEB_URL}/reset-password`,
         },
         {
           onSuccess: () => {
