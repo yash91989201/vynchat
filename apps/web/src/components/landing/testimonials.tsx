@@ -12,7 +12,7 @@ export function Testimonials() {
     },
     {
       name: "John",
-      testimonial: "“Swipe feature is unique. I’m hooked!”",
+      testimonial: "“Skip feature is unique. I’m hooked!”",
     },
   ];
 

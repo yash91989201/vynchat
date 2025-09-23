@@ -1,4 +1,4 @@
-import { CheckCircle2, MessageCircle, RefreshCw, Users } from "lucide-react";
+import { CheckCircle2, ChevronLast, MessageCircle, Users } from "lucide-react";
 
 export function HowItWorks() {
   const steps = [
@@ -16,9 +16,9 @@ export function HowItWorks() {
     },
     {
       step: 3,
-      title: "Swipe if Needed",
-      description: "Not your vibe? Swipe and discover new rooms effortlessly.",
-      icon: RefreshCw,
+      title: "Skip if Needed",
+      description: "Not your vibe? Skip and discover new rooms effortlessly.",
+      icon: ChevronLast,
     },
   ];
 
