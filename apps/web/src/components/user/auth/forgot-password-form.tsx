@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth-client";
+import { orpcClient } from "@/utils/orpc";
 
 const ForgotPasswordSchema = z.object({
   email: z.email("Please enter a valid email address"),
@@ -39,21 +40,37 @@ export const ForgotPasswordForm = () => {
   });
 
   const onSubmit: SubmitHandler<ForgotPasswordType> = async (values) => {
-    await authClient.forgetPassword(
-      {
+    try {
+      // First check if email exists in the database
+      const emailCheck = await orpcClient.user.checkEmailExists({
         email: values.email,
-        redirectTo: `${window.location.origin}/reset-password`,
-      },
-      {
-        onSuccess: () => {
-          toast.success("Password reset link sent! Check your email.");
-          navigate({ to: "/log-in" });
-        },
-        onError: (ctx) => {
-          toast.error(ctx.error.message || "Failed to send reset email");
-        },
+      });
+
+      if (!emailCheck.exists) {
+        toast.error("No account found with this email address");
+        return;
       }
-    );
+
+      // If email exists, proceed with password reset
+      await authClient.forgetPassword(
+        {
+          email: values.email,
+          redirectTo: `${window.location.origin}/reset-password`,
+        },
+        {
+          onSuccess: () => {
+            toast.success("Password reset link sent! Check your email.");
+            navigate({ to: "/log-in" });
+          },
+          onError: (ctx) => {
+            toast.error(ctx.error.message || "Failed to send reset email");
+          },
+        }
+      );
+    } catch (error) {
+      console.error("Error in forgot password flow:", error);
+      toast.error("An error occurred. Please try again.");
+    }
   };
 
   return (

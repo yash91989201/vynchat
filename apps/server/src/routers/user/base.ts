@@ -62,4 +62,16 @@ export const userBaseRouter = {
         .set(input)
         .where(eq(user.id, context.session.user.id));
     }),
+
+  checkEmailExists: protectedProcedure
+    .input(z.object({ email: z.string().email() }))
+    .handler(async ({ input }) => {
+      const existingUser = await db
+        .select({ id: user.id })
+        .from(user)
+        .where(eq(user.email, input.email))
+        .limit(1);
+
+      return { exists: existingUser.length > 0 };
+    }),
 };
