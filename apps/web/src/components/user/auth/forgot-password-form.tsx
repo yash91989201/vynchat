@@ -47,7 +47,9 @@ export const ForgotPasswordForm = () => {
       });
 
       if (!emailCheck.exists) {
-        toast.error("No account found with this email address");
+        form.setError("email", {
+          message: "Email not found. Please check and try again.",
+        });
         return;
       }
 
