@@ -135,14 +135,16 @@ export const ChatRoom = ({
           toast.success(
             `You and ${
               strangerUser?.name || "the stranger"
-            } are now following each other! You can now start a 1-on-1 chat.`
+            } are now following each other! You can now start a 1-on-1 chat.`,
+            { duration: 5000 }
           );
           actions.notifyMutualFollow();
         } else {
           toast.info(
             `Once ${
               strangerUser?.name || "the stranger"
-            } follows you back, you can start messaging.`
+            } follows you back, you can start messaging.`,
+            { duration: 5000 }
           );
           actions.notifyFollow();
         }
@@ -150,9 +152,6 @@ export const ChatRoom = ({
         queryClient.invalidateQueries({
           queryKey: queryUtils.user.userFollowing.queryKey(),
         });
-      },
-      onError: () => {
-        toast.error("Failed to follow user");
       },
     })
   );
@@ -162,13 +161,13 @@ export const ChatRoom = ({
     queryUtils.user.unfollow.mutationOptions({
       onSuccess: () => {
         queryClient.setQueryData(["isFollowing", strangerUser?.id], false);
-        toast.success("User unfollowed successfully");
+        toast.success("User unfollowed successfully", { duration: 5000 });
         queryClient.invalidateQueries({
           queryKey: queryUtils.user.userFollowing.queryKey(),
         });
       },
       onError: () => {
-        toast.error("Failed to unfollow user");
+        toast.error("Failed to unfollow user", { duration: 5000 });
       },
     })
   );

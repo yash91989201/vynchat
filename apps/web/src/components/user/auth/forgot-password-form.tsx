@@ -48,7 +48,8 @@ export const ForgotPasswordForm = () => {
 
       if (!emailCheck.exists) {
         form.setError("email", {
-          message: "Email not found. Please check and try again.",
+          message:
+            "No account found with this email address. Please check your email or create a new account.",
         });
         return;
       }
