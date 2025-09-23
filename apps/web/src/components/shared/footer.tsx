@@ -88,6 +88,25 @@ export function Footer() {
           </a>
         </div>
       </div>
+
+      {/* Built by WinApps */}
+      <a
+        className="flex cursor-pointer flex-col items-center justify-center gap-2 border-border/20 border-t bg-primary/10 px-6 py-4 transition-colors hover:bg-primary/20"
+        href="https://winapps.co.in"
+        rel="noreferrer"
+        target="_blank"
+      >
+        <span className="text-muted-foreground text-sm">Built by</span>
+        <div className="flex items-center gap-2">
+          <Image
+            alt="WinApps Logo"
+            className="size-6 rounded"
+            layout="fullWidth"
+            src="/winapps-logo.webp"
+          />
+          <span className="font-semibold text-foreground text-sm">WinApps</span>
+        </div>
+      </a>
     </footer>
   );
 }

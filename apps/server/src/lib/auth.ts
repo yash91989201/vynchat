@@ -29,7 +29,7 @@ export const auth = betterAuth({
     facebook: {
       clientId: env.FACEBOOK_CLIENT_ID,
       clientSecret: env.FACEBOOK_CLIENT_SECRET,
-      scopes: ["email"],
+      scopes: ["email", "public_profile"],
     },
   },
   account: {
