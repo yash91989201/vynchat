@@ -16,7 +16,9 @@ import { Route as authenticatedProfileRouteImport } from './routes/(authenticate
 import { Route as authenticatedFeedbackRouteImport } from './routes/(authenticated)/feedback'
 import { Route as authenticatedChatRouteImport } from './routes/(authenticated)/chat'
 import { Route as authSignUpRouteImport } from './routes/(auth)/sign-up'
+import { Route as authResetPasswordRouteImport } from './routes/(auth)/reset-password'
 import { Route as authLogInRouteImport } from './routes/(auth)/log-in'
+import { Route as authForgotPasswordRouteImport } from './routes/(auth)/forgot-password'
 import { Route as authenticatedAdminRouteRouteImport } from './routes/(authenticated)/admin/route'
 import { Route as publicBlogsIndexRouteImport } from './routes/(public)/blogs/index'
 import { Route as authenticatedAdminProfileRouteImport } from './routes/(authenticated)/admin/profile'
@@ -67,9 +69,19 @@ const authSignUpRoute = authSignUpRouteImport.update({
   path: '/sign-up',
   getParentRoute: () => rootRouteImport,
 } as any)
+const authResetPasswordRoute = authResetPasswordRouteImport.update({
+  id: '/(auth)/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const authLogInRoute = authLogInRouteImport.update({
   id: '/(auth)/log-in',
   path: '/log-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const authForgotPasswordRoute = authForgotPasswordRouteImport.update({
+  id: '/(auth)/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const authenticatedAdminRouteRoute = authenticatedAdminRouteRouteImport.update({
@@ -161,7 +173,9 @@ const authenticatedAdminDashboardBlogsNewRoute =
 export interface FileRoutesByFullPath {
   '/': typeof publicIndexRoute
   '/admin': typeof authenticatedAdminRouteRouteWithChildren
+  '/forgot-password': typeof authForgotPasswordRoute
   '/log-in': typeof authLogInRoute
+  '/reset-password': typeof authResetPasswordRoute
   '/sign-up': typeof authSignUpRoute
   '/chat': typeof authenticatedChatRouteWithChildren
   '/feedback': typeof authenticatedFeedbackRoute
@@ -185,7 +199,9 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof publicIndexRoute
   '/admin': typeof authenticatedAdminRouteRouteWithChildren
+  '/forgot-password': typeof authForgotPasswordRoute
   '/log-in': typeof authLogInRoute
+  '/reset-password': typeof authResetPasswordRoute
   '/sign-up': typeof authSignUpRoute
   '/chat': typeof authenticatedChatRouteWithChildren
   '/feedback': typeof authenticatedFeedbackRoute
@@ -209,7 +225,9 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/(authenticated)': typeof authenticatedRouteRouteWithChildren
   '/(authenticated)/admin': typeof authenticatedAdminRouteRouteWithChildren
+  '/(auth)/forgot-password': typeof authForgotPasswordRoute
   '/(auth)/log-in': typeof authLogInRoute
+  '/(auth)/reset-password': typeof authResetPasswordRoute
   '/(auth)/sign-up': typeof authSignUpRoute
   '/(authenticated)/chat': typeof authenticatedChatRouteWithChildren
   '/(authenticated)/feedback': typeof authenticatedFeedbackRoute
@@ -236,7 +254,9 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/forgot-password'
     | '/log-in'
+    | '/reset-password'
     | '/sign-up'
     | '/chat'
     | '/feedback'
@@ -260,7 +280,9 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin'
+    | '/forgot-password'
     | '/log-in'
+    | '/reset-password'
     | '/sign-up'
     | '/chat'
     | '/feedback'
@@ -283,7 +305,9 @@ export interface FileRouteTypes {
     | '__root__'
     | '/(authenticated)'
     | '/(authenticated)/admin'
+    | '/(auth)/forgot-password'
     | '/(auth)/log-in'
+    | '/(auth)/reset-password'
     | '/(auth)/sign-up'
     | '/(authenticated)/chat'
     | '/(authenticated)/feedback'
@@ -308,7 +332,9 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   authenticatedRouteRoute: typeof authenticatedRouteRouteWithChildren
+  authForgotPasswordRoute: typeof authForgotPasswordRoute
   authLogInRoute: typeof authLogInRoute
+  authResetPasswordRoute: typeof authResetPasswordRoute
   authSignUpRoute: typeof authSignUpRoute
   publicAboutRoute: typeof publicAboutRoute
   publicIndexRoute: typeof publicIndexRoute
@@ -369,11 +395,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof authSignUpRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/(auth)/reset-password': {
+      id: '/(auth)/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof authResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/(auth)/log-in': {
       id: '/(auth)/log-in'
       path: '/log-in'
       fullPath: '/log-in'
       preLoaderRoute: typeof authLogInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/(auth)/forgot-password': {
+      id: '/(auth)/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof authForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/(authenticated)/admin': {
@@ -563,7 +603,9 @@ const authenticatedRouteRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   authenticatedRouteRoute: authenticatedRouteRouteWithChildren,
+  authForgotPasswordRoute: authForgotPasswordRoute,
   authLogInRoute: authLogInRoute,
+  authResetPasswordRoute: authResetPasswordRoute,
   authSignUpRoute: authSignUpRoute,
   publicAboutRoute: publicAboutRoute,
   publicIndexRoute: publicIndexRoute,

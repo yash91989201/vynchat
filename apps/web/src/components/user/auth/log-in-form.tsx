@@ -95,6 +95,15 @@ export const LogInForm = () => {
               )}
             />
 
+            <div className="text-right">
+              <Link
+                className="text-muted-foreground text-sm underline underline-offset-2 hover:text-primary"
+                to="/forgot-password"
+              >
+                Forgot Password?
+              </Link>
+            </div>
+
             <Button className="w-full" disabled={form.formState.isSubmitting}>
               {form.formState.isSubmitting ? "Logging In" : "Log In"}
             </Button>

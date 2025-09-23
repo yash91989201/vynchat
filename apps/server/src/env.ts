@@ -16,6 +16,7 @@ export const env = createEnv({
     GOOGLE_CLIENT_SECRET: z.string(),
     FACEBOOK_CLIENT_ID: z.string(),
     FACEBOOK_CLIENT_SECRET: z.string(),
+    RESEND_API_KEY: z.string(),
   },
   runtimeEnv: process.env,
   skipValidation: !!process.env.SKIP_ENV_VALIDATION,

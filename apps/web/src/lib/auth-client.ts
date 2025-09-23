@@ -6,3 +6,6 @@ export const authClient = createAuthClient({
   baseURL: env.VITE_SERVER_URL,
   plugins: [adminClient(), anonymousClient()],
 });
+
+// Export forgot password functions for easy access
+export const { forgetPassword, resetPassword } = authClient;

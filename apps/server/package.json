@@ -29,6 +29,7 @@
     "drizzle-zod": "^0.8.3",
     "hono": "^4.9.7",
     "postgres": "^3.4.7",
+    "resend": "^6.1.0",
     "zod": "^4.1.8"
   },
   "trustedDependencies": [
