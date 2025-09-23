@@ -64,11 +64,13 @@
 FROM oven/bun:1.2.22 AS builder
 WORKDIR /app
 
+# Copy package manifests and install dependencies
 COPY package.json bun.lock ./
 COPY apps/web/package.json ./apps/web/
 COPY apps/server/package.json ./apps/server/
 RUN bun install --frozen-lockfile
 
+# Copy source
 COPY apps/web ./apps/web
 COPY apps/server ./apps/server
 
@@ -97,32 +99,22 @@ ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
 ARG VITE_SUPABASE_ANON_KEY
 ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
-
-# Build web app
+# Build the web app
 WORKDIR /app/apps/web
 RUN bun run build
 
-# Production stage (nginx)
+# Production stage with nginx
 FROM nginx:1.27-alpine AS production
 WORKDIR /usr/share/nginx/html
 
-# Copy built files
+# Copy built dist folder
 COPY --from=builder /app/apps/web/dist ./
 
-# Configure nginx for SPA (handles TanStack Router client-side routing)
-COPY <<EOF /etc/nginx/conf.d/default.conf
-server {
-  listen 80;
-  server_name _;
+# Replace default nginx config with SPA config
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
-  root /usr/share/nginx/html;
-  index index.html;
-
-  location / {
-    try_files \$uri /index.html;
-  }
-}
-EOF
-
+# Expose HTTP port
 EXPOSE 80
-ENTRYPOINT ["nginx", "-g", "daemon off;"]
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
