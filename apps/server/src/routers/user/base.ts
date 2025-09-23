@@ -3,7 +3,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { userFollowing } from "@/db/schema";
 import { user } from "@/db/schema/auth";
-import { protectedProcedure } from "@/lib/orpc";
+import { protectedProcedure, publicProcedure } from "@/lib/orpc";
 import { UpdateProfileInput } from "@/lib/schemas";
 
 export const userBaseRouter = {
@@ -63,8 +63,8 @@ export const userBaseRouter = {
         .where(eq(user.id, context.session.user.id));
     }),
 
-  checkEmailExists: protectedProcedure
-    .input(z.object({ email: z.string().email() }))
+  checkEmailExists: publicProcedure
+    .input(z.object({ email: z.email() }))
     .handler(async ({ input }) => {
       const existingUser = await db
         .select({ id: user.id })
