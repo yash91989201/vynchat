@@ -47,6 +47,7 @@ export function BlogCard({
   );
 
   const handleDeleteBlog = async (e: MouseEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     await deleteBlog({ id: blog.id });
   };
