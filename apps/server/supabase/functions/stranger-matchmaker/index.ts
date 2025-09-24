@@ -12,7 +12,7 @@ const supabase = createClient(
  * Clean up old skipped pairs (older than 10 seconds)
  */
 const cleanupOldSkippedPairs = async (): Promise<void> => {
-  const tenSecondsAgo = new Date(Date.now() - 10 * 1000).toISOString();
+  const tenSecondsAgo = new Date(Date.now() - 5 * 1000).toISOString();
 
   const { error } = await supabase
     .from("skipped_pair")
@@ -48,7 +48,7 @@ const hasRecentlySkipped = async (
     return false; // Allow matching if there's an error
   }
 
-  return (skippedPairs && skippedPairs.length > 0);
+  return skippedPairs && skippedPairs.length > 0;
 };
 
 /**
@@ -259,18 +259,31 @@ Deno.serve(async () => {
     }
 
     // 7. Handle remaining unprocessed users
+    const stillWaitingUserIds: string[] = [];
+    const staleMessageIds: bigint[] = [];
+
     for (const unprocessedUser of unprocessed) {
       const userId = unprocessedUser.message.userId as string;
-      console.log(`👤 No match available for user: ${userId}`);
-      await supabase.schema("pgmq_public").rpc("delete", {
-        queue_name: "stranger-queue",
-        message_id: unprocessedUser.msg_id,
-      });
-      await notifyUser(userId, "stranger_no_matches", {
-        reason:
-          "No available users to match with. Please try again in a few seconds.",
-      });
+
+      // Check if the user is still actually waiting according to presence
+      if (isWaiting(presenceState, userId)) {
+        // User is still waiting, leave them in the queue for the next run.
+        // Their message will become visible again after the visibility timeout.
+        stillWaitingUserIds.push(userId);
+      } else {
+        // User is no longer waiting (e.g., closed tab), so clean up their queue message.
+        console.log(`🧹 Cleaning up stale queue message for user: ${userId}`);
+        staleMessageIds.push(unprocessedUser.msg_id);
+      }
     }
+
+    if (staleMessageIds.length > 0) {
+      await deleteQueueMessages(staleMessageIds);
+    }
+
+    console.log(
+      `⏳ ${stillWaitingUserIds.length} users remain in queue for next run.`
+    );
 
     // 8. Clean up lobby channel
     await supabase.removeChannel(lobbyChannel);
