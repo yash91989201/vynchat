@@ -106,9 +106,11 @@ export const CreateBlogForm = () => {
 
     if (values.formState.image) {
       const file = values.formState.image;
-      const filePath = file.name;
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `blogs/${fileName}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("blog-image")
         .upload(filePath, file, {
           cacheControl: "3600",
@@ -120,7 +122,11 @@ export const CreateBlogForm = () => {
         return;
       }
 
-      imageUrl = uploadData.fullPath;
+      const { data: publicUrlData } = supabase.storage
+        .from("blog-image")
+        .getPublicUrl(filePath);
+
+      imageUrl = publicUrlData.publicUrl;
     }
 
     await createBlog({

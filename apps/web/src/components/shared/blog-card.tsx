@@ -1,9 +1,11 @@
 import type { ListBlogsOutputType } from "@server/lib/types";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Image } from "@unpic/react";
 import { Suspense } from "react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -13,6 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { authClient } from "@/lib/auth-client";
 import { queryUtils } from "@/utils/orpc";
 
 export function BlogCard({
@@ -20,6 +23,20 @@ export function BlogCard({
 }: {
   blog: ListBlogsOutputType["blogs"][number];
 }) {
+  const { data: session } = authClient.useSession();
+  const isAdmin = session?.user?.role === "admin";
+
+  const { mutateAsync: deleteBlog, isPending: isDeletingBlog } = useMutation(
+    queryUtils.admin.deleteBlog.mutationOptions({
+      onSuccess: () => {
+        toast.success("Blog deleted successfully");
+      },
+      onError: () => {
+        toast.error("Failed to delete blog, try again");
+      },
+    })
+  );
+
   return (
     <Link
       className="block h-full"
@@ -56,10 +73,20 @@ export function BlogCard({
             </div>
           )}
         </CardContent>
-        <CardFooter className="flex flex-wrap gap-3">
+        <CardFooter className="flex flex-wrap items-center justify-between gap-3">
           <Suspense fallback={<BlogTagsSkeleton />}>
             <BlogTags blogId={blog.id} />
           </Suspense>
+          {isAdmin && (
+            <Button
+              disabled={isDeletingBlog}
+              onClick={() => deleteBlog({ id: blog.id })}
+              size="sm"
+              variant="destructive"
+            >
+              Delete
+            </Button>
+          )}
         </CardFooter>
       </Card>
     </Link>
