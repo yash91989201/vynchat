@@ -7,6 +7,7 @@ import {
   Package,
   PanelLeft,
   Tag,
+  Users,
 } from "lucide-react";
 import {
   Breadcrumb,
@@ -25,6 +26,11 @@ const navItems = [
     href: "/admin/dashboard",
     icon: Home,
     label: "Dashboard",
+  },
+  {
+    href: "/admin/dashboard/users",
+    icon: Users,
+    label: "Users",
   },
   {
     href: "/admin/dashboard/blogs",
