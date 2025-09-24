@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
-import { queryUtils } from "@/utils/orpc";
+import { queryClient, queryUtils } from "@/utils/orpc";
 
 export function BlogCard({
   blog,
@@ -29,6 +29,15 @@ export function BlogCard({
   const { mutateAsync: deleteBlog, isPending: isDeletingBlog } = useMutation(
     queryUtils.admin.deleteBlog.mutationOptions({
       onSuccess: () => {
+        queryClient.refetchQueries({
+          queryKey: queryUtils.blog.listBlogs.queryKey({
+            input: {
+              limit: 10,
+              offset: 0,
+              sort: { field: "updatedAt", order: "desc" },
+            },
+          }),
+        });
         toast.success("Blog deleted successfully");
       },
       onError: () => {
