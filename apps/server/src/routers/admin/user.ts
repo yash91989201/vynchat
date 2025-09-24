@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, ilike, ne } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNull, ne, or } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { user } from "@/db/schema/auth";
@@ -34,7 +34,14 @@ export const adminUserRouter = {
       if (filter?.userType === "guest") {
         whereClauses.push(eq(user.isAnonymous, true));
       } else if (filter?.userType === "non-guest") {
-        whereClauses.push(eq(user.isAnonymous, false));
+        const anonCondition = or(
+          eq(user.isAnonymous, false),
+          isNull(user.isAnonymous)
+        );
+
+        if (anonCondition !== undefined) {
+          whereClauses.push(anonCondition);
+        }
       }
 
       const usersQuery = db
