@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -86,26 +87,33 @@ export const StrangerChatLobby = ({
         </p>
 
         <div className="mt-10 space-y-4">
-          <div className="flex flex-col items-center gap-3 sm:flex-row">
-            <Input
-              className="text-center"
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Enter your name"
-              value={name}
-            />
-            <Select onValueChange={setContinent} value={continent}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a continent" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="World">World</SelectItem>
-                {continents.map((c) => (
-                  <SelectItem key={c} value={c}>
-                    {c}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col gap-4 sm:flex-row sm:gap-6">
+            <div className="flex flex-col gap-2 sm:flex-1">
+              <Label htmlFor="name-input">Name (Update in Profile)</Label>
+              <Input
+                className="border-primary text-center"
+                id="name-input"
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter your name"
+                value={name}
+              />
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-1">
+              <Label>Region</Label>
+              <Select onValueChange={setContinent} value={continent}>
+                <SelectTrigger className="w-full border border-primary">
+                  <SelectValue placeholder="Select a continent" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="World">World</SelectItem>
+                  {continents.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <Button
             className="rounded-full"

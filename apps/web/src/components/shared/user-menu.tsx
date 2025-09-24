@@ -84,8 +84,12 @@ export const UserMenu = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button className="relative h-8 w-8 rounded-full" variant="ghost">
-          <Avatar>
+        <Button
+          className="flex h-auto items-center gap-2 rounded-full px-2 py-1.5"
+          variant="ghost"
+        >
+          <span className="font-medium text-sm">Profile</span>
+          <Avatar className="h-8 w-8">
             <AvatarImage
               alt={session.user.name}
               src={

@@ -17,7 +17,7 @@ export const auth = betterAuth({
       verification,
     },
   }),
-  trustedOrigins: [env.CORS_ORIGIN],
+  trustedOrigins: env.CORS_ORIGIN,
   emailAndPassword: {
     enabled: true,
     sendResetPassword: async ({ user, url }) => {
