@@ -18,14 +18,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth-client";
 import { queryClient, queryUtils } from "@/utils/orpc";
 
-export function BlogCard({
-  blog,
-}: {
-  blog: ListBlogsOutputType["blogs"][number];
-}) {
-  const { data: session } = authClient.useSession();
-  const isAdmin = session?.user?.role === "admin";
-
+export function DeleteBlogButton({ blogId }: { blogId: string }) {
   const { mutateAsync: deleteBlog, isPending: isDeletingBlog } = useMutation(
     queryUtils.admin.deleteBlog.mutationOptions({
       onSuccess: () => {
@@ -49,65 +42,75 @@ export function BlogCard({
   const handleDeleteBlog = async (e: MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    await deleteBlog({ id: blog.id });
+    await deleteBlog({ id: blogId });
   };
 
   return (
-    <Card className="h-full overflow-hidden pt-0">
-      <Image
-        alt={blog.title}
-        className="h-56 w-full object-cover"
-        layout="fullWidth"
-        src={
-          blog.imageUrl?.length === 0
-            ? "/logo.webp"
-            : (blog.imageUrl ?? "/logo.webp")
-        }
-      />
-      <CardHeader>
-        <CardTitle>{blog.title}</CardTitle>
-        {blog.category && (
-          <CardDescription>{blog.category.name}</CardDescription>
-        )}
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {blog.excerpt && (
-          <p className="text-muted-foreground text-sm">{blog.excerpt}</p>
-        )}
-        {blog.tldr && (
-          <div className="space-y-1 pt-2">
-            <p className="font-semibold text-sm">TL;DR:</p>
-            <p className="text-sm">{blog.tldr}</p>
+    <Button
+      disabled={isDeletingBlog}
+      onClick={handleDeleteBlog}
+      size="sm"
+      variant="destructive"
+    >
+      Delete
+    </Button>
+  );
+}
+
+export function BlogCard({
+  blog,
+}: {
+  blog: ListBlogsOutputType["blogs"][number];
+}) {
+  const { data: session } = authClient.useSession();
+  const isAdmin = session?.user?.role === "admin";
+
+  return (
+    <Link
+      className="block h-full"
+      params={{
+        slug: blog.slug,
+      }}
+      to="/blogs/$slug"
+    >
+      <Card className="h-full overflow-hidden pt-0">
+        <Image
+          alt={blog.title}
+          className="h-56 w-full object-cover"
+          layout="fullWidth"
+          src={
+            blog.imageUrl?.length === 0
+              ? "/logo.webp"
+              : (blog.imageUrl ?? "/logo.webp")
+          }
+        />
+        <CardHeader>
+          <CardTitle>{blog.title}</CardTitle>
+          {blog.category && (
+            <CardDescription>{blog.category.name}</CardDescription>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {blog.excerpt && (
+            <p className="text-muted-foreground text-sm">{blog.excerpt}</p>
+          )}
+          {blog.tldr && (
+            <div className="space-y-1 pt-2">
+              <p className="font-semibold text-sm">TL;DR:</p>
+              <p className="text-sm">{blog.tldr}</p>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Suspense fallback={<BlogTagsSkeleton />}>
+              <BlogTags blogId={blog.id} />
+            </Suspense>
           </div>
-        )}
-        <Link
-          className="text-primary hover:underline"
-          params={{
-            slug: blog.slug,
-          }}
-          to="/blogs/$slug"
-        >
-          View blog
-        </Link>
-      </CardContent>
-      <CardFooter className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Suspense fallback={<BlogTagsSkeleton />}>
-            <BlogTags blogId={blog.id} />
-          </Suspense>
-        </div>
-        {isAdmin && (
-          <Button
-            disabled={isDeletingBlog}
-            onClick={handleDeleteBlog}
-            size="sm"
-            variant="destructive"
-          >
-            Delete
-          </Button>
-        )}
-      </CardFooter>
-    </Card>
+          {isAdmin && <DeleteBlogButton blogId={blog.id} />}
+        </CardFooter>
+      </Card>
+    </Link>
   );
 }
 
