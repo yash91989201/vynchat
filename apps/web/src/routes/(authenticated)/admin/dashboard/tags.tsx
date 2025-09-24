@@ -20,7 +20,7 @@ function RouteComponent() {
   );
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 md:gap-8">
+    <div className="flex flex-col gap-3">
       <Card>
         <CardHeader>
           <CardTitle>Create Tag</CardTitle>
