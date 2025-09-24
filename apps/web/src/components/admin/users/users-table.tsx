@@ -36,7 +36,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Toggle } from "@/components/ui/toggle";
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { queryUtils } from "@/utils/orpc";
@@ -45,12 +44,12 @@ export const UsersTable = ({
   limit = 10,
   page = 1,
   name,
-  isGuest,
+  userType = "all",
 }: {
   limit?: number;
   page?: number;
   name?: string;
-  isGuest?: boolean;
+  userType?: "all" | "guest" | "non-guest";
 }) => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState(name ?? "");
@@ -62,7 +61,7 @@ export const UsersTable = ({
         page,
         filter: {
           name,
-          isGuest,
+          userType,
         },
       },
     })
@@ -101,7 +100,7 @@ export const UsersTable = ({
       if (searchTerm !== name) {
         navigate({
           to: "/admin/dashboard/users",
-          search: { page: 1, limit, name: searchTerm, isGuest },
+          search: { page: 1, limit, name: searchTerm, userType },
         });
       }
     }, 500);
@@ -109,7 +108,7 @@ export const UsersTable = ({
     return () => {
       clearTimeout(handler);
     };
-  }, [searchTerm, navigate, limit, isGuest, name]);
+  }, [searchTerm, navigate, limit, userType, name]);
 
   // Update local state when URL param changes
   useEffect(() => {
@@ -136,7 +135,7 @@ export const UsersTable = ({
   const handleLimitChange = (newLimit: string) => {
     navigate({
       to: "/admin/dashboard/users",
-      search: { page: 1, limit: Number.parseInt(newLimit, 10), name, isGuest },
+      search: { page: 1, limit: Number.parseInt(newLimit, 10), name, userType },
     });
   };
 
@@ -146,10 +145,10 @@ export const UsersTable = ({
     setSearchTerm(event.target.value);
   };
 
-  const handleGuestFilterChange = (checked: boolean) => {
+  const handleUserTypeFilterChange = (newUserType: "all" | "guest" | "non-guest") => {
     navigate({
       to: "/admin/dashboard/users",
-      search: { page: 1, limit, name, isGuest: checked },
+      search: { page: 1, limit, name, userType: newUserType },
     });
   };
 
@@ -239,13 +238,20 @@ export const UsersTable = ({
             placeholder="Filter by name..."
             value={searchTerm}
           />
-          <Toggle onPressedChange={handleGuestFilterChange} pressed={isGuest}>
-            Guest User Only
-          </Toggle>
+          <Select onValueChange={handleUserTypeFilterChange} value={userType}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="User type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              <SelectItem value="guest">Guest Only</SelectItem>
+              <SelectItem value="non-guest">Non-Guest Only</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
         <Button
           className="flex items-center gap-2"
-          disabled={!(searchTerm || isGuest)}
+          disabled={!(searchTerm || userType !== "all")}
           onClick={handleClearFilters}
           size="sm"
           variant="outline"
@@ -339,7 +345,7 @@ export const UsersTable = ({
           hasPreviousPage={hasPreviousPage}
           limit={limit}
           page={page}
-          search={{ name, isGuest }}
+          search={{ name, userType }}
           totalPages={totalPages}
         />
       </div>

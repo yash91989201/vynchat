@@ -10,12 +10,12 @@ export const RouteSearchSchema = z.object({
   page: z.number().min(1).default(1).catch(1),
   limit: z.number().min(1).max(50).default(10).catch(10),
   name: z.string().optional(),
-  isGuest: z.boolean().optional(),
+  userType: z.enum(["all", "guest", "non-guest"]).default("all").catch("all"),
 });
 
 export const Route = createFileRoute("/(authenticated)/admin/dashboard/users")({
   validateSearch: RouteSearchSchema,
-  beforeLoad: async ({ context: { queryClient, queryUtils }, search }) => {
+  beforeLoad: ({ context: { queryClient, queryUtils }, search }) => {
     queryClient.ensureQueryData(
       queryUtils.admin.listUsers.queryOptions({
         input: {
@@ -23,17 +23,17 @@ export const Route = createFileRoute("/(authenticated)/admin/dashboard/users")({
           limit: search.limit,
           filter: {
             name: search.name,
-            isGuest: search.isGuest,
+            userType: search.userType,
           },
         },
-      }),
+      })
     );
   },
   component: RouteComponent,
 });
 
 function RouteComponent() {
-  const { limit, page, name, isGuest } = Route.useSearch();
+  const { limit, page, name, userType } = Route.useSearch();
 
   return (
     <div className="space-y-6">
@@ -47,7 +47,7 @@ function RouteComponent() {
         </div>
       </section>
       <Suspense fallback={<UsersTableSkeleton />}>
-        <UsersTable limit={limit} page={page} name={name} isGuest={isGuest} />
+        <UsersTable limit={limit} name={name} page={page} userType={userType} />
       </Suspense>
     </div>
   );

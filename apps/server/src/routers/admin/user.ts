@@ -15,7 +15,7 @@ export const adminUserRouter = {
         filter: z
           .object({
             name: z.string().optional(),
-            isGuest: z.boolean().optional(),
+            userType: z.enum(["all", "guest", "non-guest"]).optional(),
           })
           .optional(),
       })
@@ -31,8 +31,10 @@ export const adminUserRouter = {
         whereClauses.push(ilike(user.name, `%${filter.name}%`));
       }
 
-      if (input.filter?.isGuest) {
+      if (filter?.userType === "guest") {
         whereClauses.push(eq(user.isAnonymous, true));
+      } else if (filter?.userType === "non-guest") {
+        whereClauses.push(eq(user.isAnonymous, false));
       }
 
       const usersQuery = db

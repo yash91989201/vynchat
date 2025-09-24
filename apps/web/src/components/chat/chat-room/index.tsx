@@ -60,6 +60,7 @@ export const ChatRoom = () => {
           input={input}
           isMobile={true}
           isRoomOwner={user.id === selectedRoom?.ownerId}
+          isUploading={isUploading}
           members={members}
           messages={messages}
           myRooms={myRooms}
@@ -68,9 +69,8 @@ export const ChatRoom = () => {
           selectedRoomId={selectedRoomId}
           strangerTyping={strangerTyping}
           toggleLock={toggleLock}
-          userId={user.id}
-          isUploading={isUploading}
           uploadFile={uploadFile}
+          userId={user.id}
         />
       </div>
     );
