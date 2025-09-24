@@ -4,9 +4,6 @@ import z from "zod";
 export const env = createEnv({
   clientPrefix: "VITE_",
   client: {
-    VITE_ALLOWED_HOSTS: z
-      .string()
-      .transform((val) => val.split(",").map((host) => host.trim())),
     VITE_WEB_URL: z.url(),
     VITE_SERVER_URL: z.url(),
     VITE_SUPABASE_URL: z.url(),

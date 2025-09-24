@@ -7,7 +7,13 @@ export const env = createEnv({
     DATABASE_URL: z.url(),
     BETTER_AUTH_SECRET: z.string(),
     BETTER_AUTH_URL: z.url(),
-    CORS_ORIGIN: z.url(),
+    CORS_ORIGIN: z.string().transform((val) => {
+      return val.split(",").map((url) => {
+        const trimmed = url.trim();
+        z.url().parse(trimmed);
+        return trimmed;
+      });
+    }),
     SUPABASE_URL: z.url(),
     SUPABASE_ANON_KEY: z.string(),
     SUPABASE_SERVICE_ROLE_KEY: z.string(),
