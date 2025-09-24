@@ -1,6 +1,6 @@
-import { and, asc, eq } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import z from "zod";
-import { message, room, roomMember } from "@/db/schema";
+import { message, room } from "@/db/schema";
 import { protectedProcedure } from "@/lib/orpc";
 import { MessageOutput } from "@/lib/schemas";
 
@@ -39,16 +39,16 @@ export const messageRouter = {
       const userId = context.session.user.id;
 
       // Verify user is member of the room
-      const membership = await context.db.query.roomMember.findFirst({
-        where: and(
-          eq(roomMember.roomId, roomId),
-          eq(roomMember.userId, userId)
-        ),
-      });
-
-      if (!membership) {
-        throw new Error("Not a member of this room");
-      }
+      // const membership = await context.db.query.roomMember.findFirst({
+      //   where: and(
+      //     eq(roomMember.roomId, roomId),
+      //     eq(roomMember.userId, userId)
+      //   ),
+      // });
+      //
+      // if (!membership) {
+      //   throw new Error("Not a member of this room");
+      // }
 
       // Check for DM message limit
       const roomData = await context.db.query.room.findFirst({
