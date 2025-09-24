@@ -92,6 +92,11 @@ export const useChatRoom = (
   const strangerTypingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const strangerUserRef = useRef<StrangerUser | null>(null);
+
+  useEffect(() => {
+    strangerUserRef.current = state.strangerUser;
+  }, [state.strangerUser]);
 
   // Query to fetch room members and identify stranger
   const { data: roomMembers } = useSuspenseQuery(
@@ -188,6 +193,18 @@ export const useChatRoom = (
         }
         dispatch({ type: "SET_STRANGER_LEFT", left: true });
       })
+      .on("presence", { event: "leave" }, ({ leftPresences }) => {
+        const strangerId = strangerUserRef.current?.id;
+        if (!strangerId) return;
+
+        const strangerHasLeft = leftPresences.some(
+          (p) => p.user_id === strangerId
+        );
+
+        if (strangerHasLeft) {
+          dispatch({ type: "SET_STRANGER_LEFT", left: true });
+        }
+      })
       .on("broadcast", { event: "typing" }, ({ payload }) => {
         if (payload.senderId === userId) return;
 
@@ -233,8 +250,14 @@ export const useChatRoom = (
           );
         }
       )
-      .subscribe((status) => {
+      .subscribe(async (status) => {
         dispatch({ type: "SET_CHANNEL_READY", ready: status === "SUBSCRIBED" });
+        if (status === "SUBSCRIBED") {
+          await channel.track({
+            user_id: userId,
+            name: session.user.name || "Anonymous",
+          });
+        }
       });
 
     channelRef.current = channel;
