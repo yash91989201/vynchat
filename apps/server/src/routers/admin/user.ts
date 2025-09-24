@@ -69,4 +69,22 @@ export const adminUserRouter = {
         hasPreviousPage,
       };
     }),
+
+  deleteAllGuestUsers: adminProcedure.handler(async () => {
+    const guestUsersCount = await db
+      .select({ value: count() })
+      .from(user)
+      .where(and(eq(user.isAnonymous, true), ne(user.role, "admin")));
+
+    const deletedUsers = await db
+      .delete(user)
+      .where(and(eq(user.isAnonymous, true), ne(user.role, "admin")))
+      .returning({ id: user.id, name: user.name, email: user.email });
+
+    return {
+      deletedCount: guestUsersCount[0].value,
+      deletedUsers,
+      message: `Successfully deleted ${guestUsersCount[0].value} guest users`,
+    };
+  }),
 };

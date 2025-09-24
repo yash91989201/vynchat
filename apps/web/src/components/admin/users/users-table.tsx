@@ -7,9 +7,27 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
-import { MoreHorizontal, Shield, ShieldOff, Trash2, X } from "lucide-react";
+import {
+  FilterX,
+  MoreHorizontal,
+  Shield,
+  ShieldOff,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { PaginationWindow } from "@/components/shared/pagination-window";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -94,6 +112,15 @@ export const UsersTable = ({
     },
   });
 
+  const { mutateAsync: deleteAllGuestUsers, isPending: isDeletingAllGuests } =
+    useMutation(
+      queryUtils.admin.deleteAllGuestUsers.mutationOptions({
+        onSuccess: () => {
+          refetchUserList();
+        },
+      })
+    );
+
   // Debounce effect for name filter
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -132,6 +159,15 @@ export const UsersTable = ({
     deleteUser({ userId });
   };
 
+  const handleDeleteAllGuestUsers = async () => {
+    try {
+      const result = await deleteAllGuestUsers({});
+      console.log(`Deleted ${result.deletedCount} guest users`);
+    } catch (error) {
+      console.error("Failed to delete guest users:", error);
+    }
+  };
+
   const handleLimitChange = (newLimit: string) => {
     navigate({
       to: "/admin/dashboard/users",
@@ -145,7 +181,9 @@ export const UsersTable = ({
     setSearchTerm(event.target.value);
   };
 
-  const handleUserTypeFilterChange = (newUserType: "all" | "guest" | "non-guest") => {
+  const handleUserTypeFilterChange = (
+    newUserType: "all" | "guest" | "non-guest"
+  ) => {
     navigate({
       to: "/admin/dashboard/users",
       search: { page: 1, limit, name, userType: newUserType },
@@ -156,7 +194,7 @@ export const UsersTable = ({
     setSearchTerm("");
     navigate({
       to: "/admin/dashboard/users",
-      search: { page: 1, limit },
+      search: { page: 1, limit, userType: "all" },
     });
   };
 
@@ -249,16 +287,49 @@ export const UsersTable = ({
             </SelectContent>
           </Select>
         </div>
-        <Button
-          className="flex items-center gap-2"
-          disabled={!(searchTerm || userType !== "all")}
-          onClick={handleClearFilters}
-          size="sm"
-          variant="outline"
-        >
-          <X className="h-4 w-4" />
-          Clear Filters
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            className="flex items-center gap-2"
+            disabled={!(searchTerm || userType !== "all")}
+            onClick={handleClearFilters}
+            size="sm"
+            variant="outline"
+          >
+            <FilterX className="size-4.5" />
+          </Button>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                className="flex items-center gap-2"
+                disabled={isDeletingAllGuests}
+                size="sm"
+                variant="destructive"
+              >
+                <Users className="h-4 w-4" />
+                {isDeletingAllGuests ? "Deleting..." : "Delete All Guests"}
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete All Guest Users</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action will permanently delete all guest users from the
+                  system. This cannot be undone. Are you sure you want to
+                  continue?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={handleDeleteAllGuestUsers}
+                >
+                  Continue
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </div>
       <div className="mt-4 flex flex-col gap-3">
         <div className="overflow-hidden rounded-md border">
