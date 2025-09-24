@@ -74,9 +74,11 @@ export function BlogCard({
           )}
         </CardContent>
         <CardFooter className="flex flex-wrap items-center justify-between gap-3">
-          <Suspense fallback={<BlogTagsSkeleton />}>
-            <BlogTags blogId={blog.id} />
-          </Suspense>
+          <div className="gap- items-center">
+            <Suspense fallback={<BlogTagsSkeleton />}>
+              <BlogTags blogId={blog.id} />
+            </Suspense>
+          </div>
           {isAdmin && (
             <Button
               disabled={isDeletingBlog}
