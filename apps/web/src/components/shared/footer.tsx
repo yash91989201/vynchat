@@ -50,12 +50,6 @@ export function Footer() {
           >
             Privacy
           </Link>
-          <Link
-            className="text-muted-foreground transition-colors hover:text-foreground"
-            to="/admin/log-in"
-          >
-            Admin Login
-          </Link>
         </nav>
 
         {/* Socials */}
