@@ -38,6 +38,10 @@ export const CreateBlogFormSchema = z.object({
   tags: z
     .array(z.object({ id: z.cuid2() }))
     .min(1, "At least 1 tag is required"),
+  formState: z.object({
+    slugLocked: z.boolean(),
+    image: z.instanceof(File).optional(),
+  }),
 });
 
 export const CreateCategoryFormSchema = z.object({

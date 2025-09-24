@@ -6,7 +6,9 @@ import {
   ChevronsUpDown,
   ExternalLink,
   Loader2,
+  Lock,
   Rss,
+  Unlock,
 } from "lucide-react";
 import { type SubmitHandler, useForm } from "react-hook-form";
 import { toast } from "sonner";
@@ -21,6 +23,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -41,8 +44,10 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { CreateBlogFormSchema } from "@/lib/schemas";
+import { supabase } from "@/lib/supabase";
 import type { CreateBlogFormType } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { generateSlug } from "@/utils";
 import { queryUtils } from "@/utils/orpc";
 import { TipTap } from "./tip-tap";
 
@@ -87,11 +92,41 @@ export const CreateBlogForm = () => {
       excerpt: "",
       imageUrl: "",
       tags: [],
+      formState: {
+        slugLocked: true,
+        image: undefined,
+      },
     },
   });
 
+  const slugLocked = form.watch("formState.slugLocked");
+
   const onSubmit: SubmitHandler<CreateBlogFormType> = async (values) => {
-    await createBlog(values);
+    let imageUrl = values.imageUrl;
+
+    if (values.formState.image) {
+      const file = values.formState.image;
+      const filePath = file.name;
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from("blog-image")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+
+      if (uploadError) {
+        toast.error(`Image upload failed: ${uploadError.message}`);
+        return;
+      }
+
+      imageUrl = uploadData.fullPath;
+    }
+
+    await createBlog({
+      ...values,
+      imageUrl,
+    });
   };
 
   return (
@@ -104,7 +139,21 @@ export const CreateBlogForm = () => {
             <FormItem>
               <FormLabel>Title</FormLabel>
               <FormControl>
-                <Input placeholder="Blog title" {...field} />
+                <Input
+                  placeholder="Blog title"
+                  {...field}
+                  onChange={(e) => {
+                    field.onChange(e);
+
+                    if (slugLocked) {
+                      const newSlug = generateSlug(e.target.value || "");
+                      form.setValue("slug", newSlug, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      });
+                    }
+                  }}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -117,8 +166,51 @@ export const CreateBlogForm = () => {
             <FormItem>
               <FormLabel>Slug</FormLabel>
               <FormControl>
-                <Input placeholder="blog-slug" {...field} />
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <Input
+                      placeholder="blog-slug"
+                      {...field}
+                      disabled={!!slugLocked}
+                      onChange={(e) => {
+                        if (!slugLocked) {
+                          field.onChange(e);
+                        }
+                      }}
+                    />
+                  </div>
+                  <Button
+                    aria-label={slugLocked ? "Unlock slug" : "Lock slug"}
+                    onClick={() => {
+                      const nextLocked = !slugLocked;
+
+                      if (nextLocked) {
+                        const newSlug = generateSlug(
+                          form.getValues("title") || ""
+                        );
+                        form.setValue("slug", newSlug, {
+                          shouldDirty: true,
+                          shouldTouch: true,
+                        });
+                      }
+
+                      form.setValue("formState.slugLocked", nextLocked, {
+                        shouldDirty: true,
+                        shouldTouch: true,
+                      });
+                    }}
+                    size="icon"
+                    type="button"
+                    variant="outline"
+                  >
+                    {slugLocked ? <Lock size={16} /> : <Unlock size={16} />}
+                  </Button>
+                </div>
               </FormControl>
+              <FormDescription>
+                This will be used in the URL of your blog post. Only a-z, 0-9
+                and - are allowed.
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}
@@ -249,12 +341,12 @@ export const CreateBlogForm = () => {
           name="tldr"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>TLDR</FormLabel>
+              <FormLabel>TLDR (Optional)</FormLabel>
               <FormControl>
                 <Textarea
                   rows={3}
                   {...field}
-                  placeholder="Too long; didn't read"
+                  placeholder="Too long; didn't read (optional)"
                 />
               </FormControl>
               <FormMessage />
@@ -266,9 +358,13 @@ export const CreateBlogForm = () => {
           name="excerpt"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Excerpt</FormLabel>
+              <FormLabel>Excerpt (Optional)</FormLabel>
               <FormControl>
-                <Textarea placeholder="Short description" {...field} rows={6} />
+                <Textarea
+                  placeholder="Short description (optional)"
+                  {...field}
+                  rows={6}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -276,13 +372,27 @@ export const CreateBlogForm = () => {
         />
         <FormField
           control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
+          name="formState.image"
+          render={({ field: { onChange, value, ...field } }) => (
             <FormItem>
-              <FormLabel>Image URL</FormLabel>
+              <FormLabel>Upload Image</FormLabel>
               <FormControl>
-                <Input placeholder="https://example.com/image.png" {...field} />
+                <div className="flex items-center gap-2">
+                  <Input
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      onChange(file);
+                    }}
+                    type="file"
+                    {...field}
+                    className="h-12 file:mr-4 file:rounded-md file:border-0 file:bg-primary file:px-4 file:py-2 file:font-medium file:text-primary-foreground file:text-sm hover:file:bg-primary/80"
+                  />
+                </div>
               </FormControl>
+              <FormDescription>
+                Upload an image file for your blog post.{" "}
+              </FormDescription>
               <FormMessage />
             </FormItem>
           )}

@@ -62,6 +62,7 @@
     "date-fns": "^4.1.0",
     "embla-carousel-react": "^8.6.0",
     "emoji-picker-react": "^4.13.3",
+    "export-to-csv": "^1.4.0",
     "glin-profanity": "^2.3.8",
     "html-react-parser": "^5.2.6",
     "input-otp": "^1.4.2",
