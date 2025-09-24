@@ -77,10 +77,16 @@ export const StrangerChatLobby = ({
 
       <div className="w-full max-w-lg text-center">
         <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-primary/10 sm:h-28 sm:w-28">
-          <HatGlasses className="h-12 w-12 text-primary sm:h-16 sm:w-16" />
+          {isPending || status === "waiting" ? (
+            <Loader2 className="h-12 w-12 animate-spin text-primary sm:h-16 sm:w-16" />
+          ) : (
+            <HatGlasses className="h-12 w-12 text-primary sm:h-16 sm:w-16" />
+          )}
         </div>
         <h1 className="font-bold text-3xl tracking-tight sm:text-4xl">
-          Talk to a Stranger
+          {isPending || status === "waiting"
+            ? "Finding a stranger..."
+            : "Talk to a Stranger"}
         </h1>
         <p className="mt-3 text-lg text-muted-foreground">
           Find a random person to chat with anonymously.
