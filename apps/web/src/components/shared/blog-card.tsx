@@ -2,7 +2,7 @@ import type { ListBlogsOutputType } from "@server/lib/types";
 import { useMutation, useSuspenseQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Image } from "@unpic/react";
-import { Suspense } from "react";
+import { type MouseEvent, Suspense } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,6 +36,11 @@ export function BlogCard({
       },
     })
   );
+
+  const handleDeleteBlog = async (e: MouseEvent) => {
+    e.stopPropagation();
+    await deleteBlog({ id: blog.id });
+  };
 
   return (
     <Link
@@ -82,7 +87,7 @@ export function BlogCard({
           {isAdmin && (
             <Button
               disabled={isDeletingBlog}
-              onClick={() => deleteBlog({ id: blog.id })}
+              onClick={handleDeleteBlog}
               size="sm"
               variant="destructive"
             >
