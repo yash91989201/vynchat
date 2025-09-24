@@ -55,6 +55,11 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
         src: "https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3840637479155499",
         crossOrigin: "anonymous",
       },
+      {
+        defer: true,
+        src: "https://umami.services.vynchat.com/script.js",
+        "data-website-id": "ffcaaaa3-d068-4ac4-b5f0-5e74a16152b9",
+      },
     ],
   }),
   beforeLoad: async () => {

@@ -6,7 +6,6 @@ import {
   MessageSquare,
   Package,
   PanelLeft,
-  Plus,
   Tag,
 } from "lucide-react";
 import {
@@ -81,12 +80,6 @@ export function SideNav() {
                 </Link>
               ))}
             </nav>
-          </div>
-          <div className="mt-auto p-4">
-            <Button className="w-full" size="sm">
-              <Plus className="mr-2 h-4 w-4" />
-              New Blog
-            </Button>
           </div>
         </div>
       </aside>
