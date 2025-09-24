@@ -79,7 +79,7 @@ export function BlogCard({
           )}
         </CardContent>
         <CardFooter className="flex flex-wrap items-center justify-between gap-3">
-          <div className="gap- items-center">
+          <div className="flex items-center gap-3">
             <Suspense fallback={<BlogTagsSkeleton />}>
               <BlogTags blogId={blog.id} />
             </Suspense>
