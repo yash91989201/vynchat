@@ -250,7 +250,15 @@ export const useMatchmaking = (userId: string) => {
         handleMatchTimeout,
         MATCH_TIMEOUT_MS
       );
-    }, [updatePresenceStatus, handleMatchTimeout]),
+
+      try {
+        await findStranger({ continent });
+      } catch (error) {
+        console.error("Failed to re-queue for matching:", error);
+        dispatch({ type: "RESET_TO_IDLE" });
+        toast.error("Failed to find a new match. Please try again.");
+      }
+    }, [findStranger, handleMatchTimeout, updatePresenceStatus]),
 
     dismissDialog: useCallback(() => {
       dispatch({ type: "SET_DIALOG", message: null });
