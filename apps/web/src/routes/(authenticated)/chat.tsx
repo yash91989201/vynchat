@@ -17,7 +17,6 @@ import { StrangerChat } from "@/components/chat/stranger-chat";
 //   AbsoluteLeftAd,
 //   AbsoluteRightAd,
 // } from "@/components/shared/google-ads";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WelcomeDialog } from "@/components/user/welcome-dialog";
 import { supabase } from "@/lib/supabase";
@@ -190,13 +189,15 @@ function RouteComponent() {
                 className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary"
                 value="following"
               >
-                <MessagesSquare className="mr-2" />
+                <span className="relative mr-2 inline-flex h-5 w-5 items-center justify-center">
+                  <MessagesSquare className="h-5 w-5" />
+                  {totalUnread > 0 && (
+                    <span className="-right-1 -top-1 absolute flex h-4 min-w-[1rem] items-center justify-center rounded-full bg-primary px-1 font-semibold text-[10px] text-primary-foreground leading-none">
+                      {totalUnread}
+                    </span>
+                  )}
+                </span>
                 <span>Following</span>
-                {totalUnread > 0 && (
-                  <Badge className="ml-2 h-5 min-w-[1.5rem] justify-center px-1 text-xs">
-                    {totalUnread}
-                  </Badge>
-                )}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="chat-rooms">
