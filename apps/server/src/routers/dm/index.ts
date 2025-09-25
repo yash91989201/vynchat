@@ -1,4 +1,4 @@
-import { alias, and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import { db } from "@/db";
 import { message, room, roomMember } from "@/db/schema";
@@ -141,7 +141,6 @@ export const dmRouter = {
         });
       }
 
-      const userMembership = alias(roomMember, "user_membership");
       const unreadRows = await db
         .select({
           roomId: message.roomId,
@@ -149,17 +148,17 @@ export const dmRouter = {
         })
         .from(message)
         .innerJoin(
-          userMembership,
+          roomMember,
           and(
-            eq(userMembership.roomId, message.roomId),
-            eq(userMembership.userId, sessionUser.id)
+            eq(roomMember.roomId, message.roomId),
+            eq(roomMember.userId, sessionUser.id)
           )
         )
         .where(
           and(
             inArray(message.roomId, roomIds),
             ne(message.senderId, sessionUser.id),
-            gt(message.createdAt, userMembership.lastReadAt)
+            gt(message.createdAt, roomMember.lastReadAt)
           )
         )
         .groupBy(message.roomId);
