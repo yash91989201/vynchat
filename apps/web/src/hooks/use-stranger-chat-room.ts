@@ -137,7 +137,7 @@ export const useChatRoom = (
   const { mutateAsync: leaveRoom } = useMutation(
     queryUtils.room.leave.mutationOptions({})
   );
-  const { mutateAsync: skipStranger } = useMutation(
+  const { mutateAsync: skipStrangerMutation } = useMutation(
     queryUtils.room.skipStranger.mutationOptions({})
   );
 
@@ -398,9 +398,14 @@ export const useChatRoom = (
     ),
 
     skipStranger: useCallback(
-      async (onSkip: (continent: string) => void, continent: string) => {
+      async (
+        onSkip: (continent: string) => void,
+        continent: string,
+        options?: { requeueOther?: boolean }
+      ) => {
+        const requeueOther = options?.requeueOther ?? true;
         try {
-          await skipStranger({ roomId, continent });
+          await skipStrangerMutation({ roomId, continent, requeueOther });
           toast.success("Finding new match", {
             description: "Looking for a new stranger to chat with...",
           });
@@ -417,7 +422,7 @@ export const useChatRoom = (
           return false;
         }
       },
-      [skipStranger, leaveRoom, roomId]
+      [skipStrangerMutation, leaveRoom, roomId]
     ),
 
     handleInputChange: useCallback(

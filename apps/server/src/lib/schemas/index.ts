@@ -401,6 +401,7 @@ export const FindStrangerOutput = z.object({
 export const SkipStrangerInput = z.object({
   roomId: z.string(),
   continent: z.string(),
+  requeueOther: z.boolean().optional().default(true),
 });
 
 export const SkipStrangerOutput = z.object({

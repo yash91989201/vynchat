@@ -21,7 +21,7 @@ export const roomChatRouter = {
     .input(JoinRoomInput)
     .output(JoinRoomOutput)
     .handler(async ({ context, input }) => {
-      const { roomId } = input;
+      const { roomId, requeueOther } = input;
       const userId = context.session.user.id;
 
       const roomToJoin = await context.db.query.room.findFirst({
@@ -92,7 +92,7 @@ export const roomChatRouter = {
     .output(SkipStrangerOutput)
     .handler(async ({ context, input }) => {
       const userId = context.session.user.id;
-      const { roomId } = input;
+      const { roomId, requeueOther } = input;
 
       // Get the other user in the room
       const roomMembers = await context.db.query.roomMember.findMany({
@@ -150,14 +150,16 @@ export const roomChatRouter = {
           // Don't throw here - the skip was successful even if notification failed
         }
 
-        // Add the other user back to the queue so they can be re-matched when they return
-        try {
-          await supabase.schema("pgmq_public").rpc("send", {
-            queue_name: "stranger-queue",
-            message: { userId: otherUser.userId, continent: "World" },
-          });
-        } catch (queueError) {
-          console.error("Failed to add other user to queue:", queueError);
+        if (requeueOther ?? true) {
+          // Add the other user back to the queue so they can be re-matched when they return
+          try {
+            await supabase.schema("pgmq_public").rpc("send", {
+              queue_name: "stranger-queue",
+              message: { userId: otherUser.userId, continent: "World" },
+            });
+          } catch (queueError) {
+            console.error("Failed to add other user to queue:", queueError);
+          }
         }
       }
 

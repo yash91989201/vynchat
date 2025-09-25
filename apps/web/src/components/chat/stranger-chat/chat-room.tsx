@@ -122,7 +122,9 @@ export const ChatRoom = ({
     toast.info("The stranger has left. Finding a new match...");
 
     const handleStrangerExit = async () => {
-      const didSkipRoom = await skipStrangerAction(onSkip, continent);
+      const didSkipRoom = await skipStrangerAction(onSkip, continent, {
+        requeueOther: false,
+      });
 
       if (!didSkipRoom) {
         onSkip(continent);
@@ -248,7 +250,9 @@ export const ChatRoom = ({
                 {strangerUser?.name || "Stranger"}
               </p>
               <Button
-                onClick={() => actions.skipStranger(onSkip, continent)}
+                onClick={() =>
+                  actions.skipStranger(onSkip, continent, { requeueOther: true })
+                }
                 size="sm"
                 type="button"
                 variant="secondary"
