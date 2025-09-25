@@ -187,7 +187,7 @@ Deno.serve(async () => {
 
     // 2. Subscribe to lobby presence
     let presenceState: Record<string, any> = {};
-    const lobbyChannel: RealtimeChannel = supabase.channel("lobby:global", {
+    const lobbyChannel: RealtimeChannel = supabase.channel("global:lobby", {
       config: { presence: { enabled: true } },
     });
 

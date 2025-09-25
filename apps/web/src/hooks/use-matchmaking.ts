@@ -80,16 +80,20 @@ export const useMatchmaking = (userId: string) => {
   const userChannelRef = useRef<RealtimeChannel | null>(null);
   const matchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const clearMatchTimeout = useCallback(() => {
+    if (matchTimeoutRef.current) {
+      clearTimeout(matchTimeoutRef.current);
+      matchTimeoutRef.current = null;
+    }
+  }, []);
+
   const { mutateAsync: findStranger } = useMutation(
     queryUtils.room.findStranger.mutationOptions({})
   );
 
   // Centralized cleanup function
   const cleanup = useCallback(() => {
-    if (matchTimeoutRef.current) {
-      clearTimeout(matchTimeoutRef.current);
-      matchTimeoutRef.current = null;
-    }
+    clearMatchTimeout();
 
     if (lobbyChannelRef.current) {
       supabase.removeChannel(lobbyChannelRef.current);
@@ -100,7 +104,7 @@ export const useMatchmaking = (userId: string) => {
       supabase.removeChannel(userChannelRef.current);
       userChannelRef.current = null;
     }
-  }, []);
+  }, [clearMatchTimeout]);
 
   // Update presence status helper
   const updatePresenceStatus = useCallback(
@@ -119,12 +123,13 @@ export const useMatchmaking = (userId: string) => {
 
   // Match timeout handler
   const handleMatchTimeout = useCallback(() => {
+    clearMatchTimeout();
     dispatch({ type: "MATCH_TIMEOUT" });
     updatePresenceStatus("idle");
     toast.info("No match found", {
       description: "No users found within 10 seconds. Try again later!",
     });
-  }, [updatePresenceStatus]);
+  }, [clearMatchTimeout, updatePresenceStatus]);
 
   // Setup lobby presence channel
   useEffect(() => {
@@ -157,43 +162,36 @@ export const useMatchmaking = (userId: string) => {
   // Use the existing useUserChannel hook for consistency
   const userChannelCallbacks = {
     onIdle: useCallback(() => {
+      clearMatchTimeout();
       dispatch({ type: "RESET_TO_IDLE" });
-    }, []),
+    }, [clearMatchTimeout]),
 
     onWaiting: useCallback(() => {
       dispatch({ type: "SET_STATUS", status: "waiting" });
     }, []),
 
     onMatched: useCallback(({ payload }: { payload: { room: RoomType } }) => {
-      if (matchTimeoutRef.current) {
-        clearTimeout(matchTimeoutRef.current);
-        matchTimeoutRef.current = null;
-      }
+      clearMatchTimeout();
       dispatch({ type: "MATCH_FOUND", room: payload.room });
-    }, []),
+    }, [clearMatchTimeout]),
 
     onSkipped: useCallback(() => {
+      clearMatchTimeout();
       dispatch({ type: "SET_STATUS", status: "waiting" });
       dispatch({ type: "SET_ROOM", room: null });
       updatePresenceStatus("waiting");
 
       // Set new timeout for finding next match
-      matchTimeoutRef.current = setTimeout(
-        handleMatchTimeout,
-        MATCH_TIMEOUT_MS
-      );
+      matchTimeoutRef.current = setTimeout(handleMatchTimeout, MATCH_TIMEOUT_MS);
 
       toast.info("Finding new match", {
         description: "The stranger skipped you. Looking for a new match...",
       });
-    }, [updatePresenceStatus, handleMatchTimeout]),
+    }, [clearMatchTimeout, updatePresenceStatus, handleMatchTimeout]),
 
     onNoMatches: useCallback(
       ({ payload }: { payload: { reason: string } }) => {
-        if (matchTimeoutRef.current) {
-          clearTimeout(matchTimeoutRef.current);
-          matchTimeoutRef.current = null;
-        }
+        clearMatchTimeout();
 
         dispatch({ type: "RESET_TO_IDLE" });
         updatePresenceStatus("idle");
@@ -202,7 +200,7 @@ export const useMatchmaking = (userId: string) => {
           description: payload.reason,
         });
       },
-      [updatePresenceStatus]
+      [clearMatchTimeout, updatePresenceStatus]
     ),
   };
 
@@ -214,13 +212,11 @@ export const useMatchmaking = (userId: string) => {
       dispatch({ type: "SET_PENDING", isPending: true });
 
       try {
+        clearMatchTimeout();
         await updatePresenceStatus("waiting");
 
         // Set match timeout
-        matchTimeoutRef.current = setTimeout(
-          handleMatchTimeout,
-          MATCH_TIMEOUT_MS
-        );
+        matchTimeoutRef.current = setTimeout(handleMatchTimeout, MATCH_TIMEOUT_MS);
 
         const result = await findStranger({ continent });
         if (result.status === "waiting") {
@@ -229,36 +225,37 @@ export const useMatchmaking = (userId: string) => {
       } catch (error) {
         console.error("Failed to start matching:", error);
         dispatch({ type: "RESET_TO_IDLE" });
+        clearMatchTimeout();
         toast.error("Failed to start matching. Please try again.");
       } finally {
         dispatch({ type: "SET_PENDING", isPending: false });
       }
-    }, [updatePresenceStatus, handleMatchTimeout, findStranger]),
+    }, [clearMatchTimeout, updatePresenceStatus, handleMatchTimeout, findStranger]),
 
     leaveRoom: useCallback(async () => {
+      clearMatchTimeout();
       dispatch({ type: "RESET_TO_IDLE" });
       await updatePresenceStatus("idle");
-    }, [updatePresenceStatus]),
+    }, [clearMatchTimeout, updatePresenceStatus]),
 
     skipStranger: useCallback(async (continent: string) => {
+      clearMatchTimeout();
       dispatch({ type: "SET_STATUS", status: "waiting" });
       dispatch({ type: "SET_ROOM", room: null });
       await updatePresenceStatus("waiting");
 
       // Set timeout for new match
-      matchTimeoutRef.current = setTimeout(
-        handleMatchTimeout,
-        MATCH_TIMEOUT_MS
-      );
+      matchTimeoutRef.current = setTimeout(handleMatchTimeout, MATCH_TIMEOUT_MS);
 
       try {
         await findStranger({ continent });
       } catch (error) {
         console.error("Failed to re-queue for matching:", error);
         dispatch({ type: "RESET_TO_IDLE" });
+        clearMatchTimeout();
         toast.error("Failed to find a new match. Please try again.");
       }
-    }, [findStranger, handleMatchTimeout, updatePresenceStatus]),
+    }, [clearMatchTimeout, findStranger, handleMatchTimeout, updatePresenceStatus]),
 
     dismissDialog: useCallback(() => {
       dispatch({ type: "SET_DIALOG", message: null });
