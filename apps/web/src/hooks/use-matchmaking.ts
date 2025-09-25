@@ -164,16 +164,19 @@ export const useMatchmaking = (userId: string) => {
     onIdle: useCallback(() => {
       clearMatchTimeout();
       dispatch({ type: "RESET_TO_IDLE" });
-    }, [clearMatchTimeout]),
+      void updatePresenceStatus("idle");
+    }, [clearMatchTimeout, updatePresenceStatus]),
 
     onWaiting: useCallback(() => {
       dispatch({ type: "SET_STATUS", status: "waiting" });
-    }, []),
+      void updatePresenceStatus("waiting");
+    }, [updatePresenceStatus]),
 
     onMatched: useCallback(({ payload }: { payload: { room: RoomType } }) => {
       clearMatchTimeout();
       dispatch({ type: "MATCH_FOUND", room: payload.room });
-    }, [clearMatchTimeout]),
+      void updatePresenceStatus("matched");
+    }, [clearMatchTimeout, updatePresenceStatus]),
 
     onSkipped: useCallback(() => {
       clearMatchTimeout();
