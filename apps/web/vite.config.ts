@@ -77,7 +77,6 @@ const manualChunks: Record<string, string[]> = {
     "@unpic/react",
     "@ctrl/react-adsense",
     "glin-profanity",
-    "tw-animate-css",
   ],
   auth: ["better-auth"],
 };
