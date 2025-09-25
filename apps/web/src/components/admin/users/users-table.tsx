@@ -7,7 +7,9 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { download, generateCsv, mkConfig } from "export-to-csv";
 import {
+  Download,
   FilterX,
   MoreHorizontal,
   Shield,
@@ -46,6 +48,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -58,6 +61,11 @@ import {
 import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 import { queryUtils } from "@/utils/orpc";
+
+const csvConfig = mkConfig({
+  useKeysAsHeaders: true,
+  filename: "Vynchat Users List",
+});
 
 export const UsersTable = ({
   limit = 10,
@@ -199,6 +207,17 @@ export const UsersTable = ({
     });
   };
 
+  const handleExport = () => {
+    const usersToExport = users.map((user) => ({
+      Id: user.id,
+      Name: user.name,
+      Email: user.email,
+      "Is Guest": user.isAnonymous === true,
+    }));
+    const csv = generateCsv(csvConfig)(usersToExport);
+    download(csvConfig)(csv);
+  };
+
   const columns: ColumnDef<UserType>[] = [
     {
       accessorKey: "name",
@@ -269,26 +288,37 @@ export const UsersTable = ({
 
   return (
     <section>
-      <div className="flex items-center gap-3">
-        <div className="flex flex-1 items-center gap-3">
-          <Input
-            className="max-w-sm border border-accent"
-            onChange={handleNameFilterChange}
-            placeholder="Filter by name..."
-            value={searchTerm}
-          />
-          <Select onValueChange={handleUserTypeFilterChange} value={userType}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue placeholder="User type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Users</SelectItem>
-              <SelectItem value="guest">Guest Only</SelectItem>
-              <SelectItem value="non-guest">Non-Guest Only</SelectItem>
-            </SelectContent>
-          </Select>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-1 sm:items-center">
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="name-filter" className="text-sm font-medium">
+              Filter by name
+            </Label>
+            <Input
+              id="name-filter"
+              className="max-w-full border border-accent sm:max-w-sm"
+              onChange={handleNameFilterChange}
+              placeholder="Enter name..."
+              value={searchTerm}
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="user-type-filter" className="text-sm font-medium">
+              User type
+            </Label>
+            <Select onValueChange={handleUserTypeFilterChange} value={userType}>
+              <SelectTrigger id="user-type-filter" className="w-full sm:w-[140px]">
+                <SelectValue placeholder="User type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Users</SelectItem>
+                <SelectItem value="guest">Guest Only</SelectItem>
+                <SelectItem value="non-guest">Non-Guest Only</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap gap-2 sm:flex-nowrap sm:items-center">
           <Button
             className="flex items-center gap-2"
             disabled={!(searchTerm || userType !== "all")}
@@ -297,6 +327,16 @@ export const UsersTable = ({
             variant="outline"
           >
             <FilterX className="size-4.5" />
+            <span className="hidden sm:inline">Clear</span>
+          </Button>
+          <Button
+            className="flex items-center gap-2"
+            onClick={handleExport}
+            size="sm"
+            variant="outline"
+          >
+            <Download className="size-4.5" />
+            <span className="hidden sm:inline">Export</span>
           </Button>
           <AlertDialog>
             <AlertDialogTrigger asChild>
@@ -310,6 +350,9 @@ export const UsersTable = ({
                 <Trash className="h-4 w-4 md:hidden" />
                 <span className="hidden md:inline">
                   {isDeletingAllGuests ? "Deleting..." : "Delete All Guests"}
+                </span>
+                <span className="md:hidden">
+                  {isDeletingAllGuests ? "Deleting..." : "Delete Guests"}
                 </span>
               </Button>
             </AlertDialogTrigger>

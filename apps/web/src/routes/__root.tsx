@@ -36,7 +36,70 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       {
         name: "description",
         content:
-          "VynChat is a modern chat application that lets you connect with people from around the world in real-time.",
+          "VynChat is a modern chat platform offering multiple chat modes - talk to strangers, join chat rooms, or message followers. Share rich media, connect globally, and build your network with real-time messaging.",
+      },
+      {
+        name: "keywords",
+        content: "chat app, messaging, real-time chat, stranger chat, chat rooms, social messaging, online chat, video chat, global chat",
+      },
+      {
+        name: "author",
+        content: "VynChat",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      {
+        name: "charset",
+        content: "UTF-8",
+      },
+      // Open Graph tags
+      {
+        property: "og:title",
+        content: "VynChat - Connect Beyond Limits",
+      },
+      {
+        property: "og:description",
+        content: "A modern chat platform with multiple modes: stranger chat, chat rooms, and follower messaging. Share media, connect globally, and chat in real-time.",
+      },
+      {
+        property: "og:type",
+        content: "website",
+      },
+      {
+        property: "og:image",
+        content: "/logo.webp",
+      },
+      {
+        property: "og:url",
+        content: "https://vynchat.com",
+      },
+      {
+        property: "og:site_name",
+        content: "VynChat",
+      },
+      // Twitter Card tags
+      {
+        name: "twitter:card",
+        content: "summary_large_image",
+      },
+      {
+        name: "twitter:title",
+        content: "VynChat - Connect Beyond Limits",
+      },
+      {
+        name: "twitter:description",
+        content: "Modern chat platform with stranger chat, chat rooms, and follower messaging. Connect globally in real-time.",
+      },
+      {
+        name: "twitter:image",
+        content: "/logo.webp",
+      },
+      // Additional SEO tags
+      {
+        name: "robots",
+        content: "index, follow",
       },
       {
         name: "google-adsence-account",
@@ -47,6 +110,14 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       {
         rel: "icon",
         href: "/favicon.ico",
+      },
+      {
+        rel: "apple-touch-icon",
+        href: "/logo.webp",
+      },
+      {
+        rel: "canonical",
+        href: "https://vynchat.com",
       },
     ],
     scripts: [
