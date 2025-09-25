@@ -40,7 +40,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         name: "keywords",
-        content: "chat app, messaging, real-time chat, stranger chat, chat rooms, social messaging, online chat, video chat, global chat",
+        content:
+          "chat app, messaging, real-time chat, stranger chat, chat rooms, social messaging, online chat, video chat, global chat",
       },
       {
         name: "author",
@@ -61,7 +62,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         property: "og:description",
-        content: "A modern chat platform with multiple modes: stranger chat, chat rooms, and follower messaging. Share media, connect globally, and chat in real-time.",
+        content:
+          "A modern chat platform with multiple modes: stranger chat, chat rooms, and follower messaging. Share media, connect globally, and chat in real-time.",
       },
       {
         property: "og:type",
@@ -90,7 +92,8 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
       },
       {
         name: "twitter:description",
-        content: "Modern chat platform with stranger chat, chat rooms, and follower messaging. Connect globally in real-time.",
+        content:
+          "Modern chat platform with stranger chat, chat rooms, and follower messaging. Connect globally in real-time.",
       },
       {
         name: "twitter:image",
