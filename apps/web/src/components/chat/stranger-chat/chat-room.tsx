@@ -83,6 +83,7 @@ export const ChatRoom = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const hasHandledStrangerExitRef = useRef(false);
 
   const { session } = useRouteContext({ from: "/(authenticated)" });
 
@@ -98,6 +99,8 @@ export const ChatRoom = ({
     strangerIsFollowingYou,
   } = useChatRoom(roomId, userId, session);
 
+  const { skipStranger: skipStrangerAction, setStrangerLeft } = actions;
+
   const strangerIsFollowingYouRef = useRef(strangerIsFollowingYou);
   strangerIsFollowingYouRef.current = strangerIsFollowingYou;
 
@@ -106,11 +109,30 @@ export const ChatRoom = ({
   }, [messages, isStrangerTyping]);
 
   useEffect(() => {
-    if (strangerLeft) {
-      toast.info("The stranger has left. Finding a new match...");
-      onSkip(continent);
+    if (!strangerLeft) {
+      hasHandledStrangerExitRef.current = false;
+      return;
     }
-  }, [strangerLeft, onSkip, continent]);
+
+    if (hasHandledStrangerExitRef.current) {
+      return;
+    }
+
+    hasHandledStrangerExitRef.current = true;
+    toast.info("The stranger has left. Finding a new match...");
+
+    const handleStrangerExit = async () => {
+      const didSkipRoom = await skipStrangerAction(onSkip, continent);
+
+      if (!didSkipRoom) {
+        onSkip(continent);
+      }
+
+      setStrangerLeft(false);
+    };
+
+    void handleStrangerExit();
+  }, [strangerLeft, skipStrangerAction, continent, onSkip, setStrangerLeft]);
 
   // Query to check if following the stranger
   const { data: isFollowing } = useQuery({

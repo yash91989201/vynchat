@@ -374,9 +374,11 @@ export const useChatRoom = (
             description: "Looking for a new stranger to chat with...",
           });
           onSkip(continent);
+          return true;
         } catch (error) {
           console.error("Error skipping stranger:", error);
           toast.error("Failed to skip stranger. Please try again.");
+          return false;
         }
       },
       [skipStranger, roomId]
