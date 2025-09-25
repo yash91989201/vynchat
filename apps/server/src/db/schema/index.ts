@@ -121,6 +121,9 @@ export const roomMember = pgTable(
     joinedAt: timestamp("joined_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
+    lastReadAt: timestamp("last_read_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
 
   (table) => [primaryKey({ columns: [table.roomId, table.userId] })]

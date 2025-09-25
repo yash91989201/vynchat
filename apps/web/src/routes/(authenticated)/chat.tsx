@@ -1,6 +1,12 @@
-import { createFileRoute, useRouter } from "@tanstack/react-router";
+import type { RealtimeChannel } from "@supabase/supabase-js";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  createFileRoute,
+  useRouteContext,
+  useRouter,
+} from "@tanstack/react-router";
 import { HatGlasses, MessagesSquare } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import z from "zod";
 import { ChatRoom } from "@/components/chat/chat-room";
 import type { Member } from "@/components/chat/chat-room/types";
@@ -11,8 +17,11 @@ import { StrangerChat } from "@/components/chat/stranger-chat";
 //   AbsoluteLeftAd,
 //   AbsoluteRightAd,
 // } from "@/components/shared/google-ads";
+import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WelcomeDialog } from "@/components/user/welcome-dialog";
+import { supabase } from "@/lib/supabase";
+import { queryUtils } from "@/utils/orpc";
 
 const RouteSearchSchema = z.object({
   tab: z
@@ -32,8 +41,109 @@ function RouteComponent() {
   const { tab } = Route.useSearch();
   const router = useRouter();
   const [selectedFollower, setSelectedFollower] = useState<Member | null>(null);
+  const { session } = useRouteContext({ from: "/(authenticated)" });
+  const queryClient = useQueryClient();
+  const notificationChannelsRef = useRef<Map<string, RealtimeChannel>>(
+    new Map()
+  );
+
+  const unreadSummaryQuery = queryUtils.dm.getUnreadSummary.queryOptions();
+  const { data: unreadSummary } = useQuery({
+    ...unreadSummaryQuery,
+    enabled: !!session?.user?.id,
+    refetchInterval: 5000,
+  });
+
+  // Keep DM room subscriptions updated for real-time badge updates
+  useEffect(() => {
+    const userId = session?.user?.id;
+    const channels = notificationChannelsRef.current;
+
+    if (!userId) {
+      for (const channel of channels.values()) {
+        supabase.removeChannel(channel);
+      }
+      channels.clear();
+      return;
+    }
+
+    const rooms = unreadSummary?.rooms ?? [];
+    const nextRoomIds = new Set(rooms.map((room) => room.roomId));
+
+    for (const [roomId, channel] of channels) {
+      if (!nextRoomIds.has(roomId)) {
+        supabase.removeChannel(channel);
+        channels.delete(roomId);
+      }
+    }
+
+    for (const room of rooms) {
+      if (channels.has(room.roomId)) continue;
+
+      const channel = supabase.channel(`room:${room.roomId}`, {
+        config: {
+          broadcast: { self: false },
+        },
+      });
+
+      channel
+        .on("broadcast", { event: "message" }, ({ payload }) => {
+          const senderId =
+            payload?.senderId ??
+            payload?.sender?.id ??
+            payload?.sender_id ??
+            null;
+
+          if (!senderId || senderId === userId) {
+            return;
+          }
+
+          queryClient.setQueryData(
+            queryUtils.dm.getUnreadSummary.queryKey(),
+            (current) => {
+              if (!current) return current;
+
+              let hasUpdatedRoom = false;
+              const updatedRooms = current.rooms.map((roomData) => {
+                if (roomData.roomId !== room.roomId) {
+                  return roomData;
+                }
+                hasUpdatedRoom = true;
+                return {
+                  ...roomData,
+                  unreadCount: roomData.unreadCount + 1,
+                };
+              });
+
+              if (!hasUpdatedRoom) {
+                return current;
+              }
+
+              return {
+                rooms: updatedRooms,
+                totalUnread: current.totalUnread + 1,
+              };
+            }
+          );
+        })
+        .subscribe();
+
+      channels.set(room.roomId, channel);
+    }
+  }, [unreadSummary?.rooms, session?.user?.id, queryClient]);
+
+  useEffect(() => {
+    return () => {
+      const channels = notificationChannelsRef.current;
+      for (const channel of channels.values()) {
+        supabase.removeChannel(channel);
+      }
+      channels.clear();
+    };
+  }, []);
 
   const defaultTab = tab ?? "stranger-chat";
+  const totalUnread = unreadSummary?.totalUnread ?? 0;
 
   const handleTabChange = (newTab: string) => {
     setSelectedFollower(null);
@@ -82,6 +192,11 @@ function RouteComponent() {
               >
                 <MessagesSquare className="mr-2" />
                 <span>Following</span>
+                {totalUnread > 0 && (
+                  <Badge className="ml-2 h-5 min-w-[1.5rem] justify-center px-1 text-xs">
+                    {totalUnread}
+                  </Badge>
+                )}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="chat-rooms">

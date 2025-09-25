@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import type { Member, Room } from "@/components/chat/chat-room/types";
 import { supabase } from "@/lib/supabase";
 import type { ChatMessage } from "@/lib/types";
-import { queryUtils } from "@/utils/orpc";
+import { queryClient, queryUtils } from "@/utils/orpc";
 
 export const useFollowerChat = (currentUser: Member, otherUser: Member) => {
   const [room, setRoom] = useState<Room | null>(null);
@@ -61,6 +61,49 @@ export const useFollowerChat = (currentUser: Member, otherUser: Member) => {
     })
   );
 
+  const { mutate: markMessagesAsRead } = useMutation(
+    queryUtils.dm.markAsRead.mutationOptions({
+      onSuccess: (_, variables) => {
+        queryClient.setQueryData(
+          queryUtils.dm.getUnreadSummary.queryKey(),
+          (current) => {
+            if (!current) return current;
+
+            let clearedCount = 0;
+            const rooms = current.rooms.map((roomData) => {
+              if (roomData.roomId !== variables.roomId) {
+                return roomData;
+              }
+
+              clearedCount = roomData.unreadCount;
+              if (roomData.unreadCount === 0) {
+                return roomData;
+              }
+
+              return {
+                ...roomData,
+                unreadCount: 0,
+              };
+            });
+
+            if (clearedCount === 0) {
+              return current;
+            }
+
+            return {
+              rooms,
+              totalUnread: Math.max(0, current.totalUnread - clearedCount),
+            };
+          }
+        );
+
+        queryClient.invalidateQueries({
+          queryKey: queryUtils.dm.getUnreadSummary.queryKey(),
+        });
+      },
+    })
+  );
+
   useEffect(() => {
     if (!room) return;
 
@@ -93,6 +136,11 @@ export const useFollowerChat = (currentUser: Member, otherUser: Member) => {
       channelRef.current = null;
     };
   }, [room, currentUser.id]);
+
+  useEffect(() => {
+    if (!room) return;
+    markMessagesAsRead({ roomId: room.id });
+  }, [room?.id, messages.length, markMessagesAsRead]);
 
   const handleSend = useCallback(async () => {
     if (!(input.trim() && room)) return;
