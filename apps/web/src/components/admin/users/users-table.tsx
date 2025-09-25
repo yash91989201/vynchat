@@ -41,6 +41,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -48,7 +49,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -289,25 +289,28 @@ export const UsersTable = ({
   return (
     <section>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-1 sm:items-center">
+        <div className="flex flex-col gap-3 sm:flex-1 sm:flex-row sm:items-center">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="name-filter" className="text-sm font-medium">
+            <Label className="font-medium text-sm" htmlFor="name-filter">
               Filter by name
             </Label>
             <Input
-              id="name-filter"
               className="max-w-full border border-accent sm:max-w-sm"
+              id="name-filter"
               onChange={handleNameFilterChange}
               placeholder="Enter name..."
               value={searchTerm}
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="user-type-filter" className="text-sm font-medium">
+            <Label className="font-medium text-sm" htmlFor="user-type-filter">
               User type
             </Label>
             <Select onValueChange={handleUserTypeFilterChange} value={userType}>
-              <SelectTrigger id="user-type-filter" className="w-full sm:w-[140px]">
+              <SelectTrigger
+                className="w-full sm:w-[140px]"
+                id="user-type-filter"
+              >
                 <SelectValue placeholder="User type" />
               </SelectTrigger>
               <SelectContent>
