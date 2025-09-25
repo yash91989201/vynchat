@@ -12,6 +12,7 @@ import {
   MoreHorizontal,
   Shield,
   ShieldOff,
+  Trash,
   Trash2,
   Users,
 } from "lucide-react";
@@ -305,8 +306,11 @@ export const UsersTable = ({
                 size="sm"
                 variant="destructive"
               >
-                <Users className="h-4 w-4" />
-                {isDeletingAllGuests ? "Deleting..." : "Delete All Guests"}
+                <Users className="hidden h-4 w-4 md:inline" />
+                <Trash className="h-4 w-4 md:hidden" />
+                <span className="hidden md:inline">
+                  {isDeletingAllGuests ? "Deleting..." : "Delete All Guests"}
+                </span>
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>

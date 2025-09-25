@@ -1,6 +1,7 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
   Book,
+  ChartNoAxesCombined,
   Home,
   LineChart,
   MessageSquare,
@@ -20,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 
 const navItems = [
   {
@@ -75,9 +77,10 @@ export function SideNav() {
             <nav className="grid items-start px-2 font-medium text-sm lg:px-4">
               {navItems.map(({ href, icon: Icon, label }) => (
                 <Link
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary ${
-                    pathname === href ? "bg-muted text-primary" : ""
-                  }`}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+                    pathname === href && "bg-muted text-primary"
+                  )}
                   key={href}
                   to={href}
                 >
@@ -85,6 +88,14 @@ export function SideNav() {
                   {label}
                 </Link>
               ))}
+              <hr className="my-1.5" />
+              <a
+                className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+                href="https://umami.services.vynchat.com"
+              >
+                <ChartNoAxesCombined className="h-4 w-4" />
+                Umami Analytics
+              </a>
             </nav>
           </div>
         </div>
@@ -125,6 +136,17 @@ export function AdminHeader() {
                 {label}
               </Link>
             ))}
+
+            <hr className="my-1.5" />
+            <a
+              className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary"
+              href="https://umami.services.vynchat.com"
+              rel="noopener noreferrer"
+              target="_blank"
+            >
+              <ChartNoAxesCombined className="h-4 w-4" />
+              Umami Analytics
+            </a>
           </nav>
         </SheetContent>
       </Sheet>
