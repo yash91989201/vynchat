@@ -93,6 +93,7 @@ export const useChatRoom = (
   const isTypingRef = useRef(false);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const strangerUserRef = useRef<StrangerUser | null>(null);
+  const strangerPresenceSeenRef = useRef(false);
 
   useEffect(() => {
     strangerUserRef.current = state.strangerUser;
@@ -193,6 +194,17 @@ export const useChatRoom = (
         }
         dispatch({ type: "SET_STRANGER_LEFT", left: true });
       })
+      .on("presence", { event: "join" }, ({ newPresences }) => {
+        const strangerId = strangerUserRef.current?.id;
+        if (!strangerId) {
+          return;
+        }
+
+        if (newPresences.some((presence) => presence.user_id === strangerId)) {
+          strangerPresenceSeenRef.current = true;
+          dispatch({ type: "SET_STRANGER_LEFT", left: false });
+        }
+      })
       .on("presence", { event: "leave" }, ({ leftPresences }) => {
         const strangerId = strangerUserRef.current?.id;
         if (!strangerId) return;
@@ -202,6 +214,24 @@ export const useChatRoom = (
         );
 
         if (strangerHasLeft) {
+          if (strangerPresenceSeenRef.current === false) {
+            strangerPresenceSeenRef.current = true;
+          }
+          dispatch({ type: "SET_STRANGER_LEFT", left: true });
+        }
+      })
+      .on("presence", { event: "sync" }, () => {
+        const strangerId = strangerUserRef.current?.id;
+        if (!strangerId || strangerPresenceSeenRef.current === false) {
+          return;
+        }
+
+        const presenceState = channel.presenceState<
+          Record<string, Array<{ user_id: string }>>
+        >();
+        const strangerEntries = presenceState[strangerId];
+
+        if (!strangerEntries || strangerEntries.length === 0) {
           dispatch({ type: "SET_STRANGER_LEFT", left: true });
         }
       })
@@ -267,6 +297,7 @@ export const useChatRoom = (
       channelRef.current = null;
       dispatch({ type: "SET_CHANNEL_READY", ready: false });
       clearTimeouts();
+      strangerPresenceSeenRef.current = false;
     };
   }, [roomId, userId, clearTimeouts, session.user.name]);
 
@@ -378,10 +409,15 @@ export const useChatRoom = (
         } catch (error) {
           console.error("Error skipping stranger:", error);
           toast.error("Failed to skip stranger. Please try again.");
+          try {
+            await leaveRoom({ roomId });
+          } catch (leaveError) {
+            console.error("Error leaving room after failed skip:", leaveError);
+          }
           return false;
         }
       },
-      [skipStranger, roomId]
+      [skipStranger, leaveRoom, roomId]
     ),
 
     handleInputChange: useCallback(
