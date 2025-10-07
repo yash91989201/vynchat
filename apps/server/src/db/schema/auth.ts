@@ -14,6 +14,9 @@ export const user = pgTable("user", {
   banReason: text("ban_reason"),
   banExpires: timestamp("ban_expires"),
   isAnonymous: boolean("is_anonymous"),
+  isBot: boolean("is_bot"),
+  botProfile: text("bot_profile"),
+  lastActive: timestamp("last_active"),
   createdAt: timestamp("created_at").notNull(),
   updatedAt: timestamp("updated_at").notNull(),
 });

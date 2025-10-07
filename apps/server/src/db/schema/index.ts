@@ -3,6 +3,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   index,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -240,6 +241,30 @@ export const bannedUser = pgTable(
   ]
 );
 
+export const botAnalytics = pgTable(
+  "bot_analytics",
+  {
+    id: cuid2("id").defaultRandom().primaryKey(),
+    botId: text("bot_id")
+      .notNull()
+      .references(() => user.id),
+    conversationId: cuid2("conversation_id")
+      .notNull()
+      .references(() => room.id),
+    messagesExchanged: integer("messages_exchanged").notNull(),
+    conversationDuration: integer("conversation_duration").notNull(),
+    humanSkipped: boolean("human_skipped").notNull(),
+    botSkipped: boolean("bot_skipped").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    index("bot_analytics_bot_idx").on(table.botId),
+    index("bot_analytics_created_at_idx").on(table.createdAt),
+  ]
+);
+
 export const blogRelations = relations(blog, ({ one, many }) => ({
   author: one(user, {
     fields: [blog.authorId],
@@ -328,5 +353,13 @@ export const bannedUserRelations = relations(bannedUser, ({ one }) => ({
     fields: [bannedUser.bannedBy],
     references: [user.id],
     relationName: "banned_by_user",
+  }),
+}));
+
+export const botAnalyticsRelations = relations(botAnalytics, ({ one }) => ({
+  bot: one(user, { fields: [botAnalytics.botId], references: [user.id] }),
+  conversation: one(room, {
+    fields: [botAnalytics.conversationId],
+    references: [room.id],
   }),
 }));
