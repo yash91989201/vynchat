@@ -10,4 +10,4 @@ RUN bun install
 COPY . .
 
 # Run the service
-CMD ["bun", "run", "src/index.ts"]
+CMD ["bun", "run", "src/bot-service/index.ts"]
