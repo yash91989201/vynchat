@@ -43,6 +43,13 @@
       "when": 1758782390613,
       "tag": "0005_bright_dm_reads",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1759814273945,
+      "tag": "0006_early_black_widow",
+      "breakpoints": true
     }
   ]
 }
