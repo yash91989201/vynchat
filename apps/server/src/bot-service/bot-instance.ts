@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { botAnalytics, message } from "@/db/schema";
 import { user } from "@/db/schema/auth";
-import { supabase } from "@/lib/supabase";
+import { botSupabase as supabase } from "./supabase-client";
 import type { MessageType, RoomType } from "@/lib/types";
 import type { BotProfile } from "./config";
 
@@ -39,8 +39,13 @@ export class BotInstance {
       this.shouldStop = false;
 
       await this.createBotUser();
+      
+      // Add delay before joining lobby to stagger bot connections
+      await this.delay(this.randomBetween(500, 1500));
+      
       await this.joinLobbyPresence();
       this.setupUserChannel();
+      
       await this.delay(this.randomBetween(2000, 4000));
       await this.joinMatchmakingQueue(continent);
 
@@ -92,26 +97,85 @@ export class BotInstance {
   }
 
   private async joinLobbyPresence(): Promise<void> {
-    this.lobbyChannel = supabase.channel("global:lobby", {
-      config: { presence: { key: this.botUserId } },
-    });
+    const maxRetries = 3;
+    let attempt = 0;
 
-    await new Promise<void>((resolve, reject) => {
-      this.lobbyChannel?.subscribe(async (status) => {
-        if (status === "SUBSCRIBED") {
-          await this.lobbyChannel?.track({
-            user_id: this.botUserId,
-            status: "idle",
+    while (attempt < maxRetries) {
+      try {
+        this.lobbyChannel = supabase.channel("global:lobby", {
+          config: { presence: { key: this.botUserId } },
+        });
+
+        await new Promise<void>((resolve, reject) => {
+          let isResolved = false;
+          let timeoutId: NodeJS.Timeout;
+
+          const cleanup = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+          };
+
+          this.lobbyChannel?.subscribe(async (status) => {
+            if (isResolved) return;
+
+            if (status === "SUBSCRIBED") {
+              isResolved = true;
+              cleanup();
+              try {
+                await this.lobbyChannel?.track({
+                  user_id: this.botUserId,
+                  status: "idle",
+                });
+                resolve();
+              } catch (error) {
+                reject(error);
+              }
+            } else if (status === "CHANNEL_ERROR") {
+              isResolved = true;
+              cleanup();
+              reject(new Error("Failed to join lobby - channel error"));
+            } else if (status === "TIMED_OUT") {
+              isResolved = true;
+              cleanup();
+              reject(new Error("Failed to join lobby - subscription timed out"));
+            }
           });
-          resolve();
-        } else if (status === "CHANNEL_ERROR") {
-          reject(new Error("Failed to join lobby"));
-        }
-      });
-      setTimeout(() => reject(new Error("Lobby join timeout")), 5000);
-    });
 
-    console.log(`📍 ${this.botName} joined lobby`);
+          // Increased timeout to 15 seconds to handle concurrent connections
+          timeoutId = setTimeout(() => {
+            if (!isResolved) {
+              isResolved = true;
+              reject(new Error("Lobby join timeout"));
+            }
+          }, 15000);
+        });
+
+        console.log(`📍 ${this.botName} joined lobby`);
+        return; // Success, exit the retry loop
+      } catch (error) {
+        attempt++;
+        console.warn(
+          `⚠️  ${this.botName} failed to join lobby (attempt ${attempt}/${maxRetries}):`,
+          error instanceof Error ? error.message : error
+        );
+
+        // Clean up failed channel
+        if (this.lobbyChannel) {
+          try {
+            await supabase.removeChannel(this.lobbyChannel);
+          } catch (cleanupError) {
+            // Ignore cleanup errors
+          }
+          this.lobbyChannel = null;
+        }
+
+        if (attempt >= maxRetries) {
+          throw error; // Re-throw on final attempt
+        }
+
+        // Wait before retrying with exponential backoff
+        await this.delay(1000 * Math.pow(2, attempt - 1));
+      }
+    }
   }
 
   private setupUserChannel(): void {
@@ -135,9 +199,13 @@ export class BotInstance {
           await this.handleSkipped();
         }
       })
-      .subscribe();
-
-    console.log(`📡 ${this.botName} listening for matches`);
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          console.log(`📡 ${this.botName} listening for matches`);
+        } else if (status === "CHANNEL_ERROR") {
+          console.error(`❌ ${this.botName} user channel error`);
+        }
+      });
   }
 
   private async joinMatchmakingQueue(continent: string): Promise<void> {

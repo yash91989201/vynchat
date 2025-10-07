@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { supabase } from "@/lib/supabase";
+import { botSupabase as supabase } from "./supabase-client";
 import { BotInstance } from "./bot-instance";
 import { BOT_PROFILES } from "./bot-profiles";
 import type { BotProfile, BotStats } from "./config";
@@ -111,7 +111,8 @@ export class BotManager {
       for (let i = 0; i < needed; i++) {
         try {
           await this.startBot(continent);
-          await this.delay(1000);
+          // Increased delay to reduce contention when starting multiple bots
+          await this.delay(2000);
         } catch (error) {
           console.error("Failed to start bot:", error);
         }
