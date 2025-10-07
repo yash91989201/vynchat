@@ -94,6 +94,18 @@ export const auth = betterAuth({
         type: "string",
         required: false,
       },
+      isBot: {
+        type: "boolean",
+        required: false,
+      },
+      botProfile: {
+        type: "string",
+        required: false,
+      },
+      lastActive: {
+        type: "date",
+        required: false,
+      },
     },
   },
   plugins: [
