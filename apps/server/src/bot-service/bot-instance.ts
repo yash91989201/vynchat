@@ -41,12 +41,12 @@ export class BotInstance {
       await this.createBotUser();
       
       // Add delay before joining lobby to stagger bot connections
-      await this.delay(this.randomBetween(500, 1500));
+      await this.delay(this.randomBetween(1000, 3000));
       
       await this.joinLobbyPresence();
       this.setupUserChannel();
       
-      await this.delay(this.randomBetween(2000, 4000));
+      await this.delay(this.randomBetween(3000, 5000));
       await this.joinMatchmakingQueue(continent);
 
       this.isActive = true;
@@ -102,8 +102,26 @@ export class BotInstance {
 
     while (attempt < maxRetries) {
       try {
+        // Clean up existing channel before creating new one
+        if (this.lobbyChannel) {
+          try {
+            await supabase.removeChannel(this.lobbyChannel);
+          } catch (cleanupError) {
+            // Ignore cleanup errors
+          }
+          this.lobbyChannel = null;
+        }
+
+        // Add delay to prevent rapid reconnections
+        if (attempt > 0) {
+          await this.delay(2000 * attempt);
+        }
+
         this.lobbyChannel = supabase.channel("global:lobby", {
-          config: { presence: { key: this.botUserId } },
+          config: { 
+            presence: { key: this.botUserId },
+            broadcast: { self: true },
+          },
         });
 
         await new Promise<void>((resolve, reject) => {
@@ -121,6 +139,8 @@ export class BotInstance {
               isResolved = true;
               cleanup();
               try {
+                // Add a small delay before tracking presence
+                await this.delay(500);
                 await this.lobbyChannel?.track({
                   user_id: this.botUserId,
                   status: "idle",
@@ -137,16 +157,20 @@ export class BotInstance {
               isResolved = true;
               cleanup();
               reject(new Error("Failed to join lobby - subscription timed out"));
+            } else if (status === "CLOSED") {
+              isResolved = true;
+              cleanup();
+              reject(new Error("Failed to join lobby - connection closed"));
             }
           });
 
-          // Increased timeout to 15 seconds to handle concurrent connections
+          // Increased timeout to handle network latency
           timeoutId = setTimeout(() => {
             if (!isResolved) {
               isResolved = true;
               reject(new Error("Lobby join timeout"));
             }
-          }, 15000);
+          }, 20000);
         });
 
         console.log(`📍 ${this.botName} joined lobby`);
@@ -172,8 +196,11 @@ export class BotInstance {
           throw error; // Re-throw on final attempt
         }
 
-        // Wait before retrying with exponential backoff
-        await this.delay(1000 * Math.pow(2, attempt - 1));
+        // Exponential backoff with jitter
+        const baseDelay = 2000;
+        const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
+        const jitter = Math.random() * 1000;
+        await this.delay(exponentialDelay + jitter);
       }
     }
   }

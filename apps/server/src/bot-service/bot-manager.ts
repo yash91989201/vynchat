@@ -20,6 +20,7 @@ export class BotManager {
     this.isRunning = true;
     console.log("🚀 Starting bot manager...");
 
+    // Start bots with staggered timing to prevent connection storms
     await this.maintainBotPool(targetBotCount, continent);
 
     this.maintenanceInterval = setInterval(
@@ -108,13 +109,15 @@ export class BotManager {
         `📈 Starting ${needed} new bots (${currentCount}/${targetCount})`
       );
 
+      // Start bots sequentially with delays to prevent connection storms
       for (let i = 0; i < needed; i++) {
         try {
           await this.startBot(continent);
           // Increased delay to reduce contention when starting multiple bots
-          await this.delay(2000);
+          await this.delay(3000 + Math.random() * 2000);
         } catch (error) {
           console.error("Failed to start bot:", error);
+          // Continue trying to start other bots even if one fails
         }
       }
     } else if (currentCount > targetCount) {
