@@ -20,22 +20,26 @@ for (const envVar of requiredEnvVars) {
 // Initialize bot manager
 const botManager = new BotManager();
 
-// Configuration
+// Configuration with safer defaults
 const config = {
-  targetBotCount: Number.parseInt(process.env.BOT_MIN_COUNT || "3", 10),
+  targetBotCount: Number.parseInt(process.env.BOT_MIN_COUNT || "2", 10),
   continent: "World",
+  maintenanceInterval: Number.parseInt(process.env.MAINTENANCE_INTERVAL_MS || "120000", 10), // 2 minutes
 };
+
+console.log("⚙️  Configuration:", config);
 
 // Start bot manager
 async function startService() {
   try {
+    console.log(`🚀 Starting bot manager with ${config.targetBotCount} bots...`);
     await botManager.start(config.targetBotCount, config.continent);
 
     // Log stats periodically
     setInterval(() => {
       const stats = botManager.getStats();
       console.log("📊 Bot Stats:", stats);
-    }, 30_000);
+    }, 60_000); // Every minute
   } catch (error) {
     console.error("❌ Failed to start bot service:", error);
     process.exit(1);
@@ -44,7 +48,7 @@ async function startService() {
 
 // Graceful shutdown
 async function shutdown(signal: string) {
-  console.log(`\n${signal} received. Shutting down gracefully...`);
+  console.log(`\n⚠️  ${signal} received. Shutting down gracefully...`);
 
   try {
     await botManager.stop();

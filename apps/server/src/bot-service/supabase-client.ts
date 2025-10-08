@@ -2,8 +2,8 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "@/env";
 
 /**
- * Simple Supabase client for bot service
- * Uses service role key for admin operations
+ * Optimized Supabase client for bot service
+ * Uses service role key with proper connection management
  */
 export const supabase = createClient(
   env.SUPABASE_URL,
@@ -15,8 +15,11 @@ export const supabase = createClient(
     },
     realtime: {
       params: {
-        eventsPerSecond: 5,
+        eventsPerSecond: 10,
       },
+      // Heartbeat configuration
+      heartbeatIntervalMs: 30000,
+      timeout: 10000,
     },
     global: {
       headers: {
@@ -34,3 +37,4 @@ supabase.realtime.setAuth(env.SUPABASE_SERVICE_ROLE_KEY);
 export const botClient = supabase;
 export const botAdmin = supabase;
 export const botRealtime = supabase;
+
