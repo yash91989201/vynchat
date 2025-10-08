@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { botSupabase as supabase } from "./supabase-client";
+import { botRealtime as supabase } from "./supabase-client";
 import { BotInstance } from "./bot-instance";
 import { BOT_PROFILES } from "./bot-profiles";
 import type { BotProfile, BotStats } from "./config";

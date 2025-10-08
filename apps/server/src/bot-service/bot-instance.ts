@@ -4,9 +4,9 @@ import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { botAnalytics, message } from "@/db/schema";
 import { user } from "@/db/schema/auth";
-import { botSupabase as supabase } from "./supabase-client";
 import type { MessageType, RoomType } from "@/lib/types";
 import type { BotProfile } from "./config";
+import { botAdmin, botRealtime as supabase } from "./supabase-client";
 
 const GreetingRegex = /\b(hi|hello|hey|howdy|sup)\b/;
 const InterestsRegex = /\b(hobby|hobbies|interests?|do for fun)\b/;
@@ -21,7 +21,7 @@ export class BotInstance {
   private messageCount = 0;
   private conversationStartTime: number | null = null;
 
-  private lobbyChannel: RealtimeChannel | null = null;
+  lobbyChannel: RealtimeChannel | null = null;
   private userChannel: RealtimeChannel | null = null;
   private roomChannel: RealtimeChannel | null = null;
 
@@ -39,13 +39,13 @@ export class BotInstance {
       this.shouldStop = false;
 
       await this.createBotUser();
-      
+
       // Add delay before joining lobby to stagger bot connections
       await this.delay(this.randomBetween(1000, 3000));
-      
+
       await this.joinLobbyPresence();
       this.setupUserChannel();
-      
+
       await this.delay(this.randomBetween(3000, 5000));
       await this.joinMatchmakingQueue(continent);
 
@@ -108,6 +108,7 @@ export class BotInstance {
             await supabase.removeChannel(this.lobbyChannel);
           } catch (cleanupError) {
             // Ignore cleanup errors
+            console.log(cleanupError);
           }
           this.lobbyChannel = null;
         }
@@ -118,7 +119,7 @@ export class BotInstance {
         }
 
         this.lobbyChannel = supabase.channel("global:lobby", {
-          config: { 
+          config: {
             presence: { key: this.botUserId },
             broadcast: { self: true },
           },
@@ -149,18 +150,14 @@ export class BotInstance {
               } catch (error) {
                 reject(error);
               }
-            } else if (status === "CHANNEL_ERROR") {
+            } else if (
+              status === "CHANNEL_ERROR" ||
+              status === "TIMED_OUT" ||
+              status === "CLOSED"
+            ) {
               isResolved = true;
               cleanup();
-              reject(new Error("Failed to join lobby - channel error"));
-            } else if (status === "TIMED_OUT") {
-              isResolved = true;
-              cleanup();
-              reject(new Error("Failed to join lobby - subscription timed out"));
-            } else if (status === "CLOSED") {
-              isResolved = true;
-              cleanup();
-              reject(new Error("Failed to join lobby - connection closed"));
+              reject(new Error(`Lobby presence failed: ${status}`));
             }
           });
 
@@ -170,15 +167,15 @@ export class BotInstance {
               isResolved = true;
               reject(new Error("Lobby join timeout"));
             }
-          }, 20000);
+          }, 10_000);
         });
 
-        console.log(`📍 ${this.botName} joined lobby`);
+        console.log(`📍 ${this.botName} joined lobby presence`);
         return; // Success, exit the retry loop
       } catch (error) {
         attempt++;
         console.warn(
-          `⚠️  ${this.botName} failed to join lobby (attempt ${attempt}/${maxRetries}):`,
+          `!  ${this.botName} failed to join lobby presence (attempt ${attempt}/${maxRetries}):`,
           error instanceof Error ? error.message : error
         );
 
@@ -187,18 +184,22 @@ export class BotInstance {
           try {
             await supabase.removeChannel(this.lobbyChannel);
           } catch (cleanupError) {
-            // Ignore cleanup errors
+            console.log(cleanupError);
           }
           this.lobbyChannel = null;
         }
 
         if (attempt >= maxRetries) {
-          throw error; // Re-throw on final attempt
+          // Gracefully degrade - continue without lobby presence
+          console.warn(
+            `!  ${this.botName} could not join lobby presence after ${maxRetries} attempts. Continuing without presence tracking.`
+          );
+          return; // Don't throw, just continue without lobby presence
         }
 
         // Exponential backoff with jitter
-        const baseDelay = 2000;
-        const exponentialDelay = baseDelay * Math.pow(2, attempt - 1);
+        const baseDelay = 1000;
+        const exponentialDelay = baseDelay * 2 ** (attempt - 1);
         const jitter = Math.random() * 1000;
         await this.delay(exponentialDelay + jitter);
       }
@@ -245,7 +246,8 @@ export class BotInstance {
       });
     }
 
-    await supabase.schema("pgmq_public").rpc("send", {
+    // Use admin client for queue RPC
+    await botAdmin.schema("pgmq_public").rpc("send", {
       queue_name: "stranger-queue",
       message: { userId: this.botUserId, continent },
     });

@@ -2,10 +2,11 @@ import { createClient } from "@supabase/supabase-js";
 import { env } from "@/env";
 
 /**
- * Dedicated Supabase client for bot service using service role key
- * This allows bots to bypass RLS and have unlimited realtime connections
+ * Supabase client for bot service
+ * Uses service role key to bypass RLS and auth requirements
+ * Note: This app uses Better Auth, not Supabase Auth
  */
-export const botSupabase = createClient(
+export const botClient = createClient(
   env.SUPABASE_URL,
   env.SUPABASE_SERVICE_ROLE_KEY,
   {
@@ -15,8 +16,12 @@ export const botSupabase = createClient(
     },
     realtime: {
       params: {
-        eventsPerSecond: 100, // Increase event throughput
+        eventsPerSecond: 100,
       },
     },
   }
 );
+
+// Export as both names for backwards compatibility
+export const botAdmin = botClient;
+export const botRealtime = botClient;
