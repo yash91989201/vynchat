@@ -1,12 +1,12 @@
 import { db } from "@/db";
-import { BotInstance } from "./bot-instance";
+import { BotInstanceSimple } from "./bot-instance-simple";
 import { BOT_PROFILES } from "./bot-profiles";
 import type { BotProfile, BotStats } from "./config";
 import { user } from "@/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 export class BotManager {
-  activeBots = new Map<string, BotInstance>();
+  activeBots = new Map<string, BotInstanceSimple>();
   private isRunning = false;
   private maintenanceInterval: Timer | null = null;
 
@@ -121,7 +121,7 @@ export class BotManager {
 
   private async startBot(continent: string): Promise<void> {
     const profile = this.selectRandomProfile();
-    const bot = new BotInstance(profile);
+    const bot = new BotInstanceSimple(profile);
 
     await bot.start(continent);
 
@@ -133,7 +133,7 @@ export class BotManager {
   }
 
   private async stopExcessBots(count: number): Promise<void> {
-    const botsToStop: BotInstance[] = [];
+    const botsToStop: BotInstanceSimple[] = [];
 
     for (const bot of this.activeBots.values()) {
       if (!bot.isInConversation()) {
