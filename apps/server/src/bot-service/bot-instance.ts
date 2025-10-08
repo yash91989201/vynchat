@@ -227,7 +227,9 @@ export class BotInstance {
           await this.handleSkipped();
         }
       })
-      .subscribe((status) => {
+      .subscribe((status, err) => {
+        console.log(status);
+        console.log(err);
         if (status === "SUBSCRIBED") {
           console.log(`📡 ${this.botName} listening for matches`);
         } else if (status === "CHANNEL_ERROR") {
