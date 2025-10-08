@@ -53,13 +53,35 @@ const hasRecentlySkipped = async (
 
 /**
  * Check if a user is currently in waiting status based on presence state
+ * For bots, we check the database instead of presence
  */
-const isWaiting = (
+const isWaiting = async (
   presenceState: Record<string, any>,
   userId: string
-): boolean => {
+): Promise<boolean> => {
+  // First check presence for human users
   const pres = presenceState[userId] as any[] | undefined;
-  return pres?.some((p) => p.status === "waiting") ?? false;
+  const hasPresence = pres?.some((p) => p.status === "waiting") ?? false;
+
+  if (hasPresence) return true;
+
+  // If no presence, check if user is a bot by querying database
+  const { data: userData, error } = await supabase
+    .from("user")
+    .select("isBot, lastActive")
+    .eq("id", userId)
+    .single();
+
+  if (error || !userData) return false;
+
+  // For bots, consider them waiting if they're in the queue and recently active (within 5 minutes)
+  if (userData.isBot) {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const lastActive = new Date(userData.lastActive);
+    return lastActive > fiveMinutesAgo;
+  }
+
+  return false;
 };
 
 /**
@@ -266,7 +288,7 @@ Deno.serve(async () => {
       const userId = unprocessedUser.message.userId as string;
 
       // Check if the user is still actually waiting according to presence
-      if (isWaiting(presenceState, userId)) {
+      if (await isWaiting(presenceState, userId)) {
         // User is still waiting, leave them in the queue for the next run.
         // Their message will become visible again after the visibility timeout.
         stillWaitingUserIds.push(userId);
@@ -347,12 +369,14 @@ async function processUserGroup(
       // Skip if same user
       if (user1 === user2) continue;
 
-      // Check presence
-      if (
-        Object.keys(presenceState).length > 0 &&
-        !(isWaiting(presenceState, user1) && isWaiting(presenceState, user2))
-      ) {
-        continue;
+      // Check presence - with async support for bot checking
+      if (Object.keys(presenceState).length > 0) {
+        const user1Waiting = await isWaiting(presenceState, user1);
+        const user2Waiting = await isWaiting(presenceState, user2);
+
+        if (!(user1Waiting && user2Waiting)) {
+          continue;
+        }
       }
 
       // Check for recent skips

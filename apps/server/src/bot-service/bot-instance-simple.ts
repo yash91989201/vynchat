@@ -43,10 +43,13 @@ export class BotInstanceSimple {
       // Delay before joining
       await this.delay(this.randomBetween(2000, 4000));
 
-      // Join lobby presence for online count
-      await this.joinLobbyPresence();
+      // Try to join lobby presence (for online count), but don't fail if it doesn't work
+      // Bots can still match via database checks in the matchmaker
+      this.joinLobbyPresence().catch(error => {
+        console.warn(`⚠️ ${this.botName} skipping lobby presence:`, error.message);
+      });
 
-      // Join matchmaking queue
+      // Join matchmaking queue - this is critical
       await this.joinMatchmakingQueue(continent);
 
       // Start polling for matches
@@ -82,8 +85,8 @@ export class BotInstanceSimple {
   }
 
   private async joinLobbyPresence(): Promise<void> {
+    // Increased timeout and better error handling
     try {
-      // Join shared lobby presence channel
       this.lobbyPresenceChannel = supabase.channel("global:lobby", {
         config: {
           presence: { key: this.botUserId },
@@ -91,11 +94,19 @@ export class BotInstanceSimple {
       });
 
       await new Promise<void>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error("Lobby presence timeout")), 5000);
+        const timeout = setTimeout(() => reject(new Error("Lobby presence timeout")), 8000);
+        let resolved = false;
+
+        const cleanup = () => {
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+          }
+        };
 
         this.lobbyPresenceChannel!.subscribe(async (status) => {
           if (status === "SUBSCRIBED") {
-            clearTimeout(timeout);
+            cleanup();
             // Track presence as idle
             try {
               await this.lobbyPresenceChannel!.track({
@@ -107,15 +118,14 @@ export class BotInstanceSimple {
               console.warn(`${this.botName} presence tracking failed:`, trackError);
             }
             resolve();
-          } else if (status === "CHANNEL_ERROR") {
-            clearTimeout(timeout);
-            reject(new Error("Lobby presence channel error"));
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+            cleanup();
+            reject(new Error(`Lobby presence channel error: ${status}`));
           }
         });
       });
     } catch (error) {
-      console.warn(`⚠️ ${this.botName} lobby presence failed, continuing without it:`, error);
-      // Don't throw - lobby presence is not critical
+      // Clean up failed channel
       if (this.lobbyPresenceChannel) {
         try {
           await supabase.removeChannel(this.lobbyPresenceChannel);
@@ -124,6 +134,7 @@ export class BotInstanceSimple {
         }
         this.lobbyPresenceChannel = null;
       }
+      throw error;
     }
   }
 
