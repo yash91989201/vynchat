@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { botRealtime as supabase } from "./supabase-client";
+import { connectionPool } from "./supabase-client";
 import { BotInstance } from "./bot-instance";
 import { BOT_PROFILES } from "./bot-profiles";
 import type { BotProfile, BotStats } from "./config";
@@ -62,18 +62,47 @@ export class BotManager {
 
   private async calculateTargetBotCount(): Promise<number> {
     try {
-      const lobbyChannel = supabase.channel("global:lobby");
-
-      await new Promise<void>((resolve) => {
-        lobbyChannel.subscribe((status) => {
-          if (status === "SUBSCRIBED") resolve();
-        });
-        setTimeout(() => resolve(), 3000);
+      // Use connection pool for presence check
+      const client = connectionPool.getClient('bot-manager');
+      const lobbyChannel = client.channel("global:lobby-presence-check", {
+        config: { presence: { enabled: true } },
       });
 
-      // const presenceState = lobbyChannel.presenceState();
-      // const totalUsers = Object.keys(presenceState).length;
-      await supabase.removeChannel(lobbyChannel);
+      try {
+        await new Promise<void>((resolve, reject) => {
+          let timeoutId: number;
+          
+          const cleanup = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+          };
+          
+          lobbyChannel.subscribe((status, err) => {
+            if (status === "SUBSCRIBED") {
+              cleanup();
+              resolve();
+            } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+              cleanup();
+              reject(new Error(`Presence check failed: ${status}`));
+            }
+          });
+          
+          timeoutId = setTimeout(() => {
+            cleanup();
+            resolve(); // Don't fail, just continue without presence
+          }, 5000);
+        });
+        
+        // const presenceState = lobbyChannel.presenceState();
+        // const totalUsers = Object.keys(presenceState).length;
+      } catch (presenceError) {
+        console.warn("⚠️ Presence check failed, proceeding without it:", presenceError instanceof Error ? presenceError.message : presenceError);
+      } finally {
+        try {
+          await client.removeChannel(lobbyChannel);
+        } catch (cleanupError) {
+          // Ignore cleanup errors
+        }
+      }
 
       const humanUsers = await db.query.user.findMany({
         where: eq(user.isBot, false),
@@ -109,15 +138,18 @@ export class BotManager {
         `📈 Starting ${needed} new bots (${currentCount}/${targetCount})`
       );
 
-      // Start bots sequentially with delays to prevent connection storms
+      // Start bots sequentially with longer delays to prevent connection storms
       for (let i = 0; i < needed; i++) {
         try {
           await this.startBot(continent);
-          // Increased delay to reduce contention when starting multiple bots
-          await this.delay(3000 + Math.random() * 2000);
+          // Significantly increased delay with jitter to reduce connection contention
+          const delay = 5000 + Math.random() * 3000; // 5-8 seconds
+          console.log(`⏳ Waiting ${Math.round(delay)}ms before next bot...`);
+          await this.delay(delay);
         } catch (error) {
           console.error("Failed to start bot:", error);
-          // Continue trying to start other bots even if one fails
+          // Add extra delay after a failure
+          await this.delay(3000);
         }
       }
     } else if (currentCount > targetCount) {
@@ -212,6 +244,10 @@ export class BotManager {
         waiting++;
       }
     }
+
+    // Log connection pool stats
+    const poolStats = connectionPool.getStats();
+    console.log(`📊 Connection pool stats:`, poolStats);
 
     return {
       totalBots: this.activeBots.size,

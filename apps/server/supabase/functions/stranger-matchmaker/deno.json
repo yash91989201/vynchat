@@ -5,7 +5,7 @@
     "@paralleldrive/cuid2": "npm:@paralleldrive/cuid2@2.2.2"
   },
   "compilerOptions": {
-    "lib": ["deno.window"],
+    "lib": ["deno.window", "deno.ns"],
     "strict": true
   }
 }
