@@ -1,4 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
+import type { RealtimeChannel } from "@supabase/supabase-js";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { botAnalytics, message } from "@/db/schema";
@@ -6,7 +7,6 @@ import { user } from "@/db/schema/auth";
 import type { MessageType, RoomType } from "@/lib/types";
 import type { BotProfile } from "./config";
 import { botAdmin, connectionPool } from "./supabase-client";
-import { createClient, type RealtimeChannel } from "@supabase/supabase-js";
 
 const GreetingRegex = /\b(hi|hello|hey|howdy|sup)\b/;
 const InterestsRegex = /\b(hobby|hobbies|interests?|do for fun)\b/;
@@ -22,9 +22,9 @@ export class BotInstance {
   private conversationStartTime: number | null = null;
 
   lobbyChannel: RealtimeChannel | null = null;
-  private userChannel: RealtimeChannel | null = null;
+  userChannel: RealtimeChannel | null = null;
   private roomChannel: RealtimeChannel | null = null;
-  private clientId = `bot-${this.botName.toLowerCase()}-${Date.now()}`;
+  clientId: string;
 
   isActive = false;
   private shouldStop = false;
@@ -32,6 +32,7 @@ export class BotInstance {
   constructor(profile: BotProfile) {
     this.profile = profile;
     this.botName = profile.name;
+    this.clientId = `bot-${this.botName.toLowerCase()}-${Date.now()}`;
   }
 
   async start(continent: string): Promise<void> {
@@ -88,16 +89,19 @@ export class BotInstance {
         // Clean up existing channel before creating new one
         if (this.lobbyChannel) {
           try {
-            await connectionPool.removeChannel(this.clientId, this.lobbyChannel);
+            await connectionPool.removeChannel(
+              this.clientId,
+              this.lobbyChannel
+            );
           } catch (cleanupError) {
-            console.error('Cleanup error:', cleanupError);
+            console.error("Cleanup error:", cleanupError);
           }
           this.lobbyChannel = null;
         }
 
         // Add delay to prevent rapid reconnections
         if (attempt > 0) {
-          await this.delay(Math.min(3000 * attempt, 10000)); // Cap at 10s
+          await this.delay(Math.min(3000 * attempt, 10_000)); // Cap at 10s
         }
 
         // Use connection pool for channel creation
@@ -110,18 +114,21 @@ export class BotInstance {
               broadcast: { self: true },
             },
           },
-          { maxRetries: 3, baseDelay: 2000, maxDelay: 10000 }
+          { maxRetries: 3, baseDelay: 2000, maxDelay: 10_000 }
         );
 
         // Track presence with retry
         try {
           await this.delay(500); // Small delay before tracking
-          await this.lobbyChannel.track({
+          await this.lobbyChannel?.track({
             user_id: this.botUserId,
             status: "idle",
           });
         } catch (trackError) {
-          console.warn(`⚠️ Presence tracking failed for ${this.botName}:`, trackError);
+          console.warn(
+            `! Presence tracking failed for ${this.botName}:`,
+            trackError
+          );
           // Continue anyway - channel is subscribed
         }
 
@@ -129,7 +136,8 @@ export class BotInstance {
         return; // Success, exit the retry loop
       } catch (error) {
         attempt++;
-        const errorMessage = error instanceof Error ? error.message : String(error);
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.warn(
           `!  ${this.botName} failed to join lobby presence (attempt ${attempt}/${maxRetries}):`,
           errorMessage
@@ -138,9 +146,12 @@ export class BotInstance {
         // Clean up failed channel
         if (this.lobbyChannel) {
           try {
-            await connectionPool.removeChannel(this.clientId, this.lobbyChannel);
+            await connectionPool.removeChannel(
+              this.clientId,
+              this.lobbyChannel
+            );
           } catch (cleanupError) {
-            console.error('Cleanup error:', cleanupError);
+            console.error("Cleanup error:", cleanupError);
           }
           this.lobbyChannel = null;
         }
@@ -155,7 +166,10 @@ export class BotInstance {
 
         // Exponential backoff with jitter
         const baseDelay = 2000;
-        const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt - 1), 15000);
+        const exponentialDelay = Math.min(
+          baseDelay * 2 ** (attempt - 1),
+          15_000
+        );
         const jitter = Math.random() * 1000;
         await this.delay(exponentialDelay + jitter);
       }
@@ -169,7 +183,7 @@ export class BotInstance {
         try {
           await connectionPool.removeChannel(this.clientId, this.userChannel);
         } catch (cleanupError) {
-          console.error('User channel cleanup error:', cleanupError);
+          console.error("User channel cleanup error:", cleanupError);
         }
         this.userChannel = null;
       }
@@ -187,12 +201,18 @@ export class BotInstance {
       );
 
       this.userChannel
-        .on("broadcast", { event: "stranger_matched" }, async ({ payload }) => {
-          if (!this.shouldStop) {
-            console.log(`🎯 ${this.botName} matched! Room: ${payload.room.id}`);
-            await this.handleMatch(payload.room);
+        ?.on(
+          "broadcast",
+          { event: "stranger_matched" },
+          async ({ payload }) => {
+            if (!this.shouldStop) {
+              console.log(
+                `🎯 ${this.botName} matched! Room: ${payload.room.id}`
+              );
+              await this.handleMatch(payload.room);
+            }
           }
-        })
+        )
         .on("broadcast", { event: "stranger_skipped" }, async () => {
           if (!this.shouldStop) {
             console.log(`⏭ ${this.botName} was skipped`);
@@ -209,7 +229,10 @@ export class BotInstance {
           }
         });
     } catch (error) {
-      console.error(`❌ Failed to setup user channel for ${this.botName}:`, error);
+      console.error(
+        `❌ Failed to setup user channel for ${this.botName}:`,
+        error
+      );
       // Don't throw - continue without user channel (will affect functionality but not crash)
     }
   }
@@ -272,7 +295,7 @@ export class BotInstance {
     });
 
     this.roomChannel
-      .on("broadcast", { event: "message" }, async ({ payload }) => {
+      ?.on("broadcast", { event: "message" }, async ({ payload }) => {
         if (payload.senderId !== this.botUserId && !this.shouldStop) {
           await this.handleIncomingMessage(payload);
         }
@@ -291,7 +314,10 @@ export class BotInstance {
             });
             console.log(`💬 ${this.botName} joined room ${this.currentRoomId}`);
           } catch (trackError) {
-            console.warn(`⚠️ Room presence tracking failed for ${this.botName}:`, trackError);
+            console.warn(
+              `! Room presence tracking failed for ${this.botName}:`,
+              trackError
+            );
           }
         } else if (status === "CHANNEL_ERROR") {
           console.error(`❌ ${this.botName} room channel error`);
@@ -468,7 +494,7 @@ export class BotInstance {
       try {
         await connectionPool.removeChannel(this.clientId, this.roomChannel);
       } catch (error) {
-        console.error('Room channel cleanup error:', error);
+        console.error("Room channel cleanup error:", error);
       }
       this.roomChannel = null;
     }
@@ -480,7 +506,7 @@ export class BotInstance {
           status: "idle",
         });
       } catch (error) {
-        console.warn('Lobby presence update error:', error);
+        console.warn("Lobby presence update error:", error);
       }
     }
 
@@ -518,7 +544,7 @@ export class BotInstance {
 
   private async cleanup(): Promise<void> {
     const channels = [this.roomChannel, this.userChannel, this.lobbyChannel];
-    
+
     for (const channel of channels) {
       if (channel) {
         try {
