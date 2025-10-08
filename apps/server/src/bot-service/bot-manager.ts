@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { connectionPool } from "./supabase-client";
+import { botSupabaseClient } from "./supabase-client";
 import { BotInstance } from "./bot-instance";
 import { BOT_PROFILES } from "./bot-profiles";
 import type { BotProfile, BotStats } from "./config";
@@ -62,48 +62,8 @@ export class BotManager {
 
   private async calculateTargetBotCount(): Promise<number> {
     try {
-      // Use connection pool for presence check
-      const client = connectionPool.getClient('bot-manager');
-      const lobbyChannel = client.channel("global:lobby-presence-check", {
-        config: { presence: { enabled: true } },
-      });
-
-      try {
-        await new Promise<void>((resolve, reject) => {
-          let timeoutId: number;
-          
-          const cleanup = () => {
-            if (timeoutId) clearTimeout(timeoutId);
-          };
-          
-          lobbyChannel.subscribe((status, err) => {
-            if (status === "SUBSCRIBED") {
-              cleanup();
-              resolve();
-            } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-              cleanup();
-              reject(new Error(`Presence check failed: ${status}`));
-            }
-          });
-          
-          timeoutId = setTimeout(() => {
-            cleanup();
-            resolve(); // Don't fail, just continue without presence
-          }, 5000);
-        });
-        
-        // const presenceState = lobbyChannel.presenceState();
-        // const totalUsers = Object.keys(presenceState).length;
-      } catch (presenceError) {
-        console.warn("⚠️ Presence check failed, proceeding without it:", presenceError instanceof Error ? presenceError.message : presenceError);
-      } finally {
-        try {
-          await client.removeChannel(lobbyChannel);
-        } catch (cleanupError) {
-          // Ignore cleanup errors
-        }
-      }
-
+      // Simplified: just count human users without presence check
+      // This avoids connection overhead and potential failures
       const humanUsers = await db.query.user.findMany({
         where: eq(user.isBot, false),
       });
@@ -111,9 +71,9 @@ export class BotManager {
       const humanCount = humanUsers.length;
 
       const minBots = Number.parseInt(process.env.BOT_MIN_COUNT || "3", 10);
-      const maxBots = Number.parseInt(process.env.BOT_MAX_COUNT || "15", 10);
+      const maxBots = Number.parseInt(process.env.BOT_MAX_COUNT || "10", 10); // Reduced max
       const targetPercentage = Number.parseInt(
-        process.env.BOT_TARGET_PERCENTAGE || "30",
+        process.env.BOT_TARGET_PERCENTAGE || "20", // Reduced percentage
         10
       );
 
@@ -245,9 +205,8 @@ export class BotManager {
       }
     }
 
-    // Log connection pool stats
-    const poolStats = connectionPool.getStats();
-    console.log(`📊 Connection pool stats:`, poolStats);
+    // Log simple connection stats
+    console.log(`📊 Active bots: ${this.activeBots.size}`);
 
     return {
       totalBots: this.activeBots.size,
