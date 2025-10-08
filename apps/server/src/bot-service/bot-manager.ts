@@ -1,18 +1,18 @@
 import { db } from "@/db";
-import { BotInstanceSimple } from "./bot-instance-simple";
+import { BotUser } from "./bot-user";
 import { BOT_PROFILES } from "./bot-profiles";
 import type { BotProfile, BotStats } from "./config";
 import { user } from "@/db/schema/auth";
 import { eq } from "drizzle-orm";
 
 export class BotManager {
-  activeBots = new Map<string, BotInstanceSimple>();
+  activeBots = new Map<string, BotUser>();
   private isRunning = false;
   private maintenanceInterval: Timer | null = null;
 
   async start(targetBotCount: number, continent = "World"): Promise<void> {
     if (this.isRunning) {
-      console.log("! Bot manager already running");
+      console.log("⚠️  Bot manager already running");
       return;
     }
 
@@ -24,14 +24,14 @@ export class BotManager {
     this.maintenanceInterval = setInterval(
       async () => {
         try {
-          const newTarget = this.calculateTargetBotCount();
-          await this.maintainBotPool(await newTarget, continent);
+          const newTarget = await this.calculateTargetBotCount();
+          await this.maintainBotPool(newTarget, continent);
           this.cleanupInactiveBots();
         } catch (error) {
           console.error("❌ Bot maintenance error:", error);
         }
       },
-      Number.parseInt(process.env.MAINTENANCE_INTERVAL_MS || "60000", 10)
+      Number.parseInt(process.env.MAINTENANCE_INTERVAL_MS || "120000", 10)
     );
 
     console.log("✅ Bot manager started");
@@ -94,20 +94,21 @@ export class BotManager {
         `📈 Starting ${needed} new bots (${currentCount}/${targetCount})`
       );
 
-      // Start bots sequentially with delays to prevent connection storms
+      // Start bots with BIG delays to prevent connection storms
       for (let i = 0; i < needed; i++) {
         try {
           await this.startBot(continent);
-          // Longer delay to prevent lobby presence channel storms
-          const delay = 7000 + Math.random() * 3000; // 7-10 seconds
-          if (i < needed - 1) { // Don't wait after the last bot
-            console.log(`⏳ Waiting ${Math.round(delay)}ms before next bot...`);
+          
+          // HUGE delay between bots to prevent overwhelming Realtime
+          if (i < needed - 1) {
+            const delay = 15000 + Math.random() * 5000; // 15-20 seconds
+            console.log(`⏳ Waiting ${Math.round(delay / 1000)}s before next bot...`);
             await this.delay(delay);
           }
         } catch (error) {
           console.error(`Failed to start bot ${i + 1}/${needed}:`, error);
-          // Add extra delay after a failure
-          await this.delay(5000);
+          // Extra delay after failure
+          await this.delay(10000);
         }
       }
     } else if (currentCount > targetCount) {
@@ -123,7 +124,7 @@ export class BotManager {
 
   private async startBot(continent: string): Promise<void> {
     const profile = this.selectRandomProfile();
-    const bot = new BotInstanceSimple(profile);
+    const bot = new BotUser(profile);
 
     await bot.start(continent);
 
@@ -135,7 +136,7 @@ export class BotManager {
   }
 
   private async stopExcessBots(count: number): Promise<void> {
-    const botsToStop: BotInstanceSimple[] = [];
+    const botsToStop: BotUser[] = [];
 
     for (const bot of this.activeBots.values()) {
       if (!bot.isInConversation()) {
@@ -170,7 +171,7 @@ export class BotManager {
     const inactiveBots: string[] = [];
 
     for (const [botId, bot] of this.activeBots.entries()) {
-      if (!bot) {
+      if (!bot || !bot.isActive) {
         inactiveBots.push(botId);
       }
     }
