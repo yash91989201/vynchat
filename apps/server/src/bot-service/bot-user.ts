@@ -51,7 +51,13 @@ export class BotUser {
       await this.delay(this.randomBetween(1000, 2000));
 
       // Step 2: Join global lobby presence (like opening stranger chat page)
-      await this.joinLobbyPresence();
+      try {
+        await this.joinLobbyPresence();
+      } catch (error) {
+        console.warn(
+          `⚠️ ${this.botName} failed to join lobby, continuing...:`, (error as Error).message
+        );
+      }
       await this.delay(this.randomBetween(500, 1000));
 
       // Step 3: Setup user channel (to receive match notifications)
@@ -94,9 +100,14 @@ export class BotUser {
    * Join global:lobby presence - EXACTLY like a real user
    */
   private async joinLobbyPresence(): Promise<void> {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const timeout = setTimeout(() => {
-        reject(new Error("Lobby presence timeout"));
+        console.warn(`⚠️ ${this.botName} lobby presence timed out, continuing...`);
+        if (this.lobbyChannel) {
+          supabase.removeChannel(this.lobbyChannel).catch(() => {});
+          this.lobbyChannel = null;
+        }
+        resolve();
       }, 10000);
 
       this.lobbyChannel = supabase.channel("global:lobby", {
@@ -121,7 +132,12 @@ export class BotUser {
             resolve();
           } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
             clearTimeout(timeout);
-            reject(new Error(`Lobby channel failed: ${status}`));
+            console.warn(`⚠️ ${this.botName} lobby channel failed (${status}), continuing...`);
+            if (this.lobbyChannel) {
+              supabase.removeChannel(this.lobbyChannel).catch(() => {});
+              this.lobbyChannel = null;
+            }
+            resolve();
           }
         });
     });
