@@ -1,5 +1,4 @@
 import { db } from "@/db";
-import { botSupabaseClient } from "./supabase-client";
 import { BotInstance } from "./bot-instance";
 import { BOT_PROFILES } from "./bot-profiles";
 import type { BotProfile, BotStats } from "./config";
@@ -20,15 +19,14 @@ export class BotManager {
     this.isRunning = true;
     console.log("🚀 Starting bot manager...");
 
-    // Start bots with staggered timing to prevent connection storms
     await this.maintainBotPool(targetBotCount, continent);
 
     this.maintenanceInterval = setInterval(
       async () => {
         try {
-          const newTarget = await this.calculateTargetBotCount();
-          await this.maintainBotPool(newTarget, continent);
-          await this.cleanupInactiveBots();
+          const newTarget = this.calculateTargetBotCount();
+          await this.maintainBotPool(await newTarget, continent);
+          this.cleanupInactiveBots();
         } catch (error) {
           console.error("❌ Bot maintenance error:", error);
         }
@@ -62,18 +60,16 @@ export class BotManager {
 
   private async calculateTargetBotCount(): Promise<number> {
     try {
-      // Simplified: just count human users without presence check
-      // This avoids connection overhead and potential failures
       const humanUsers = await db.query.user.findMany({
         where: eq(user.isBot, false),
       });
 
       const humanCount = humanUsers.length;
 
-      const minBots = Number.parseInt(process.env.BOT_MIN_COUNT || "3", 10);
-      const maxBots = Number.parseInt(process.env.BOT_MAX_COUNT || "10", 10); // Reduced max
+      const minBots = Number.parseInt(process.env.BOT_MIN_COUNT || "2", 10);
+      const maxBots = Number.parseInt(process.env.BOT_MAX_COUNT || "8", 10);
       const targetPercentage = Number.parseInt(
-        process.env.BOT_TARGET_PERCENTAGE || "20", // Reduced percentage
+        process.env.BOT_TARGET_PERCENTAGE || "25",
         10
       );
 
@@ -85,7 +81,7 @@ export class BotManager {
       return Math.max(minBots, Math.min(maxBots, target));
     } catch (error) {
       console.error("Error calculating target bot count:", error);
-      return Number.parseInt(process.env.BOT_MIN_COUNT || "3", 10);
+      return Number.parseInt(process.env.BOT_MIN_COUNT || "2", 10);
     }
   }
 
@@ -98,18 +94,18 @@ export class BotManager {
         `📈 Starting ${needed} new bots (${currentCount}/${targetCount})`
       );
 
-      // Start bots sequentially with longer delays to prevent connection storms
+      // Start bots sequentially with delays to prevent connection storms
       for (let i = 0; i < needed; i++) {
         try {
           await this.startBot(continent);
-          // Significantly increased delay with jitter to reduce connection contention
-          const delay = 5000 + Math.random() * 3000; // 5-8 seconds
+          // Increased delay with jitter to reduce connection contention
+          const delay = 3000 + Math.random() * 2000; // 3-5 seconds
           console.log(`⏳ Waiting ${Math.round(delay)}ms before next bot...`);
           await this.delay(delay);
         } catch (error) {
           console.error("Failed to start bot:", error);
           // Add extra delay after a failure
-          await this.delay(3000);
+          await this.delay(2000);
         }
       }
     } else if (currentCount > targetCount) {
@@ -205,9 +201,6 @@ export class BotManager {
       }
     }
 
-    // Log simple connection stats
-    console.log(`📊 Active bots: ${this.activeBots.size}`);
-
     return {
       totalBots: this.activeBots.size,
       inConversation,
@@ -220,3 +213,4 @@ export class BotManager {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 }
+

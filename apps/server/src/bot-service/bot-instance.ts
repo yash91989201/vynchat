@@ -6,7 +6,7 @@ import { botAnalytics, message } from "@/db/schema";
 import { user } from "@/db/schema/auth";
 import type { MessageType, RoomType } from "@/lib/types";
 import type { BotProfile } from "./config";
-import { botAdmin, botSupabaseClient } from "./supabase-client";
+import { supabase } from "./supabase-client";
 
 const GreetingRegex = /\b(hi|hello|hey|howdy|sup)\b/;
 const InterestsRegex = /\b(hobby|hobbies|interests?|do for fun)\b/;
@@ -24,7 +24,6 @@ export class BotInstance {
   lobbyChannel: RealtimeChannel | null = null;
   userChannel: RealtimeChannel | null = null;
   private roomChannel: RealtimeChannel | null = null;
-  clientId: string;
 
   isActive = false;
   private shouldStop = false;
@@ -32,7 +31,6 @@ export class BotInstance {
   constructor(profile: BotProfile) {
     this.profile = profile;
     this.botName = profile.name;
-    this.clientId = `bot-${this.botName.toLowerCase()}-${Date.now()}`;
   }
 
   async start(continent: string): Promise<void> {
@@ -41,14 +39,22 @@ export class BotInstance {
       this.shouldStop = false;
 
       await this.createBotUser();
+      await this.delay(this.randomBetween(1000, 3000)); // Stagger startup
 
-      // Add delay before joining lobby to stagger bot connections
-      await this.delay(this.randomBetween(1000, 3000));
+      // Try to join channels, but don't fail completely if they don't work
+      try {
+        await this.joinLobbyPresence();
+      } catch (error) {
+        console.warn(`⚠️ ${this.botName} lobby presence failed, continuing:`, error);
+      }
 
-      await this.joinLobbyPresence();
-      await this.setupUserChannel();
+      try {
+        await this.setupUserChannel();
+      } catch (error) {
+        console.warn(`⚠️ ${this.botName} user channel failed, continuing:`, error);
+      }
 
-      await this.delay(this.randomBetween(3000, 5000));
+      await this.delay(this.randomBetween(2000, 4000));
       await this.joinMatchmakingQueue(continent);
 
       this.isActive = true;
@@ -81,137 +87,129 @@ export class BotInstance {
   }
 
   private async joinLobbyPresence(): Promise<void> {
-    const maxRetries = 3; // Reduced retries for faster failure
+    const maxRetries = 2;
     let attempt = 0;
 
     while (attempt < maxRetries) {
       try {
-        // Clean up existing channel
         if (this.lobbyChannel) {
-          try {
-            await botSupabaseClient.removeChannel(this.lobbyChannel);
-          } catch (cleanupError) {
-            console.warn("Cleanup error:", cleanupError);
-          }
+          await supabase.removeChannel(this.lobbyChannel);
           this.lobbyChannel = null;
         }
 
-        // Add delay to prevent rapid reconnections
         if (attempt > 0) {
-          await this.delay(Math.min(2000 * attempt, 5000)); // Shorter delays
+          await this.delay(2000 * attempt);
         }
 
-        // Use simplified channel creation
-        this.lobbyChannel = await botSupabaseClient.createChannel(
-          "global:lobby",
-          {
+        this.lobbyChannel = supabase.channel("global:lobby", {
+          config: {
             presence: { key: this.botUserId },
             broadcast: { self: true },
-          }
-        );
+          },
+        });
 
-        // Track presence with error handling
+        await new Promise<void>((resolve, reject) => {
+          let timeoutId: NodeJS.Timeout;
+
+          const cleanup = () => {
+            if (timeoutId) clearTimeout(timeoutId);
+          };
+
+          this.lobbyChannel!.subscribe((status) => {
+            if (status === "SUBSCRIBED") {
+              cleanup();
+              resolve();
+            } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+              cleanup();
+              reject(new Error(`Lobby channel failed: ${status}`));
+            }
+          });
+
+          timeoutId = setTimeout(() => {
+            cleanup();
+            reject(new Error("Lobby channel timeout"));
+          }, 3000);
+        });
+
+        // Track presence
         try {
-          await this.delay(500);
-          await this.lobbyChannel?.track({
+          await this.lobbyChannel.track({
             user_id: this.botUserId,
             status: "idle",
           });
         } catch (trackError) {
-          console.warn(
-            `! Presence tracking failed for ${this.botName}:`,
-            trackError
-          );
-          // Continue anyway
+          console.warn(`Presence tracking failed:`, trackError);
         }
 
         console.log(`📍 ${this.botName} joined lobby presence`);
         return;
       } catch (error) {
         attempt++;
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        console.warn(
-          `!  ${this.botName} failed to join lobby presence (attempt ${attempt}/${maxRetries}):`,
-          errorMessage
-        );
-
-        // Clean up failed channel
-        if (this.lobbyChannel) {
-          try {
-            await botSupabaseClient.removeChannel(this.lobbyChannel);
-          } catch (cleanupError) {
-            console.warn("Cleanup error:", cleanupError);
-          }
-          this.lobbyChannel = null;
-        }
+        console.warn(`Lobby attempt ${attempt} failed:`, error);
 
         if (attempt >= maxRetries) {
-          console.warn(
-            `!  ${this.botName} could not join lobby presence after ${maxRetries} attempts. Continuing without presence tracking.`
-          );
-          return;
+          console.warn(`⚠️ ${this.botName} giving up on lobby presence`);
+          return; // Don't throw, just continue without lobby
         }
-
-        // Simpler backoff
-        const delay = 1000 * attempt + Math.random() * 1000;
-        await this.delay(delay);
       }
     }
   }
 
   private async setupUserChannel(): Promise<void> {
     try {
-      // Clean up existing channel
       if (this.userChannel) {
-        try {
-          await botSupabaseClient.removeChannel(this.userChannel);
-        } catch (cleanupError) {
-          console.warn("User channel cleanup error:", cleanupError);
-        }
+        await supabase.removeChannel(this.userChannel);
         this.userChannel = null;
       }
 
-      this.userChannel = await botSupabaseClient.createChannel(
-        `user:${this.botUserId}`,
-        {
-          broadcast: { self: true, ack: false },
+      this.userChannel = supabase.channel(`user:${this.botUserId}`, {
+        config: {
+          broadcast: { self: true },
           presence: { key: this.botUserId },
-        }
-      );
+        },
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        let timeoutId: NodeJS.Timeout;
+
+        const cleanup = () => {
+          if (timeoutId) clearTimeout(timeoutId);
+        };
+
+        this.userChannel!.subscribe((status) => {
+          if (status === "SUBSCRIBED") {
+            cleanup();
+            resolve();
+          } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT" || status === "CLOSED") {
+            cleanup();
+            reject(new Error(`User channel failed: ${status}`));
+          }
+        });
+
+        timeoutId = setTimeout(() => {
+          cleanup();
+          reject(new Error("User channel timeout"));
+        }, 3000);
+      });
 
       this.userChannel
-        ?.on(
-          "broadcast",
-          { event: "stranger_matched" },
-          async ({ payload }) => {
-            if (!this.shouldStop) {
-              console.log(
-                `🎯 ${this.botName} matched! Room: ${payload.room.id}`
-              );
-              await this.handleMatch(payload.room);
-            }
+        .on("broadcast", { event: "stranger_matched" }, async ({ payload }) => {
+          if (!this.shouldStop) {
+            console.log(`🎯 ${this.botName} matched! Room: ${payload.room.id}`);
+            await this.handleMatch(payload.room);
           }
-        )
+        })
         .on("broadcast", { event: "stranger_skipped" }, async () => {
           if (!this.shouldStop) {
             console.log(`⏭ ${this.botName} was skipped`);
             await this.handleSkipped();
           }
-        })
-        .subscribe((status, err) => {
-          if (status === "SUBSCRIBED") {
-            console.log(`📡 ${this.botName} listening for matches`);
-          } else if (status === "CHANNEL_ERROR") {
-            console.error(`❌ ${this.botName} user channel error:`, err);
-          }
         });
+
+      console.log(`📡 ${this.botName} listening for matches`);
     } catch (error) {
-      console.error(
-        `❌ Failed to setup user channel for ${this.botName}:`,
-        error
-      );
-      // Don't throw - continue without user channel (will affect functionality but not crash)
+      console.warn(`⚠️ ${this.botName} user channel setup failed:`, error);
+      // Don't throw - continue without user channel
     }
   }
 
@@ -219,17 +217,26 @@ export class BotInstance {
     if (this.shouldStop) return;
 
     if (this.lobbyChannel) {
-      await this.lobbyChannel.track({
-        user_id: this.botUserId,
-        status: "waiting",
-      });
+      try {
+        await this.lobbyChannel.track({
+          user_id: this.botUserId,
+          status: "waiting",
+        });
+      } catch (error) {
+        console.warn(`Failed to track waiting status:`, error);
+      }
     }
 
     // Use admin client for queue RPC
-    await botAdmin.schema("pgmq_public").rpc("send", {
-      queue_name: "stranger-queue",
-      message: { userId: this.botUserId, continent },
-    });
+    try {
+      await supabase.schema("pgmq_public").rpc("send", {
+        queue_name: "stranger-queue",
+        message: { userId: this.botUserId, continent },
+      });
+    } catch (error) {
+      console.error(`Failed to join matchmaking queue:`, error);
+      throw error; // This is critical
+    }
 
     await db
       .update(user)
@@ -249,31 +256,33 @@ export class BotInstance {
     this.conversationStartTime = Date.now();
 
     if (this.lobbyChannel) {
-      await this.lobbyChannel.track({
-        user_id: this.botUserId,
-        status: "matched",
-      });
+      try {
+        await this.lobbyChannel.track({
+          user_id: this.botUserId,
+          status: "matched",
+        });
+      } catch (error) {
+        console.warn(`Failed to track matched status:`, error);
+      }
     }
 
     this.joinRoomChannel();
-    await this.delay(this.randomBetween(2000, 4000));
+    await this.delay(this.randomBetween(1000, 3000));
     await this.sendGreeting();
   }
 
   private joinRoomChannel(): void {
     if (!this.currentRoomId || this.shouldStop) return;
 
-    // Use shared client for room channels
-    const client = botSupabaseClient.getClient();
-    this.roomChannel = client.channel(`room:${this.currentRoomId}`, {
+    this.roomChannel = supabase.channel(`room:${this.currentRoomId}`, {
       config: {
-        broadcast: { self: true, ack: false },
+        broadcast: { self: true },
         presence: { key: this.botUserId },
       },
     });
 
     this.roomChannel
-      ?.on("broadcast", { event: "message" }, async ({ payload }) => {
+      .on("broadcast", { event: "message" }, async ({ payload }) => {
         if (payload.senderId !== this.botUserId && !this.shouldStop) {
           await this.handleIncomingMessage(payload);
         }
@@ -292,10 +301,7 @@ export class BotInstance {
             });
             console.log(`💬 ${this.botName} joined room ${this.currentRoomId}`);
           } catch (trackError) {
-            console.warn(
-              `! Room presence tracking failed for ${this.botName}:`,
-              trackError
-            );
+            console.warn(`Room presence tracking failed:`, trackError);
           }
         } else if (status === "CHANNEL_ERROR") {
           console.error(`❌ ${this.botName} room channel error`);
@@ -309,7 +315,7 @@ export class BotInstance {
     this.messageCount++;
     console.log(`📨 ${this.botName} received: "${msg.content}"`);
 
-    await this.delay(this.randomBetween(1000, 2000));
+    await this.delay(this.randomBetween(800, 1500));
 
     if (this.roomChannel) {
       await this.roomChannel.send({
@@ -320,9 +326,8 @@ export class BotInstance {
     }
 
     const response = this.generateResponse(msg.content);
-    const typingTime =
-      (response.length / this.profile.responseStyle.typingSpeed) * 1000;
-    await this.delay(typingTime);
+    const typingTime = (response.length / this.profile.responseStyle.typingSpeed) * 1000;
+    await this.delay(Math.min(typingTime, 3000)); // Cap at 3 seconds
 
     await this.sendMessage(response);
 
@@ -444,7 +449,7 @@ export class BotInstance {
 
     await this.recordAnalytics(true, false);
     await this.cleanupRoom();
-    await this.delay(this.randomBetween(1000, 3000));
+    await this.delay(this.randomBetween(1000, 2000));
     await this.joinMatchmakingQueue("World");
   }
 
@@ -454,7 +459,7 @@ export class BotInstance {
     console.log(`👋 ${this.botName}'s partner left`);
     await this.recordAnalytics(false, true);
     await this.cleanupRoom();
-    await this.delay(this.randomBetween(1000, 3000));
+    await this.delay(this.randomBetween(1000, 2000));
     await this.joinMatchmakingQueue("World");
   }
 
@@ -463,14 +468,14 @@ export class BotInstance {
 
     console.log(`😔 ${this.botName} was skipped`);
     await this.cleanupRoom();
-    await this.delay(this.randomBetween(1000, 3000));
+    await this.delay(this.randomBetween(1000, 2000));
     await this.joinMatchmakingQueue("World");
   }
 
   private async cleanupRoom(): Promise<void> {
     if (this.roomChannel) {
       try {
-        await botSupabaseClient.removeChannel(this.roomChannel);
+        await supabase.removeChannel(this.roomChannel);
       } catch (error) {
         console.warn("Room channel cleanup error:", error);
       }
@@ -493,10 +498,7 @@ export class BotInstance {
     this.conversationStartTime = null;
   }
 
-  private async recordAnalytics(
-    botSkipped: boolean,
-    humanSkipped: boolean
-  ): Promise<void> {
+  private async recordAnalytics(botSkipped: boolean, humanSkipped: boolean): Promise<void> {
     const duration = this.conversationStartTime
       ? Math.floor((Date.now() - this.conversationStartTime) / 1000)
       : 0;
@@ -526,7 +528,7 @@ export class BotInstance {
     for (const channel of channels) {
       if (channel) {
         try {
-          await botSupabaseClient.removeChannel(channel);
+          await supabase.removeChannel(channel);
         } catch (error) {
           console.warn(`Channel cleanup error for ${this.botName}:`, error);
         }

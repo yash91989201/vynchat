@@ -13,7 +13,12 @@ export interface ConnectionMetrics {
 }
 
 export interface ConnectionState {
-  status: 'connecting' | 'connected' | 'disconnected' | 'error' | 'reconnecting';
+  status:
+    | "connecting"
+    | "connected"
+    | "disconnected"
+    | "error"
+    | "reconnecting";
   lastConnected?: Date;
   lastDisconnected?: Date;
   reconnectAttempts: number;
@@ -29,9 +34,9 @@ export class RealtimeMonitor {
     reconnectAttempts: 0,
     averageResponseTime: 0,
   };
-  private connectionStates: Map<string, ConnectionState> = new Map();
+  connectionStates: Map<string, ConnectionState> = new Map();
   private responseTimes: number[] = [];
-  private maxResponseTimeSamples = 100;
+  maxResponseTimeSamples = 100;
 
   private constructor() {}
 
@@ -48,7 +53,7 @@ export class RealtimeMonitor {
   recordConnectionAttempt(connectionId: string): void {
     this.metrics.totalConnections++;
     this.connectionStates.set(connectionId, {
-      status: 'connecting',
+      status: "connecting",
       reconnectAttempts: 0,
       maxReconnectAttempts: 10,
     });
@@ -60,13 +65,13 @@ export class RealtimeMonitor {
   recordConnectionSuccess(connectionId: string, responseTime?: number): void {
     const state = this.connectionStates.get(connectionId);
     if (state) {
-      state.status = 'connected';
+      state.status = "connected";
       state.lastConnected = new Date();
       state.reconnectAttempts = 0; // Reset on successful connection
     }
 
     this.metrics.activeConnections++;
-    
+
     if (responseTime) {
       this.recordResponseTime(responseTime);
     }
@@ -80,7 +85,7 @@ export class RealtimeMonitor {
   recordConnectionFailure(connectionId: string, error: string): void {
     const state = this.connectionStates.get(connectionId);
     if (state) {
-      state.status = 'error';
+      state.status = "error";
       state.lastDisconnected = new Date();
     }
 
@@ -97,11 +102,14 @@ export class RealtimeMonitor {
   recordDisconnection(connectionId: string): void {
     const state = this.connectionStates.get(connectionId);
     if (state) {
-      state.status = 'disconnected';
+      state.status = "disconnected";
       state.lastDisconnected = new Date();
     }
 
-    this.metrics.activeConnections = Math.max(0, this.metrics.activeConnections - 1);
+    this.metrics.activeConnections = Math.max(
+      0,
+      this.metrics.activeConnections - 1
+    );
     console.log(`🔌 Disconnected: ${connectionId}`);
   }
 
@@ -114,15 +122,19 @@ export class RealtimeMonitor {
 
     state.reconnectAttempts++;
     this.metrics.reconnectAttempts++;
-    state.status = 'reconnecting';
+    state.status = "reconnecting";
 
     // Check if we've exceeded max reconnection attempts
     if (state.reconnectAttempts >= state.maxReconnectAttempts) {
-      console.error(`🚫 Max reconnection attempts exceeded for ${connectionId}`);
+      console.error(
+        `🚫 Max reconnection attempts exceeded for ${connectionId}`
+      );
       return false;
     }
 
-    console.log(`🔄 Reconnection attempt ${state.reconnectAttempts}/${state.maxReconnectAttempts} for ${connectionId}`);
+    console.log(
+      `🔄 Reconnection attempt ${state.reconnectAttempts}/${state.maxReconnectAttempts} for ${connectionId}`
+    );
     return true;
   }
 
@@ -131,14 +143,16 @@ export class RealtimeMonitor {
    */
   private recordResponseTime(responseTime: number): void {
     this.responseTimes.push(responseTime);
-    
+
     // Keep only the last N samples
     if (this.responseTimes.length > this.maxResponseTimeSamples) {
       this.responseTimes.shift();
     }
 
     // Update average
-    this.metrics.averageResponseTime = this.responseTimes.reduce((sum, time) => sum + time, 0) / this.responseTimes.length;
+    this.metrics.averageResponseTime =
+      this.responseTimes.reduce((sum, time) => sum + time, 0) /
+      this.responseTimes.length;
   }
 
   /**
@@ -155,13 +169,13 @@ export class RealtimeMonitor {
 
     // Check error patterns that shouldn't trigger reconnection
     const noReconnectErrors = [
-      'AUTH_INVALID',
-      'TENANT_NOT_FOUND', 
-      'UNAUTHORIZED',
-      'FORBIDDEN',
+      "AUTH_INVALID",
+      "TENANT_NOT_FOUND",
+      "UNAUTHORIZED",
+      "FORBIDDEN",
     ];
 
-    const shouldNotReconnect = noReconnectErrors.some(pattern => 
+    const shouldNotReconnect = noReconnectErrors.some((pattern) =>
       error.toUpperCase().includes(pattern)
     );
 
@@ -198,7 +212,10 @@ export class RealtimeMonitor {
 
     for (const [connectionId, state] of this.connectionStates.entries()) {
       const lastActivity = state.lastDisconnected || state.lastConnected;
-      if (lastActivity && (now.getTime() - lastActivity.getTime()) > staleThreshold) {
+      if (
+        lastActivity &&
+        now.getTime() - lastActivity.getTime() > staleThreshold
+      ) {
         this.connectionStates.delete(connectionId);
       }
     }
@@ -208,15 +225,19 @@ export class RealtimeMonitor {
    * Log current status for monitoring
    */
   logStatus(): void {
-    console.log('📊 Realtime Connection Monitor Status:');
+    console.log("📊 Realtime Connection Monitor Status:");
     console.log(`  Total Connections: ${this.metrics.totalConnections}`);
     console.log(`  Active Connections: ${this.metrics.activeConnections}`);
     console.log(`  Failed Connections: ${this.metrics.failedConnections}`);
     console.log(`  Reconnect Attempts: ${this.metrics.reconnectAttempts}`);
-    console.log(`  Average Response Time: ${Math.round(this.metrics.averageResponseTime)}ms`);
-    
+    console.log(
+      `  Average Response Time: ${Math.round(this.metrics.averageResponseTime)}ms`
+    );
+
     if (this.metrics.lastError) {
-      console.log(`  Last Error: ${this.metrics.lastError} at ${this.metrics.lastErrorTime?.toISOString()}`);
+      console.log(
+        `  Last Error: ${this.metrics.lastError} at ${this.metrics.lastErrorTime?.toISOString()}`
+      );
     }
 
     const statusCounts = new Map<string, number>();
@@ -225,7 +246,7 @@ export class RealtimeMonitor {
       statusCounts.set(state.status, count + 1);
     }
 
-    console.log('  Connection Status Breakdown:');
+    console.log("  Connection Status Breakdown:");
     for (const [status, count] of statusCounts.entries()) {
       console.log(`    ${status}: ${count}`);
     }
@@ -253,8 +274,11 @@ export const realtimeMonitor = RealtimeMonitor.getInstance();
  * Utility function to create exponential backoff with jitter
  */
 export function createExponentialBackoff(baseDelay: number, maxDelay: number) {
-  return function(attempt: number): number {
-    const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+  return function (attempt: number): number {
+    const exponentialDelay = Math.min(
+      baseDelay * Math.pow(2, attempt),
+      maxDelay
+    );
     const jitter = Math.random() * 0.3 * exponentialDelay; // 30% jitter
     return exponentialDelay + jitter;
   };
@@ -263,9 +287,12 @@ export function createExponentialBackoff(baseDelay: number, maxDelay: number) {
 /**
  * Utility function to measure operation time
  */
-export async function measureTime<T>(operation: () => Promise<T>): Promise<[T, number]> {
+export async function measureTime<T>(
+  operation: () => Promise<T>
+): Promise<[T, number]> {
   const startTime = Date.now();
   const result = await operation();
   const responseTime = Date.now() - startTime;
   return [result, responseTime];
 }
+

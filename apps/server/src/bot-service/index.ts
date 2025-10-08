@@ -22,7 +22,7 @@ const botManager = new BotManager();
 
 // Configuration
 const config = {
-  targetBotCount: Number.parseInt(process.env.BOT_MIN_COUNT || "5", 10),
+  targetBotCount: Number.parseInt(process.env.BOT_MIN_COUNT || "3", 10),
   continent: "World",
 };
 
