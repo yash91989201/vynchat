@@ -18,24 +18,27 @@ Implemented a **simplified, more reliable bot architecture** that minimizes Real
 #### 1. **New BotInstanceSimple Class** (`bot-instance-simple.ts`)
 
 **What it does differently:**
-- ✅ **No lobby presence channel** - Bots don't need to broadcast their online status
+- ✅ **Lightweight lobby presence** - Joins shared `global:lobby` channel for online count (with staggered timing)
 - ✅ **No user notification channel** - Uses database polling instead of Realtime for match detection
-- ✅ **Only 1 Realtime channel per bot** - Room channel only when matched
+- ✅ **Minimal Realtime usage** - Only 1-2 channels per bot (lobby + room when matched)
 - ✅ **Fallback to polling** - If Realtime fails, falls back to database polling for messages
 
 **How it works:**
 1. Creates bot user in database
-2. Joins matchmaking queue via PGMQ
-3. **Polls database every 3 seconds** to check if matched to a room (via `room_member` table)
-4. When matched, tries to join room Realtime channel
-5. If Realtime fails, falls back to polling room messages every 2 seconds
+2. Joins `global:lobby` presence channel (with retry and graceful failure)
+3. Joins matchmaking queue via PGMQ
+4. **Polls database every 3 seconds** to check if matched to a room (via `room_member` table)
+5. When matched, tries to join room Realtime channel
+6. If Realtime fails, falls back to polling room messages every 2 seconds
+7. Updates lobby presence status (idle → matched → idle)
 
 #### 2. **Updated Bot Manager** 
 
 **Changes:**
 - Uses `BotInstanceSimple` instead of `BotInstance`
-- Increased startup delays from 3-5s to **5-8 seconds** between bots
+- Increased startup delays from 5-8s to **7-10 seconds** between bots (prevents lobby channel storms)
 - Better error handling during bot startup
+- No wait after the last bot in a batch
 
 #### 3. **Improved Realtime Client** (`supabase-client.ts`)
 
@@ -57,18 +60,19 @@ Bot Instance
 ### After (Simple - Minimal Realtime)
 ```
 Bot Instance
-├── Database Polling (3s interval) ✅
+├── Lobby Presence Channel ✅ (shared, with staggered join for online count)
+├── Database Polling (3s interval) ✅ (for match detection)
 └── Room Channel (when matched) ✅
     └── Fallback: Message Polling (if channel fails) ✅
 ```
 
 ## Benefits
 
-1. **95% reduction in Realtime connections** - From 3+ channels per bot to 0-1
-2. **No connection storms** - Polling is gradual and controlled
-3. **Graceful degradation** - Works even if Realtime is completely down
-4. **Lower resource usage** - Polling is more efficient than maintaining persistent connections
-5. **More reliable** - Database queries are more reliable than Realtime subscriptions
+1. **66% reduction in Realtime connections** - From 3 channels per bot to 1-2 (lobby + room)
+2. **Staggered connection** - 7-10 second delays prevent connection storms
+3. **Graceful degradation** - Lobby presence failure doesn't stop bot functionality
+4. **Visible to users** - Bots appear in the online user count
+5. **More reliable** - Database polling for critical operations (match detection)
 
 ## Files Modified
 

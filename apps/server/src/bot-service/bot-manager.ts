@@ -98,10 +98,12 @@ export class BotManager {
       for (let i = 0; i < needed; i++) {
         try {
           await this.startBot(continent);
-          // Increased delay with jitter to reduce connection contention
-          const delay = 5000 + Math.random() * 3000; // 5-8 seconds
-          console.log(`⏳ Waiting ${Math.round(delay)}ms before next bot...`);
-          await this.delay(delay);
+          // Longer delay to prevent lobby presence channel storms
+          const delay = 7000 + Math.random() * 3000; // 7-10 seconds
+          if (i < needed - 1) { // Don't wait after the last bot
+            console.log(`⏳ Waiting ${Math.round(delay)}ms before next bot...`);
+            await this.delay(delay);
+          }
         } catch (error) {
           console.error(`Failed to start bot ${i + 1}/${needed}:`, error);
           // Add extra delay after a failure

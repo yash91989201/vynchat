@@ -22,6 +22,7 @@ export class BotInstanceSimple {
   private conversationStartTime: number | null = null;
 
   private roomChannel: RealtimeChannel | null = null;
+  private lobbyPresenceChannel: RealtimeChannel | null = null;
   private matchCheckInterval: NodeJS.Timeout | null = null;
 
   isActive = false;
@@ -39,8 +40,11 @@ export class BotInstanceSimple {
 
       await this.createBotUser();
       
-      // Delay before joining queue
+      // Delay before joining
       await this.delay(this.randomBetween(2000, 4000));
+
+      // Join lobby presence for online count
+      await this.joinLobbyPresence();
 
       // Join matchmaking queue
       await this.joinMatchmakingQueue(continent);
@@ -75,6 +79,52 @@ export class BotInstanceSimple {
 
     this.botUserId = userId;
     console.log(`👤 Bot user created: ${this.botUserId}`);
+  }
+
+  private async joinLobbyPresence(): Promise<void> {
+    try {
+      // Join shared lobby presence channel
+      this.lobbyPresenceChannel = supabase.channel("global:lobby", {
+        config: {
+          presence: { key: this.botUserId },
+        },
+      });
+
+      await new Promise<void>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error("Lobby presence timeout")), 5000);
+
+        this.lobbyPresenceChannel!.subscribe(async (status) => {
+          if (status === "SUBSCRIBED") {
+            clearTimeout(timeout);
+            // Track presence as idle
+            try {
+              await this.lobbyPresenceChannel!.track({
+                user_id: this.botUserId,
+                status: "idle",
+              });
+              console.log(`📍 ${this.botName} joined lobby presence`);
+            } catch (trackError) {
+              console.warn(`${this.botName} presence tracking failed:`, trackError);
+            }
+            resolve();
+          } else if (status === "CHANNEL_ERROR") {
+            clearTimeout(timeout);
+            reject(new Error("Lobby presence channel error"));
+          }
+        });
+      });
+    } catch (error) {
+      console.warn(`⚠️ ${this.botName} lobby presence failed, continuing without it:`, error);
+      // Don't throw - lobby presence is not critical
+      if (this.lobbyPresenceChannel) {
+        try {
+          await supabase.removeChannel(this.lobbyPresenceChannel);
+        } catch (e) {
+          // Ignore cleanup errors
+        }
+        this.lobbyPresenceChannel = null;
+      }
+    }
   }
 
   private startMatchPolling(): void {
@@ -141,6 +191,18 @@ export class BotInstanceSimple {
     this.currentRoomId = room.id;
     this.messageCount = 0;
     this.conversationStartTime = Date.now();
+
+    // Update lobby presence to matched
+    if (this.lobbyPresenceChannel) {
+      try {
+        await this.lobbyPresenceChannel.track({
+          user_id: this.botUserId,
+          status: "matched",
+        });
+      } catch (error) {
+        console.warn(`${this.botName} failed to update presence to matched:`, error);
+      }
+    }
 
     // Join room channel for real-time messages
     await this.joinRoomChannel();
@@ -378,6 +440,18 @@ export class BotInstanceSimple {
       this.roomChannel = null;
     }
 
+    // Update lobby presence back to idle
+    if (this.lobbyPresenceChannel) {
+      try {
+        await this.lobbyPresenceChannel.track({
+          user_id: this.botUserId,
+          status: "idle",
+        });
+      } catch (error) {
+        console.warn(`${this.botName} failed to update presence to idle:`, error);
+      }
+    }
+
     this.currentRoomId = null;
     this.messageCount = 0;
     this.conversationStartTime = null;
@@ -417,9 +491,18 @@ export class BotInstanceSimple {
       try {
         await supabase.removeChannel(this.roomChannel);
       } catch (error) {
-        console.warn(`${this.botName} cleanup error:`, error);
+        console.warn(`${this.botName} room cleanup error:`, error);
       }
       this.roomChannel = null;
+    }
+
+    if (this.lobbyPresenceChannel) {
+      try {
+        await supabase.removeChannel(this.lobbyPresenceChannel);
+      } catch (error) {
+        console.warn(`${this.botName} lobby cleanup error:`, error);
+      }
+      this.lobbyPresenceChannel = null;
     }
   }
 
