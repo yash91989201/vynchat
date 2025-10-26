@@ -38,18 +38,6 @@ export const messageRouter = {
       const { roomId, content } = input;
       const userId = context.session.user.id;
 
-      // Verify user is member of the room
-      // const membership = await context.db.query.roomMember.findFirst({
-      //   where: and(
-      //     eq(roomMember.roomId, roomId),
-      //     eq(roomMember.userId, userId)
-      //   ),
-      // });
-      //
-      // if (!membership) {
-      //   throw new Error("Not a member of this room");
-      // }
-
       // Check for DM message limit
       const roomData = await context.db.query.room.findFirst({
         where: eq(room.id, roomId),

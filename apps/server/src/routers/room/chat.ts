@@ -21,7 +21,7 @@ export const roomChatRouter = {
     .input(JoinRoomInput)
     .output(JoinRoomOutput)
     .handler(async ({ context, input }) => {
-      const { roomId, requeueOther } = input;
+      const { roomId } = input;
       const userId = context.session.user.id;
 
       const roomToJoin = await context.db.query.room.findFirst({
@@ -125,7 +125,9 @@ export const roomChatRouter = {
               if (status === "SUBSCRIBED") {
                 resolve();
               } else if (status === "CHANNEL_ERROR") {
-                reject(new Error("Failed to subscribe to notification channel"));
+                reject(
+                  new Error("Failed to subscribe to notification channel")
+                );
               }
             });
 
